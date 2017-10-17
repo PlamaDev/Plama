@@ -1,0 +1,152 @@
+---
+layout: page
+title: "About"
+description: "Hi there"
+---
+<br>
+
+<!-- Language Selector -->
+<select onchange= "onLanChange(this.options[this.options.selectedIndex].value)">
+    <option value="0" selected> 中文 Chinese </option>
+    <option value="1"> 英文 English </option>
+</select>
+
+<!-- Chinese Version -->
+<div class="zh post-container">
+
+  <p>旧都流民一人，现于利物浦读电气 Beng</p>
+
+  <p>以前觉得命令行用电脑的都是大佬，现在我90%的工作都是在文本编辑器或者命令行里边完成的。<br>
+  以前觉得 ubuntu 这种东西根本就不是给人用的，然而我现在一个月都碰不到一次 Windows。<br>
+  以前觉得会编程的都是大佬，现在我可以10种语言 Hello World。</p>
+
+  <p>然而实际上什么都没有变，在你变成了曾经眼中的大佬之后，只会发现这实际上并没有什么难度，然后脑子里又出现了新的大佬的影子。对我而言，最大的困难莫过于时间太少，想做的事太多。这么久走下来，倒也不是因为自己在原地踏步，只是和无穷远比起来，1和100并没有区别。</p>
+
+  <p>不过就算是这样，如果能一直往前走的话，也就没什么好抱怨了</p>
+
+  <p>2017年春</p>
+
+</div>
+
+<!-- English Version -->
+<div class="en post-container">
+  <p>Hi, here is Towdium, a guy from Nanjing. I'm studing in <a href="http://www.xjtlu.edu.cn">Xi'an Jiaotong Liverpool University</a>, studing EEE, year 2.
+  As you might be able to notice, my English level is not as good as a native speaker, but if you have anything to share with me, just go ahead. I'm willing to talk and share.</p>
+
+  <p>If you want to know more about me, here is what I can do:</p>
+
+  <ul>
+    <li>Start to learn Photoshop and Audition in 2009, can do most of daily things.</li>
+    <li>Start to learn Java in 2014, can do simple desktop apps.</li>
+    <li>Start to learn AE and Premiere in 2014, can use most of templates or make simple ones.</li>
+    <li>Start to learn Python in 2014. Made a simple equation set calculator (of coursee without NumPy).</li>
+    <li>Start to learn C and Cpp in 2015, can do everything basic and nothing hacky.</li>
+    <li>Start working on Minecraft mod Just Enough Calculation. Keep developing and maintaining up to now.</li>
+  </ul>
+
+  <p>No intrest in food and travelling.</p>
+
+  <p>Best regards,<br> winter 2016</p>
+</div>
+
+<!-- Handle Language Change -->
+<script type="text/javascript">
+    // get nodes
+    var $zh = document.querySelector(".zh");
+    var $en = document.querySelector(".en");
+    var $select = document.querySelector("select");
+
+    // bind hashchange event
+    window.addEventListener('hashchange', _render);
+
+    // handle render
+    function _render(){
+        var _hash = window.location.hash;
+        // en
+        if(_hash == "#en"){
+            $select.selectedIndex = 1;
+            $en.style.display = "block";
+            $zh.style.display = "none";
+        // zh by default
+        }else{
+            // not trigger onChange, otherwise cause a loop call.
+            $select.selectedIndex = 0;
+            $zh.style.display = "block";
+            $en.style.display = "none";
+        }
+    }
+
+    // handle select change
+    function onLanChange(index){
+        if(index == 0){
+            window.location.hash = "#zh"
+        }else{
+            window.location.hash = "#en"
+        }
+    }
+
+    // init
+    _render();
+</script>
+
+
+
+{% if site.duoshuo_username %}
+<!-- 多说评论框 start -->
+<div class="comment">
+    <div class="ds-thread"
+    {% if site.duoshuo_username == "huxblog" %}
+        data-thread-id="1187623191091085319"
+    {% else %}
+        data-thread-key="{{site.duoshuo_username}}/about"
+    {% endif %}
+
+    data-title="{{page.title}}"
+    data-url="{{site.url}}/about/"></div>
+</div>
+<!-- 多说评论框 end -->
+
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    // dynamic User hacking by Hux
+    var _user = '{{site.duoshuo_username}}';
+
+    // duoshuo comment query.
+    var duoshuoQuery = {short_name: _user };
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0]
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+</script>
+<!-- 多说公共JS代码 end -->
+{% endif %}
+
+
+{% if site.disqus_username %}
+<!-- disqus 评论框 start -->
+<div class="comment">
+    <div id="disqus_thread" class="disqus-thread">
+
+    </div>
+</div>
+<!-- disqus 评论框 end -->
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "{{site.disqus_username}}";
+    var disqus_identifier = "{{site.disqus_username}}/{{page.url}}";
+    var disqus_url = "{{site.url}}{{page.url}}";
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+{% endif %}

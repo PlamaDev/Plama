@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  CommonHTML: { linebreaks: { automatic: true } },
+  SVG: { linebreaks: { automatic: true } },
+  "TeX": {
+    equationNumbers: {autoNumber: ["none"]},
+    Macros: {
+      AA : "{\\unicode{x212B}}",
+      oiiint : "{\\rlap{\\subset}\\mkern-0.11em\\rlap\\int\\mkern0.3em\\rlap\\int\\mkern0.14em\\int\\mkern-1.1em\\supset}",
+      oiint : "{\\subset\\hspace{-10pt}\\iint\\hspace{-9.5pt}\\supset}"
+    }
+  },
+  "HTML-CSS": {
+      scale: 90,
+      linebreaks: { automatic: true }
+    },
+  "tex2jax": {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+});
+
+MathJax.Hub.Register.StartupHook("Begin",function () {
+  MathJax.Hub.Queue(function () {
+    var math = document.getElementById("rescale");
+    var w = math.offsetWidth, W = math.parentNode.offsetWidth-40;
+    if (w > W) {
+      math.style.fontSize = (95*W/w)+"%";
+      MathJax.Hub.getAllJax(math)[0].Rerender();
+    }
+  });
+});
+</script>
+
+{% include head.html %}
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    {% include nav.html %}
+
+    {{ content }}
+
+    {% include footer.html %}
+
+
+<!-- Image to hack wechat -->
+<img src="/img/site/icon.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>
