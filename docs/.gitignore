@@ -1,8 +1,0 @@
-_site
-node_modules
-raft
-npm-debug.log
-.DS_Store
-*/.DS_Store
-*/*/.DS_Store
-*.sh
