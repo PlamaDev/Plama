@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>render/plain.vsh</file>
+        <file>render/plain.fsh</file>
+    </qresource>
+</RCC>
