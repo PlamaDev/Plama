@@ -12,21 +12,21 @@ public:
   virtual QVector<QVector3D>& getPoint() = 0;
   virtual QVector<QVector3D>& getNormal() = 0;
   virtual QVector3D getSize() = 0;
-  static void getExtreme(float* data, int total, float& max, float& min);
+  static void getExtreme(const float* data, int total, float& max, float& min);
 };
 
 class ModelSmooth : public Model {
 public:
   ~ModelSmooth() override = default;
-  ModelSmooth(float* data, int sizeX, int sizeY);
-  ModelSmooth(float* data, int sizeX, int sizeY, float max, float min);
+  ModelSmooth(const float* data, int sizeX, int sizeY);
+  ModelSmooth(const float* data, int sizeX, int sizeY, float max, float min);
   QVector<GLuint>& getIndex() override;
   QVector<QVector3D>& getPoint() override;
   QVector<QVector3D>& getNormal() override;
   QVector3D getSize() override;
 
 private:
-  void init(float* data, int sizeX, int sizeY, float max, float min);
+  void init(const float* data, int sizeX, int sizeY, float max, float min);
   QVector<GLuint> index;
   QVector<QVector3D> point;
   QVector<QVector3D> normal;
@@ -36,8 +36,8 @@ private:
 class ModelInsert : public Model {
 public:
   ~ModelInsert() override = default;
-  ModelInsert(float* data, int sizeX, int sizeY);
-  ModelInsert(float* data, int sizeX, int sizeY, float max, float min);
+  ModelInsert(const float* data, int sizeX, int sizeY);
+  ModelInsert(const float* data, int sizeX, int sizeY, float max, float min);
   QVector<GLuint>& getIndex() override;
   QVector<QVector3D>& getPoint() override;
   QVector<QVector3D>& getNormal() override;
@@ -45,7 +45,7 @@ public:
 
 
 private:
-  void init(float* data, int sizeX, int sizeY, float max, float min);
+  void init(const float* data, int sizeX, int sizeY, float max, float min);
   QVector<GLuint> index;
   QVector<QVector3D> point;
   QVector<QVector3D> normal;

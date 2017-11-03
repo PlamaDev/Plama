@@ -20,4 +20,5 @@ void main() {
     vec4 dirView = normalize(vec4(vecView, 1.0f) - vecPos_);
     float fSpec = max(dot(dirReflect, dirView), 0);
     ret = color + pow(fSpec, 4.0f) * vec4(vecSpec, 1.0f);
+    //ret = dirNormal;
 }

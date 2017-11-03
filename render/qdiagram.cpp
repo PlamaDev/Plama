@@ -8,6 +8,7 @@
 #include <QSharedPointer>
 #include "render/model.h"
 #include "render/engine.h"
+#include "dataio/fileio.h"
 
 QDiagram::QDiagram(QWidget *parent) : QOpenGLWidget(parent), QOpenGLFunctions(), engine(new EngineSimple) {
   setAttribute(Qt::WA_OpaquePaintEvent, true);
@@ -21,8 +22,10 @@ QDiagram::QDiagram(QWidget *parent) : QOpenGLWidget(parent), QOpenGLFunctions(),
   setFormat(format);
 
 
-  float data[] = {0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.0f};
-  QScopedPointer<Model> model(new ModelInsert(data, 3, 3, 1.0f, 0.0f));
+  //float data[] = {0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.0f};
+  //QScopedPointer<Model> model(new ModelInsert(data, 3, 3));
+  Fileio f;
+  QScopedPointer<Model> model(new ModelSmooth(f.getData(), f.getSizeX(), f.getSizeY()));
   engine->setModel(model);
   engine->setBackGround(palette().color(QWidget::backgroundRole()));
 }

@@ -4,17 +4,17 @@
 #include <QOpenGLFunctions>
 #include <memory>
 
-ModelSmooth::ModelSmooth(float* data, int sizeX, int sizeY) {
+ModelSmooth::ModelSmooth(const float* data, int sizeX, int sizeY) {
   float max, min;
   Model::getExtreme(data, sizeX*sizeY, max, min);
   init(data, sizeX, sizeY, max, min);
 }
 
-ModelSmooth::ModelSmooth(float* data, int sizeX, int sizeY, float max, float min) {
+ModelSmooth::ModelSmooth(const float* data, int sizeX, int sizeY, float max, float min) {
   init(data, sizeX, sizeY, max, min);
 }
 
-void ModelSmooth::init(float* data, int sizeX, int sizeY, float max, float min) {
+void ModelSmooth::init(const float* data, int sizeX, int sizeY, float max, float min) {
   index = QVector<GLuint>((sizeX-1) * (sizeY-1) * 6);
   point = QVector<QVector3D>(sizeX * sizeY);
   normal = QVector<QVector3D>(sizeX * sizeY);
@@ -108,13 +108,13 @@ QVector3D ModelSmooth::getSize() {
 }
 
 
-ModelInsert::ModelInsert(float *data, int sizeX, int sizeY) {
+ModelInsert::ModelInsert(const float *data, int sizeX, int sizeY) {
   float max, min;
   Model::getExtreme(data, sizeX*sizeY, max, min);
   init(data, sizeX, sizeY, max, min);
 }
 
-ModelInsert::ModelInsert(float *data, int sizeX, int sizeY, float max, float min){
+ModelInsert::ModelInsert(const float *data, int sizeX, int sizeY, float max, float min){
   init(data, sizeX, sizeY, max, min);
 }
 
@@ -134,7 +134,7 @@ QVector3D ModelInsert::getSize(){
   return size;
 }
 
-void ModelInsert::init(float *data, int sizeX, int sizeY, float max, float min){
+void ModelInsert::init(const float *data, int sizeX, int sizeY, float max, float min){
   int numPoint = sizeX * sizeY;
   int numInsert = (sizeX-1) * (sizeY-1);
   int numTotal = numPoint + numInsert;
@@ -199,7 +199,7 @@ void ModelInsert::init(float *data, int sizeX, int sizeY, float max, float min){
       int iUL = numPoint + (y - 1) * (sizeX - 1) + x - 1;
       int iLL = iUL + 1;
       int iUR = iUL + sizeX - 1;
-      int iLR = iUL + 1;
+      int iLR = iUR + 1;
       float fCurrent = dataConverted[current];
       float fLeft = dataConverted[iLeft < 0 ? 0 : iLeft];
       float fRight = dataConverted[iRight >= numPoint ? 0 : iRight];
@@ -268,7 +268,7 @@ void ModelInsert::init(float *data, int sizeX, int sizeY, float max, float min){
   size = QVector3D(sizeX-1, sizeY-1, 1);
 }
 
-void Model::getExtreme(float *data, int total, float &max, float &min) {
+void Model::getExtreme(const float *data, int total, float &max, float &min) {
   max = data[0];
   min = data[0];
   for(int i = 1; i < total; i++) {

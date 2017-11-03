@@ -9,13 +9,15 @@ SOURCES += \
     interface/windowmain.cpp \
     render/model.cpp \
     render/qdiagram.cpp \
-    render/engine.cpp
+    render/engine.cpp \
+    dataio/fileio.cpp
 
 HEADERS += \
     interface/windowmain.h \
     render/model.h \
     render/qdiagram.h \
-    render/engine.h
+    render/engine.h \
+    dataio/fileio.h
 
 FORMS += \
     interface/windowmain.ui
