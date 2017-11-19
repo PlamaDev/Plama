@@ -1,11 +1,17 @@
 #include "interface/windowmain.h"
 #include <QApplication>
+#include <QSurfaceFormat>
 
-int main(int argc, char *argv[])
-{
-  QApplication a(argc, argv);
-  WindowMain w(nullptr);
-  w.show();
+int main(int argc, char *argv[]) {
+    QSurfaceFormat format;
 
-  return a.exec();
+    format.setSamples(6);
+    QSurfaceFormat::setDefaultFormat(format);
+
+    QApplication a(argc, argv);
+    WindowMain w(nullptr);
+
+    w.show();
+
+    return(a.exec());
 }

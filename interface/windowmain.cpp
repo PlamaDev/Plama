@@ -8,27 +8,113 @@
 #include <QPushButton>
 #include <QStringList>
 #include <QKeySequence>
+#include <QDockWidget>
+#include <QListWidget>
+#include <QTreeWidgetItem>
+#include <QTreeWidget>
+#include <QTabWidget>
+#include <QStyle>
+#include <QPushButton>
+#include <QWidget>
+#include <QGridLayout>
+#include <QLabel>
 
-WindowMain::WindowMain(QWidget* parent)
-  : QMainWindow(parent), ui(new Ui::Main) {
-  ui->setupUi(this);
+#include "qplot.h"
+#include "qsplitview.h"
 
-  ui->comboBox->addItems(QStringList() << "+" << "-" << "*" << "/");
+WindowMain::WindowMain(QWidget *parent)
+    : QMainWindow(parent) {
+    setCentralWidget(nullptr);
+    setDockOptions(QMainWindow::AllowNestedDocks |
+                   QMainWindow::AllowTabbedDocks);
+    QDockWidget *dock = new QDockWidget("Data list", this);
+    QTreeWidget *tree = new QTreeWidget(dock);
+    QTreeWidgetItem *particles =
+        new QTreeWidgetItem(tree, QStringList("Particles"));
+    particles->addChild(new QTreeWidgetItem(particles, QStringList("e")));
+    particles->addChild(new QTreeWidgetItem(particles, QStringList("He+")));
+    particles->addChild(new QTreeWidgetItem(particles, QStringList("He2+")));
+    particles->addChild(new QTreeWidgetItem(particles, QStringList("He*")));
+    particles->addChild(new QTreeWidgetItem(particles, QStringList("e*")));
+    particles->addChild(new QTreeWidgetItem(particles, QStringList("He")));
+    QTreeWidgetItem *reactions = new QTreeWidgetItem(tree,
+                                                     QStringList() <<
+                                                     "Reactions");
 
-  connect(ui->pushButton, &QPushButton::clicked, [this](bool) {
-    auto a = ui->numA->text().toFloat();
-    auto b = ui->numB->text().toFloat();
-    switch (ui->comboBox->currentIndex()) {
-    case 0: a += b; break;
-    case 1: a -= b; break;
-    case 2: a *= b; break;
-    case 3: a /= b; break;
-    default: break;
-    }
-    ui->result->setText(QString::number(a));
-  });
+    particles->addChild(new QTreeWidgetItem(reactions,
+                                            QStringList("e + He <=> e + He*")));
+    particles->addChild(new QTreeWidgetItem(reactions,
+                                            QStringList(
+                                                "e + He* <=> e + e + He+")));
+    particles->addChild(new QTreeWidgetItem(reactions,
+                                            QStringList(
+                                                "e + He <=> e + e + He+")));
+    particles->addChild(new QTreeWidgetItem(reactions,
+                                            QStringList(
+                                                "He+ + He + He <=> He2+ + He")));
+    particles->addChild(new QTreeWidgetItem(reactions,
+                                            QStringList(
+                                                "He* + He* <=> He+ + He + e*")));
+    particles->addChild(new QTreeWidgetItem(reactions,
+                                            QStringList(
+                                                "He* + He* <=> He2+ + e*")));
+    particles->addChild(new QTreeWidgetItem(reactions,
+                                            QStringList(
+                                                "He2+ + He <=> He+ + He + He")));
+    dock->setWidget(tree);
+    tree->header()->close();
+
+    QWidget *w = new QWidget();
+    w->setAutoFillBackground(true);
+    QGridLayout *l = new QGridLayout();
+    w->setLayout(l);
+    QPlot *d = new QPlot();
+    //QDiagram *d1 = new QDiagram();
+    //QLabel *la = new QLabel();
+    //la->setAutoFillBackground(true);
+    //l->addWidget(la, 10, 10, 2, 2);
+    l->addWidget(d, 0, 0, 10, 10);
+    //l->addWidget(d1, 0, 0, 10, 10);
+
+    //la->setFixedSize(10, 10);
+
+    QSplitView *s = new QSplitView();
+    s->addWidget(new QPlot(), "Plot");
+    setCentralWidget(s);
+
+    //setCentralWidget(w);
+
+
+    //QDockWidget *dock1 = new QDockWidget("asd1", this);
+    //QDockWidget *dock2 = new QDockWidget("asd2", this);
+//    QDockWidget *dock3 = new QDockWidget("asd3", this);
+//    QDockWidget *dock4 = new QDockWidget("asd4", this);
+//    QDiagram *dia1 = new QDiagram(dock1);
+    //QPlot *dia2 = new QPlot(dock2);
+//    QDiagram *dia3 = new QDiagram(dock1);
+//    QDiagram *dia4 = new QDiagram(dock1);
+    //dock1->setWidget(w);
+    //dock2->setWidget(dia2);
+//    dock3->setWidget(dia3);
+//    dock4->setWidget(dia4);
+
+
+
+//    QTabWidget* tab = new QTabWidget(this);
+//    tab->addTab(new QDiagram(this), "page1");
+//    tab->addTab(new QDiagram(this), "page2");
+//    tab->setTabsClosable(true);
+//    setCentralWidget(tab);
+
+    //QSplitView* split = new QSplitView();
+    //split->addWidget(new QSplitViewItemTab());
+    //setCentralWidget(split);
+
+    addDockWidget(Qt::LeftDockWidgetArea, dock);
+    //addDockWidget(Qt::RightDockWidgetArea, dock1);
+    //addDockWidget(Qt::LeftDockWidgetArea, dock2);
+//    addDockWidget(Qt::RightDockWidgetArea, dock3);
+//    addDockWidget(Qt::LeftDockWidgetArea, dock4);
 }
 
-WindowMain::~WindowMain() {
-  delete ui;
-}
+WindowMain::~WindowMain() {}
