@@ -12,12 +12,12 @@ ModelSmooth::ModelSmooth(const float *data, int sizeX, int sizeY) {
 }
 
 ModelSmooth::ModelSmooth(const float *data, int sizeX, int sizeY, float max,
-                         float min) {
+    float min) {
     init(data, sizeX, sizeY, max, min);
 }
 
 void ModelSmooth::init(const float *data, int sizeX, int sizeY, float max,
-                       float min) {
+    float min) {
     index = QVector <GLuint>((sizeX - 1) * (sizeY - 1) * 6);
     point = QVector <QVector3D>(sizeX * sizeY);
     normal = QVector <QVector3D>(sizeX * sizeY);
@@ -27,7 +27,7 @@ void ModelSmooth::init(const float *data, int sizeX, int sizeY, float max,
     QVector <float> dataConverted(total);
 
     for (int i = 0; i < total; i++) {
-        dataConverted[i] = (data[i] + min) / range;
+        dataConverted[i] = (data[i] - min) / range;
     }
 
     for (int y = 0; y < sizeY; y++) {
@@ -96,19 +96,19 @@ void ModelSmooth::init(const float *data, int sizeX, int sizeY, float max,
 }
 
 QVector <GLuint>& ModelSmooth::getIndex() {
-    return(index);
+    return index;
 }
 
 QVector <QVector3D>& ModelSmooth::getPoint() {
-    return(point);
+    return point;
 }
 
 QVector <QVector3D>& ModelSmooth::getNormal() {
-    return(normal);
+    return normal;
 }
 
 QVector3D ModelSmooth::getSize() {
-    return(size);
+    return size;
 }
 
 ModelInsert::ModelInsert(const float *data, int sizeX, int sizeY) {
@@ -119,28 +119,28 @@ ModelInsert::ModelInsert(const float *data, int sizeX, int sizeY) {
 }
 
 ModelInsert::ModelInsert(const float *data, int sizeX, int sizeY, float max,
-                         float min) {
+    float min) {
     init(data, sizeX, sizeY, max, min);
 }
 
 QVector <GLuint>& ModelInsert::getIndex() {
-    return(index);
+    return index;
 }
 
 QVector <QVector3D>& ModelInsert::getPoint() {
-    return(point);
+    return point;
 }
 
 QVector <QVector3D>& ModelInsert::getNormal() {
-    return(normal);
+    return normal;
 }
 
 QVector3D ModelInsert::getSize() {
-    return(size);
+    return size;
 }
 
 void ModelInsert::init(const float *data, int sizeX, int sizeY, float max,
-                       float min) {
+    float min) {
     int numPoint = sizeX * sizeY;
     int numInsert = (sizeX - 1) * (sizeY - 1);
     int numTotal = numPoint + numInsert;

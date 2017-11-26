@@ -46,9 +46,9 @@ QSplitViewHelper::QSplitViewHelper(QSVInternalITab *parent) {
     connect(btnDown, &QPushButton::clicked, [&](bool) {
         parentItem->split(new QSVInternalITab(), DOWN);
     });
-    connect(btnNew, &QPushButton::clicked, [&](bool) {
-        parentItem->addWidget(new QPlot(), "Data");
-    });
+    //connect(btnNew, &QPushButton::clicked, [&](bool) {
+    //    parentItem->addWidget(new QPlot(), "Data");
+    //});
 }
 
 void QSVInternalItem::split(QSVInternalItem *extra, enumDirection dir) {
@@ -76,7 +76,6 @@ QSVInternalITab::QSVInternalITab() {
 
     this->tab = tab;
     tab->setTabsClosable(true);
-    // tab->addTab(new QTestWidget(this), "Test");
     setAcceptDrops(true);
 }
 
@@ -117,15 +116,14 @@ void QSVInternalISection::removeWidget(QSVInternalItem *widget) {
     }
 }
 
-void QSVInternalISection::split(QSVInternalItem *source, QSVInternalItem *extra,
-                                enumDirection dir) {
+void QSVInternalISection::split(QSVInternalItem *source,
+    QSVInternalItem *extra, enumDirection dir) {
     if ((splitter->orientation() == Qt::Horizontal &&
          (dir == LEFT || dir == RIGHT)) ||
         (splitter->orientation() == Qt::Vertical &&
          (dir == UP || dir == DOWN))) {
-        insertWidget(
-            extra, splitter->indexOf(
-                source) + dir == RIGHT || dir == DOWN ? 1 : 0);
+        insertWidget(extra, splitter->indexOf(
+                source) + (dir == RIGHT || dir == DOWN ? 1 : 0));
     } else {
         QSVInternalISection *section = new QSVInternalISection(
                 dir == LEFT || dir == RIGHT ? Qt::Horizontal : Qt::Vertical);
@@ -138,7 +136,19 @@ void QSVInternalISection::split(QSVInternalItem *source, QSVInternalItem *extra,
             section->addWidget(source);
             section->addWidget(extra);
         }
+        int size = dir == LEFT || dir == RIGHT ?
+            section->width() : section->height();
+        size /= 2;
+        section->splitter->setSizes(QList <int> { size, size });
         splitter->setSizes(sizes);
+    }
+}
+
+void QSVInternalISection::clear() {
+    int len = splitter->count();
+
+    for (int i = 0; i < len; i++) {
+        delete splitter->widget(0);
     }
 }
 
@@ -158,13 +168,17 @@ void QSplitView::addWidget(QWidget *w, QString text) {
     root->addWidget(tab);
 }
 
+void QSplitView::clear() {
+    root->clear();
+}
+
 QSVInternalBar::QSVInternalBar(QSVInternalWTab *parent) {
     setAcceptDrops(true);
     parentTab = parent;
 }
 
 QSVInternalWTab *QSVInternalBar::getParentTab() {
-    return(parentTab);
+    return parentTab;
 }
 
 void QSVInternalBar::mouseMoveEvent(QMouseEvent *event) {
@@ -229,7 +243,7 @@ QSVInternalWTab::QSVInternalWTab(QSVInternalITab *tab)
 
 QSVInternalITab *
 QSVInternalWTab::getItemTab() {
-    return(parentTab);
+    return parentTab;
 }
 
 void QSVInternalITab::dragEnterEvent(QDragEnterEvent *event) {
@@ -259,7 +273,7 @@ void QSVInternalITab::dragMoveEvent(QDragMoveEvent *event) {
             bool ur = y / (float)x < r;
 
             rect->setGeometry((!ul && ur) ? hw : 0, ul || ur ? 0 : hh,
-                              (ul ^ ur) ? hw : w, (ul ^ ur) ? h : hh);
+                (ul ^ ur) ? hw : w, (ul ^ ur) ? h : hh);
             rect->show();
         } else {
             rect->hide();
@@ -290,10 +304,10 @@ void QSVInternalITab::dropEvent(QDropEvent *event) {
 
             split(t, ul ? (ur ? UP : LEFT) : (ur ? RIGHT : DOWN));
             t->addWidget(source->getParentTab()->widget(index),
-                         source->tabText(index));
+                source->tabText(index));
         } else {
             tab->addTab(source->getParentTab()->widget(index),
-                        source->tabText(index));
+                source->tabText(index));
         }
     }
     delete rect;

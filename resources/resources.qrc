@@ -2,5 +2,6 @@
     <qresource prefix="/res">
         <file>render/plain.vsh</file>
         <file>render/plain.fsh</file>
+        <file>script/test.py</file>
     </qresource>
 </RCC>

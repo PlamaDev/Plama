@@ -9,6 +9,7 @@
 #include <QSharedPointer>
 #include "render/model.h"
 #include "render/engine.h"
+#include "dataio/fileadapter.h"
 
 
 class QPlot : public QOpenGLWidget, protected QOpenGLFunctions {
@@ -17,11 +18,7 @@ class QPlot : public QOpenGLWidget, protected QOpenGLFunctions {
 protected:
 
 public:
-    QPlot(const QPlot& p);
-
-    QPlot(QWidget *parent = nullptr);
-
-
+    QPlot(const SimQuantity& q, QWidget *parent = nullptr);
     ~QPlot() override;
 
 protected:

@@ -76,7 +76,8 @@ public:
     void insertWidget(QSVInternalItem *widget, int index);
     void removeWidget(QSVInternalItem *widget);
     void split(QSVInternalItem *source, QSVInternalItem *extra,
-               enumDirection dir);
+        enumDirection dir);
+    void clear();
 
 private:
     QSplitter *splitter;
@@ -97,6 +98,7 @@ class QSplitView : public QWidget {
 public:
     QSplitView();
     void addWidget(QWidget *w, QString text);
+    void clear();
 
 private:
     QSVInternalISection *root;

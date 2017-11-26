@@ -10,20 +10,17 @@
 #include "render/engine.h"
 #include "dataio/fileio.h"
 
-QPlot::QPlot(const QPlot& p) {
-    int i = 1;
-}
 
-QPlot::QPlot(QWidget *parent) : QOpenGLWidget(parent), QOpenGLFunctions(),
+QPlot::QPlot(const SimQuantity&q, QWidget *parent) :
+    QOpenGLWidget(parent), QOpenGLFunctions(),
     engine(new EngineSimple) {
     setAttribute(Qt::WA_OpaquePaintEvent, true);
     setAttribute(Qt::WA_NativeWindow, true);
     //setAttribute(Qt::WA_NoSystemBackground, true);
     setAttribute(Qt::WA_MSWindowsUseDirect3D, true);
-
-    Fileio f;
-    QScopedPointer <Model> model(new ModelSmooth(f.getData(),
-                                                 f.getSizeX(), f.getSizeY()));
+    QVector <int> size = q.getSizeData();
+    QScopedPointer <Model> model(new ModelInsert(q.getDataAt(0, 0).data(),
+            size[0], size[1]));
     engine->setModel(model);
     engine->setBackGround(palette().color(QWidget::backgroundRole()));
 }
