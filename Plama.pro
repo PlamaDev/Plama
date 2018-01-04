@@ -13,8 +13,9 @@ SOURCES += \
     render/engine.cpp \
     dataio/fileio.cpp \
     interface/qsplitview.cpp \
-    interface/qplot.cpp \
-    dataio/fileadapter.cpp
+    dataio/fileadapter.cpp \
+    interface/plotgl.cpp \
+    interface/plotqt.cpp
 
 HEADERS += \
     interface/windowmain.h \
@@ -22,8 +23,9 @@ HEADERS += \
     render/engine.h \
     dataio/fileio.h \
     interface/qsplitview.h \
-    interface/qplot.h \
-    dataio/fileadapter.h
+    dataio/fileadapter.h \
+    interface/plotgl.h \
+    interface/plotqt.h
 
 INCLUDEPATH += /usr/include/python3.6m
 

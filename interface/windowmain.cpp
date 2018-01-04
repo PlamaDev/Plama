@@ -26,7 +26,7 @@
 #include <QFileDialog>
 
 #include "dataio/fileadapter.h"
-#include "qplot.h"
+#include "plotgl.h"
 #include "qsplitview.h"
 
 QTreeWidgetItem *generateTree(const SimTreeNode& n) {
@@ -39,8 +39,8 @@ QTreeWidgetItem *generateTree(const SimTreeNode& n) {
     for (const SimQuantity&i : n.getData()) {
         QTreeWidgetItem *q = new QTreeWidgetItem(QStringList(i.getName()));
         // TODO
-        QVariant v = QVariant::fromValue((void *)&i);
-        SimQuantity *sq = (SimQuantity *)v.value <void *>();
+        //QVariant v = QVariant::fromValue((void *)&i);
+        //SimQuantity *sq = (SimQuantity *)v.value <void *>();
         q->setData(0, 0x0100, QVariant::fromValue((void *)&i));
         ret->addChild(q);
     }
@@ -77,7 +77,7 @@ WindowMain::WindowMain(QWidget *parent)
             QVariant p = i->parent()->data(0, 0x0101);
             SimTreeNode *sp = (SimTreeNode *)p.value <void *>();
             SimQuantity *sq = (SimQuantity *)q.value <void *>();
-            s->addWidget(new QPlot(*sq),
+            s->addWidget(new PlotFrame(*sq),
                 sp->getAbbr() + '>' + sq->getName());
         }
     });

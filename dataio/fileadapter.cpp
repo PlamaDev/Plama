@@ -10,7 +10,7 @@
 FileAdapterManager::FileAdapterManager() :
     main(PyImport_AddModule("__main__")), list() {
     // read script
-    QFile f(":/res/script/test.py");
+    QFile f(":/res/script/plugins.py");
 
     f.open(QFile::ReadOnly);
     QTextStream ts(&f);
@@ -78,7 +78,6 @@ QSharedPointer <FileAdapter> FileAdapterManager::load(QString name,
 FileAdapter::FileAdapter(PyObject *data) :
     nodes(new QList <SimTreeNode>()),
     data(data, [](PyObject *p) {
-    qDebug() << "get";
     Py_DECREF(p);
 }) {
     Py_ssize_t len = PyList_Size(data);

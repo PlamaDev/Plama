@@ -1,5 +1,5 @@
 #include "qsplitview.h"
-#include "qplot.h"
+#include "plotgl.h"
 #include <QDrag>
 #include <QFrame>
 #include <QGridLayout>

@@ -11,15 +11,26 @@
 #include "render/engine.h"
 #include "dataio/fileadapter.h"
 
+class PlotOverlay : public QWidget {
+public:
+    PlotOverlay(QWidget *parent);
+protected:
+    void paintEvent(QPaintEvent *event);
+};
 
-class QPlot : public QOpenGLWidget, protected QOpenGLFunctions {
+class PlotFrame : public QWidget {
+public:
+    PlotFrame(const SimQuantity& q);
+};
+
+class PlotGL : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 
 protected:
 
 public:
-    QPlot(const SimQuantity& q, QWidget *parent = nullptr);
-    ~QPlot() override;
+    PlotGL(const SimQuantity& q, QWidget *parent = nullptr);
+    ~PlotGL() override;
 
 protected:
     QScopedPointer <Engine> engine;
@@ -30,6 +41,8 @@ protected:
     void paintGL() override;
     void initializeGL() override;
     void resizeGL(int w, int h) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event);
 };
 
 #endif // WGLDIAGRAM_H
