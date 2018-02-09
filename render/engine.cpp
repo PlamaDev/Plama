@@ -5,9 +5,25 @@
 #include <QMatrix3x3>
 #include <QMatrix>
 #include <QColor>
+#include <QPainter>
+#include <QOpenGLPaintDevice>
+#include <memory>
+#include "render/axis.h"
+#include "util.h"
 
-void Engine::setModel(QScopedPointer <Model>& model) {
+Engine::Engine(std::unique_ptr<Model> &model,
+    std::unique_ptr<Axis> &axis) : rotX(0), rotY(0) {
     this->model.swap(model);
+    this->axis.swap(axis);
+}
+
+void Engine::resize(int sizeX, int sizeY) {
+    this->sizeX = sizeX;
+    this->sizeY = sizeY;
+}
+
+QPoint Engine::getRotation() {
+    return QPoint(rotX, rotY);
 }
 
 void Engine::setRotation(int rotX, int rotY) {
@@ -15,99 +31,172 @@ void Engine::setRotation(int rotX, int rotY) {
     this->rotY = rotY;
 }
 
-void Engine::setBackGround(const QColor&color) {
-    this->color =
-        QVector3D(static_cast <float>(color.redF()),
-                  static_cast <float>(color.greenF()),
-                  static_cast <float>(color.blueF()));
+void Engine::setBackGround(const QColor &color) {
+    this->color = QVector3D((float)color.redF(),
+            (float)color.greenF(), (float)color.blueF());
 }
+
+EngineSimple::EngineSimple(std::unique_ptr<Model> &model,
+    std::unique_ptr<Axis> &axis) : Engine (model, axis) {}
 
 void EngineSimple::initialize() {
     initializeOpenGLFunctions();
-    QScopedPointer <QOpenGLShaderProgram> ptr(new QOpenGLShaderProgram());
-    program.swap(ptr);
-    program->addShaderFromSourceFile(QOpenGLShader::Vertex,
-                                     ":res/render/plain.vsh");
-    program->addShaderFromSourceFile(QOpenGLShader::Fragment,
-                                     ":res/render/plain.fsh");
-    program->link();
-    argVecPos = program->attributeLocation("vecPos");
-    argVecNormal = program->attributeLocation("vecNormal");
-    argMatTrans = program->uniformLocation("matTrans");
-    argMatColor = program->uniformLocation("matColor");
-    argMatModel = program->uniformLocation("matModel");
-    argVecLight = program->uniformLocation("vecLight");
-    argFAmbient = program->uniformLocation("fAmbient");
-    argFDiff = program->uniformLocation("fDiff");
-    argVecView = program->uniformLocation("vecView");
-    argVecSpec = program->uniformLocation("vecSpec");
-    argMatNormal = program->uniformLocation("matNormal");
+
+    programFlat.reset(new QOpenGLShaderProgram());
+    programFlat->addShaderFromSourceFile(QOpenGLShader::Vertex,
+        ":res/render/flat.vsh");
+    programFlat->addShaderFromSourceFile(QOpenGLShader::Fragment,
+        ":res/render/flat.fsh");
+    programFlat->link();
+
+    programPlain.reset(new QOpenGLShaderProgram());
+    programPlain->addShaderFromSourceFile(QOpenGLShader::Vertex,
+        ":res/render/plain.vsh");
+    programPlain->addShaderFromSourceFile(QOpenGLShader::Fragment,
+        ":res/render/plain.fsh");
+    programPlain->link();
+
+    argFlatVecPnt = programFlat->attributeLocation("vecPnt");
+    argFlatVecPos = programFlat->attributeLocation("vecPos");
+    argFlatVecNormal = programFlat->attributeLocation("vecNormal");
+    argFlatVecColor = programFlat->attributeLocation("vecColor");
+    argFlatMatTrans = programFlat->uniformLocation("matTrans");
+    argFlatMatModel = programFlat->uniformLocation("matModel");
+    argFlatMatNormal = programFlat->uniformLocation("matNormal");
+    argFlatVecView = programFlat->uniformLocation("vecView");
+    argFlatVecLight = programFlat->uniformLocation("vecLight");
+
+    argPlainMatModel = programPlain->uniformLocation("matModel");
+    argPlainMatTrans = programPlain->uniformLocation("matTrans");
+    argPlainVecColor = programPlain->attributeLocation("vecColor");
+    argPlainVecPnt = programPlain->attributeLocation("vecPnt");
+
     glClearColor(color.x(), color.y(), color.z(), 1.0f);
     glEnable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+
     glEnable(GL_POLYGON_SMOOTH);
+    //glEnable(GL_CULL_FACE);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
 }
 
-void EngineSimple::render() {
+void EngineSimple::render(QPainter &p) {
+    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setRenderHint(QPainter::HighQualityAntialiasing);
+
+    p.beginNativePainting();
+
+    glEnable(GL_DEPTH_TEST);
+    int degree = unify(-rotX, 360).second;
+
+    int dir = degree / 45;
+    dir %= 8;
+    int rotXDiff = degree % 45;
+
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    program->bind();
-
-    program->setUniformValue(argVecSpec, 2.5f * QVector3D(0.20f, 0.20f, 0.15f));
-
     // view matrix
-    QVector3D view(1.5, 0, 1.5);
+    QVector3D view(1.5, 0, 0);
     QMatrix4x4 rotation;
     rotation.rotate(-rotX, 0, 0, 1);
     rotation.rotate(-rotY, 0, 1, 0);
-    program->setUniformValue(argVecView, rotation * view);
-
     // transform matrix
     QMatrix4x4 matTrans;
-    matTrans.perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+    matTrans.ortho(-1, 1, -1, 1, 0.1, 100);
     matTrans.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
     matTrans.rotate(rotY, 0, 1, 0);
     matTrans.rotate(rotX, 0, 0, 1);
-    program->setUniformValue(argMatTrans, matTrans);
-
-    QVector3D size = model->getSize();
     QMatrix4x4 matModel;
-    matModel.scale(1.0f / size.x(), 1.0f / size.y(), 1.0f / size.z());
-    matModel.translate(-size.x() / 2.0f, -size.y() / 2.0f, -size.z() / 2.0f);
-    program->setUniformValue(argMatModel, matModel);
-
+    //matModel.scale(1.0f / size.x(), 1.0f / size.y(), 1.0f / size.z());
+    matModel.translate(-0.5, -0.5f, -0.5f);
     QMatrix4x4 matNormal = matModel.inverted();
-    program->setUniformValue(argMatNormal, matNormal.transposed());
+    matNormal = matNormal.transposed();
+    QMatrix4x4 rotateAxis;
 
-    QMatrix4x4 color(0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                     -1.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f);
-    program->setUniformValue(argMatColor, color);
+    rotateAxis.rotate(90 * (dir / 2), 0, 0, 1);
 
-    QVector3D light(3.0f, -3.0f, 3.0f);
-    program->setUniformValue(argVecLight, light);
-    program->setUniformValue(argFAmbient, 0.6f);
-    program->setUniformValue(argFDiff, 0.7f);
+    programFlat->bind();
+    programFlat->setUniformValue(argFlatMatNormal, matNormal);
+    programFlat->setUniformValue(argFlatVecView, rotation * view);
+    programFlat->setUniformValue(argFlatVecLight, rotation * view);
+    programFlat->setUniformValue(argFlatMatTrans, matTrans);
+    programFlat->setUniformValue(argFlatMatModel, matModel);
 
-    glVertexAttribPointer(static_cast <GLuint>(argVecPos), 3, GL_FLOAT,
-                          GL_FALSE, 0, model->getPoint().constData());
-    glVertexAttribPointer(static_cast <GLuint>(argVecNormal), 3, GL_FLOAT,
-                          GL_FALSE, 0, model->getNormal().constData());
+    glVertexAttribPointer(argFlatVecPnt, 3, GL_FLOAT,
+        GL_FALSE, 0, model->getPoint().constData());
+    glVertexAttribPointer(argFlatVecPos, 3, GL_FLOAT,
+        GL_FALSE, 0, model->getPosition().constData());
+    glVertexAttribPointer(argFlatVecNormal, 3, GL_FLOAT,
+        GL_FALSE, 0, model->getNormal().constData());
+    glVertexAttribPointer(argFlatVecColor, 3, GL_FLOAT,
+        GL_FALSE, 0, model->getColorF().constData());
 
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(argFlatVecPnt);
+    glEnableVertexAttribArray(argFlatVecPos);
+    glEnableVertexAttribArray(argFlatVecNormal);
+    glEnableVertexAttribArray(argFlatVecColor);
 
     glDrawElements(GL_TRIANGLES,
-                   model->getIndex().size(), GL_UNSIGNED_INT,
-                   model->getIndex().constData());
+        model->getIndex(0).size(), GL_UNSIGNED_INT,
+        model->getIndex(0).constData());
 
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(argFlatVecPnt);
+    glDisableVertexAttribArray(argFlatVecPos);
+    glDisableVertexAttribArray(argFlatVecNormal);
+    glDisableVertexAttribArray(argFlatVecColor);
 
-    program->release();
+    programFlat->release();
+
+    programPlain->bind();
+    programFlat->setUniformValue(argPlainMatModel, rotateAxis*matModel);
+    programFlat->setUniformValue(argPlainMatTrans, matTrans);
+
+    glEnableVertexAttribArray(argPlainVecPnt);
+    glEnableVertexAttribArray(argPlainVecColor);
+
+    glVertexAttribPointer(argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0,
+        axis->getPoint().constData());
+    glVertexAttribPointer(argPlainVecColor, 3, GL_FLOAT, GL_FALSE, 0,
+        axis->getColor().constData());
+
+    GLuint *pnt = (GLuint *)axis->getIndex().constData();
+
+    for (auto i : axis->getSlice(dir, rotXDiff, rotY))
+        glDrawElements(GL_LINES, i.second*2, GL_UNSIGNED_INT, pnt + i.first);
+
+    glDisableVertexAttribArray(argPlainVecPnt);
+    glDisableVertexAttribArray(argPlainVecColor);
+    glDisable(GL_DEPTH_TEST);
+
+    programPlain->release();
+
+    QMatrix4x4 matScreen;
+    matScreen.translate(1, -1);
+    matScreen = QMatrix4x4(sizeX / 2.0, 0, 0, 0, 0, -sizeY / 2.0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1) * matScreen;
+    QMatrix4x4 matText = matScreen * matTrans * rotateAxis * matModel;
+
+    QVector<QVector<QVector3D>> &num = axis->getNumber(dir, rotXDiff, rotY);
+    const QVector3D &size = model->getSize();
+    QString format("%1");
+    for (int i = 0; i < 3; i++) {
+        if (num[i].isEmpty()) continue;
+
+        float diff = size[i] / (num[i].size()-1);
+        int f = (i == 0 ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter;
+        QVector<QVector3D> &ax = num[i];
+        for (int j = 0; j < ax.size(); j++) {
+            QPoint n = (matText * ax[j]).toPoint();
+            QRect r = i == 0 ? QRect(n.x(), n.y() - 10, 100, 20) :
+                QRect(n.x() - 100, n.y() - 10, 100, 20);
+
+            p.drawText(r, f, format.arg(diff * j, 0, 'g', 2));
+        }
+    }
 }
 
 void EngineSimple::resize(int sizeX, int sizeY) {
+    Engine::resize(sizeX, sizeY);
     glClear(GL_COLOR_BUFFER_BIT);
 }

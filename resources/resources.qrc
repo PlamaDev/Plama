@@ -1,7 +1,0 @@
-<RCC>
-    <qresource prefix="/res">
-        <file>render/plain.vsh</file>
-        <file>render/plain.fsh</file>
-        <file>script/plugins.py</file>
-    </qresource>
-</RCC>

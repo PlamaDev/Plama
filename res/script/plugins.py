@@ -57,11 +57,11 @@ class LoaderDummy:
                 'name': 'example',
                 'times': [1, 2],
                 'dimData': 1,
-                'sizeData': [2, 3],
+                'sizeData': [3, 2],
                 'sizeModel': [1, 2],
                 'data': lambda: [
-                    [1, 2, 3, 4, 5, 6],
-                    [7, 8, 9, 10, 11, 12]
+                    [0, 1, 0, 0, 0, 0],
+                    [1, 1, 1, 2, 0, 0]
                 ]
             }]
         }]
@@ -247,9 +247,3 @@ class LoaderMd2d:
                         data.append(buf)
                         buf = []
         return data
-
-
-# if __name__ == '__main__':
-#     dir = '/run/media/towdium/Files/Work/FYP/software/data'
-#     files_ = [_os.path.join(dir, i) for i in _os.listdir(dir)]
-#     print(LoaderMd2d().load(files_))

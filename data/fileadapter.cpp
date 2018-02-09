@@ -22,9 +22,8 @@ FileAdapterManager::FileAdapterManager() :
     QStringList dirs = QStandardPaths::standardLocations(
             QStandardPaths::AppConfigLocation);
     PyObject *dirsp = PyList_New(0);
-    for (QString s : dirs) {
+    for (QString s : dirs)
         PyList_Append(dirsp, PyUnicode_FromString(s.toLocal8Bit().data()));
-    }
     PyObject *args = Py_BuildValue("(O)", dirsp);
     // run python
     PyObject *rec;
@@ -46,17 +45,16 @@ FileAdapterManager::FileAdapterManager() :
     Py_DECREF(plugins);
 }
 
-const QStringList&FileAdapterManager::plugins() const {
+const QStringList &FileAdapterManager::plugins() const {
     return list;
 }
 
-QSharedPointer <FileAdapter> FileAdapterManager::load(QString name,
+std::unique_ptr<FileAdapter> FileAdapterManager::load(QString name,
     QStringList files) const {
     PyObject *pfiles = PyList_New(0);
 
-    for (QString file : files) {
+    for (QString file : files)
         PyList_Append(pfiles, PyUnicode_FromString(file.toLocal8Bit().data()));
-    }
     PyObject *load = PyObject_GetAttrString(main, "load");
     PyObject *args = Py_BuildValue("(s, O)", name.toLocal8Bit().data(), pfiles);
     PyObject *data = PyObject_CallObject(load, args);
@@ -67,12 +65,8 @@ QSharedPointer <FileAdapter> FileAdapterManager::load(QString name,
 
     if (data == Py_None) {
         Py_DECREF(data);
-        return QSharedPointer <FileAdapter>();
-    } else {
-        return QSharedPointer <FileAdapter>(new FileAdapter(data));
-        //PyErr_Print();
-        //return QSharedPointer <FileAdapter>();
-    }
+        return std::unique_ptr <FileAdapter>();
+    } else return std::make_unique <FileAdapter>(data);
 }
 
 FileAdapter::FileAdapter(PyObject *data) :
@@ -81,14 +75,11 @@ FileAdapter::FileAdapter(PyObject *data) :
     Py_DECREF(p);
 }) {
     Py_ssize_t len = PyList_Size(data);
-    for (Py_ssize_t i = 0; i < len; i++) {
+    for (Py_ssize_t i = 0; i < len; i++)
         nodes->append(SimTreeNode(PyList_GetItem(data, i)));
-    }
 }
 
-const QList <SimTreeNode>&FileAdapter::getTopLevelNodes() const {
-    return *nodes;
-}
+const QList <SimTreeNode> &FileAdapter::getTopLevelNodes() const { return *nodes; }
 
 SimTreeNode::SimTreeNode(PyObject *data) : raw(data),
     name(PyUnicode_AsUTF8(PyDict_GetItemString(data, "name"))),
@@ -98,30 +89,17 @@ SimTreeNode::SimTreeNode(PyObject *data) : raw(data),
     PyObject *pquantities = PyDict_GetItemString(data, "quantities");
     Py_ssize_t len = PyList_Size(pchildren);
 
-    for (Py_ssize_t i = 0; i < len; i++) {
+    for (Py_ssize_t i = 0; i < len; i++)
         children->append(SimTreeNode(PyList_GetItem(pchildren, i)));
-    }
     len = PyList_Size(pquantities);
-    for (Py_ssize_t i = 0; i < len; i++) {
+    for (Py_ssize_t i = 0; i < len; i++)
         quantities->append(SimQuantity(PyList_GetItem(pquantities, i)));
-    }
 }
 
-const QString&SimTreeNode::getName() const {
-    return name;
-}
-
-const QString&SimTreeNode::getAbbr() const {
-    return abbr;
-}
-
-const QList <SimQuantity>&SimTreeNode::getData() const {
-    return *quantities;
-}
-
-const QList <SimTreeNode>&SimTreeNode::getChildren() const {
-    return *children;
-}
+const QString &SimTreeNode::getName() const { return name; }
+const QString &SimTreeNode::getAbbr() const { return abbr; }
+const QList <SimQuantity> &SimTreeNode::getData() const { return *quantities; }
+const QList <SimTreeNode> &SimTreeNode::getChildren() const { return *children; }
 
 SimQuantity::SimQuantity(PyObject *data) :
     raw(data), name(PyUnicode_AsUTF8(PyDict_GetItemString(data, "name"))),
@@ -133,21 +111,18 @@ SimQuantity::SimQuantity(PyObject *data) :
     PyObject *pSizeModel = PyDict_GetItemString(data, "sizeModel");
     Py_ssize_t len = PyList_Size(pTimes);
 
-    for (Py_ssize_t i = 0; i < len; i++) {
+    for (Py_ssize_t i = 0; i < len; i++)
         times->append(PyFloat_AsDouble(PyList_GetItem(pTimes, i)));
-    }
     len = PyList_Size(pSizeModel);
-    for (Py_ssize_t i = 0; i < len; i++) {
+    for (Py_ssize_t i = 0; i < len; i++)
         sizeModel->append(PyFloat_AsDouble(PyList_GetItem(pSizeModel, i)));
-    }
     len = PyList_Size(pSizeData);
-    for (Py_ssize_t i = 0; i < len; i++) {
+    for (Py_ssize_t i = 0; i < len; i++)
         sizeData->append(PyLong_AsLong(PyList_GetItem(pSizeData, i)));
-    }
 
-    if (times->size() < 2) {
+    if (times->size() < 2)
         uniform = true;
-    } else {
+    else {
         uniform = true;
         float step = (times->last() - times->first()) / times->size();
         float error = step / 40;
@@ -163,30 +138,15 @@ SimQuantity::SimQuantity(PyObject *data) :
     }
 }
 
-bool SimQuantity::isUniform() const {
-    return uniform;
-}
+bool SimQuantity::isUniform() const { return uniform; }
+const QString &SimQuantity::getName() const { return name; }
+const QVector <float> &SimQuantity::getTimes() const { return *times; }
+const QVector <float> &SimQuantity::getSizeModel() const { return *sizeModel; }
+const QVector <int> &SimQuantity::getSizeData() const { return *sizeData; }
 
-const QString&SimQuantity::getName() const {
-    return name;
-}
-
-const QVector <float>&SimQuantity::getTimes() const {
-    return *times;
-}
-
-const QVector <float>&SimQuantity::getSizeModel() const {
-    return *sizeModel;
-}
-
-const QVector <int>&SimQuantity::getSizeData() const {
-    return *sizeData;
-}
-
-const QVector <float>& SimQuantity::getDataAt(float time, int dim) const {
-    if (data->size() == 0) {
+const QVector <float> &SimQuantity::getDataAt(float time, int dim) const {
+    if (data->size() == 0)
         initData();
-    }
     if (uniform) {
         float step = (times->last() - times->first()) / times->size();
         int index = time / step;
@@ -208,9 +168,8 @@ void SimQuantity::initData() const {
         QVector <float> buf;
         PyObject *pBuf = PyList_GetItem(pData, i);
         Py_ssize_t lenJ = PyList_Size(pBuf);
-        for (Py_ssize_t j = 0; j < lenJ; j++) {
+        for (Py_ssize_t j = 0; j < lenJ; j++)
             buf.append(PyFloat_AsDouble(PyList_GetItem(pBuf, j)));
-        }
         data->append(buf);
     }
 }

@@ -1,39 +1,31 @@
-QT       += core gui widgets opengl
+QT       += core gui widgets
 TARGET   = Plama
 TEMPLATE = app
 
 CONFIG += no_keywords
 
-DEFINES += QT_DEPRECATED_WARNINGS
-
 SOURCES += \
-        main.cpp \
-    interface/windowmain.cpp \
-    render/model.cpp \
+    main.cpp \
+    gui/windowmain.cpp \
+    data/fileadapter.cpp \
     render/engine.cpp \
-    dataio/fileio.cpp \
-    interface/qsplitview.cpp \
-    dataio/fileadapter.cpp \
-    interface/plotgl.cpp \
-    interface/plotqt.cpp
+    render/model.cpp \
+    gui/openglplot.cpp \
+    render/axis.cpp \
+    util.cpp
 
 HEADERS += \
-    interface/windowmain.h \
-    render/model.h \
+    gui/windowmain.h \
+    data/fileadapter.h \
     render/engine.h \
-    dataio/fileio.h \
-    interface/qsplitview.h \
-    dataio/fileadapter.h \
-    interface/plotgl.h \
-    interface/plotqt.h
+    render/model.h \
+    gui/openglplot.h \
+    render/axis.h \
+    util.h
 
-INCLUDEPATH += /usr/include/python3.6m
-
-FORMS += \
-    interface/windowmain.ui
-
-RESOURCES += \
-    resources/resources.qrc
-
+RESOURCES += res/resources.qrc
 
 unix: LIBS += -lpython3.6m
+unix: INCLUDEPATH += /usr/include/python3.6m
+
+DISTFILES +=

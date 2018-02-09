@@ -3,53 +3,60 @@
 
 #include <QVector>
 #include <QVector3D>
+#include <QPair>
 #include <QOpenGLFunctions>
+
+class Gradient {
+public:
+    Gradient(QVector<QPair<QColor, float>> data, int steps = 50);
+    const QColor &getColor(float pos) const;
+private:
+    QVector<QColor> cache;
+    float step;
+};
 
 class Model {
 public:
-  virtual ~Model() = default;
-  virtual QVector<GLuint>& getIndex() = 0;
-  virtual QVector<QVector3D>& getPoint() = 0;
-  virtual QVector<QVector3D>& getNormal() = 0;
-  virtual QVector3D getSize() = 0;
-  static void getExtreme(const float* data, int total, float& max, float& min);
+    virtual ~Model() = default;
+    virtual const QVector<GLuint> &getIndex(int dir) const = 0;
+    virtual const QVector<QVector3D> &getPoint() const = 0;
+    virtual const QVector<QVector3D> &getNormal() const = 0;
+    virtual const QVector<QVector3D> &getColorF() const = 0;
+    virtual const QVector<QVector3D> &getPosition() const = 0;
+    virtual const QVector<QColor const *> &getColorQ() const = 0;
+    virtual const QVector3D &getSize() const = 0;
+    virtual bool isFlat() const = 0;
+    static QPair<float, float> getExtreme(const float *data, int total);
+    static QVector<std::function<void(
+        std::function<void(int)>&, int, int)>> indexFunc;
+    static Gradient gradientHeightmap;
 };
 
-class ModelSmooth : public Model {
+class ModelDivided : public Model {
 public:
-  ~ModelSmooth() override = default;
-  ModelSmooth(const float* data, int sizeX, int sizeY);
-  ModelSmooth(const float* data, int sizeX, int sizeY, float max, float min);
-  QVector<GLuint>& getIndex() override;
-  QVector<QVector3D>& getPoint() override;
-  QVector<QVector3D>& getNormal() override;
-  QVector3D getSize() override;
-
+    ModelDivided(const float *data, int sizeX, int sizeY, QVector3D size);
+    ModelDivided(const float *data, int sizeX, int sizeY,
+        QPair<float, float> extreme, QVector3D size);
+    virtual ~ModelDivided() = default;
+    const QVector<GLuint> &getIndex(int dir) const override;
+    const QVector<QVector3D> &getPoint() const override;
+    const QVector<QVector3D> &getNormal() const override;
+    const QVector<QVector3D> &getColorF() const override;
+    const QVector<QColor const *> &getColorQ() const override;
+    const QVector<QVector3D> &getPosition() const override;
+    const QVector3D &getSize() const override;
+    bool isFlat() const override;
 private:
-  void init(const float* data, int sizeX, int sizeY, float max, float min);
-  QVector<GLuint> index;
-  QVector<QVector3D> point;
-  QVector<QVector3D> normal;
-  QVector3D size;
-};
-
-class ModelInsert : public Model {
-public:
-  ~ModelInsert() override = default;
-  ModelInsert(const float* data, int sizeX, int sizeY);
-  ModelInsert(const float* data, int sizeX, int sizeY, float max, float min);
-  QVector<GLuint>& getIndex() override;
-  QVector<QVector3D>& getPoint() override;
-  QVector<QVector3D>& getNormal() override;
-  QVector3D getSize() override;
-
-
-private:
-  void init(const float* data, int sizeX, int sizeY, float max, float min);
-  QVector<GLuint> index;
-  QVector<QVector3D> point;
-  QVector<QVector3D> normal;
-  QVector3D size;
+    QVector<QVector3D> point;
+    QVector<QVector3D> normal;
+    QVector<QVector3D> colorF;
+    QVector<QVector3D> position;
+    QVector<QColor const *> colorQ;
+    QVector<GLuint> index;
+    QVector3D size;
+    Gradient gradient;
+    int dir;
+    static QVector<QVector<GLuint>> order;
 };
 
 #endif // MODEL_H

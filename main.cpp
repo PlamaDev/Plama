@@ -1,9 +1,9 @@
 #define Py_LIMITED_API
 #include <Python.h>
-#include "interface/windowmain.h"
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QList>
+#include "gui/windowmain.h"
 
 
 int main(int argc, char *argv[]) {
@@ -12,7 +12,10 @@ int main(int argc, char *argv[]) {
     {
         QSurfaceFormat format;
 
-        format.setSamples(6);
+        format.setSamples(4);
+        format.setSwapInterval(0);
+        format.setDepthBufferSize(16);
+        format.setRenderableType(QSurfaceFormat::OpenGL);
         QSurfaceFormat::setDefaultFormat(format);
 
         QApplication a(argc, argv);
