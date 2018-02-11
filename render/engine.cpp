@@ -86,8 +86,7 @@ void EngineSimple::render(QPainter &p) {
     glEnable(GL_DEPTH_TEST);
     int degree = unify(-rotX, 360).second;
 
-    int dir = degree / 45;
-    dir %= 8;
+    int dir = (360 - rotX) / 45 % 8;
     int rotXDiff = degree % 45;
 
     glClear(GL_COLOR_BUFFER_BIT);
@@ -110,9 +109,7 @@ void EngineSimple::render(QPainter &p) {
     matModel.translate(-0.5, -0.5f, -0.5f);
     QMatrix4x4 matNormal = matModel.inverted();
     matNormal = matNormal.transposed();
-    QMatrix4x4 rotateAxis;
-
-    rotateAxis.rotate(90 * (dir / 2), 0, 0, 1);
+    QMatrix4x4 rotateAxis = axis->getTransform(rotX, rotY);
 
     programFlat->bind();
     programFlat->setUniformValue(argFlatMatNormal, matNormal);
@@ -168,7 +165,7 @@ void EngineSimple::render(QPainter &p) {
 
     GLuint *pnt = (GLuint *)axis->getIndex().constData();
 
-    for (auto i : axis->getSlice(dir, rotXDiff, rotY))
+    for (auto i : axis->getSlice(rotX, rotY))
         glDrawElements(GL_LINES, i.second*2, GL_UNSIGNED_INT, pnt + i.first);
 
     glDisableVertexAttribArray(argPlainVecPnt);
@@ -184,21 +181,18 @@ void EngineSimple::render(QPainter &p) {
             0, 0, 0, 0, 0, 0, 0, 1) * matScreen;
     QMatrix4x4 matText = matScreen * matTrans * rotateAxis * matModel;
 
-    QVector<QVector<QVector3D>> &num = axis->getNumber(dir, rotXDiff, rotY);
+    QVector<QPair<bool, QVector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
     for (int i = 0; i < 3; i++) {
-        if (num[i].isEmpty()) continue;
+        if (num[i].second.isEmpty()) continue;
 
-        bool left = i == 0;
-        if (dir % 4 > 1) left = !left;
-
-        float diff = (size[i].y() - size[i].x()) / (num[i].size()-1);
-        int f = (left ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter;
-        QVector<QVector3D> &ax = num[i];
+        float diff = (size[i].y() - size[i].x()) / (num[i].second.size()-1);
+        int f = (num[i].first ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
+        QVector<QVector3D> &ax = num[i].second;
         for (int j = 0; j < ax.size(); j++) {
             QPoint n = (matText * ax[j]).toPoint();
-            QRect r = left ? QRect(n.x(), n.y() - 10, 100, 20) :
-                QRect(n.x() - 100, n.y() - 10, 100, 20);
+            QRect r = num[i].first ? QRect(n.x() - 100, n.y() - 10, 100, 20) :
+                QRect(n.x(), n.y() - 10, 100, 20);
 
             p.drawText(r, f, format.arg(size[i].x() + diff * j, 0, 'g', 2));
         }

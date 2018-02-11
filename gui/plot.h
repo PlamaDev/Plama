@@ -52,7 +52,6 @@ protected:
 class Plot : public QWidget {
     Q_OBJECT
 public:
-    Plot(SimQuantity &quantity, float time, int dim);
     Plot(SimQuantity &quantity, int dim);
     Plot(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
         const QVector<QVector2D> &size);

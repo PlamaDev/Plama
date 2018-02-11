@@ -39,14 +39,23 @@ int mouseFuncInverseLoop(int x) {
     return p.first * (2 * width + (int)(90 / slope)) + mouseFuncInverse(p.second);
 }
 
-Plot::Plot(SimQuantity &quantity, float time, int dim)
-    : Plot(Model::fromQuantity(quantity, time, dim), std::make_unique<Axis>(5, 5,
-              5),
-{quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()}) {}
+QVector<QVector2D> genRange(SimQuantity &quantity) {
+    if (quantity.getSizeModel().size() == 0) {
+        return  {
+            {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
+            quantity.getExtreme(), {0, 1}
+        };
+    } else {
+        return {
+            quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()
+        };
+    }
+}
 
 Plot::Plot(SimQuantity &quantity, int dim)
-    : Plot(Model::fromQuantity(quantity, dim), std::make_unique<Axis>(5, 5, 5),
-{ {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]}, quantity.getExtreme(), {0, 1}}) {}
+    : Plot(quantity.getSizeData().size() == 0 ? Model::fromQuantity(quantity, dim) :
+          Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
+          std::make_unique<Axis>(5, 5, 5), genRange(quantity)) {}
 
 Plot::Plot(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
     const QVector<QVector2D> &sizeData) {

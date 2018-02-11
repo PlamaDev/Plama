@@ -66,8 +66,8 @@ const QVector<QVector3D> &Model::getColorF() const { return colorF; }
 const QVector<QVector3D> &Model::getPosition() const { return position; }
 const QVector<const QColor *> &Model::getColorQ() const { return colorQ; }
 
-std::unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time,
-    int dim) {
+std::unique_ptr<Model> Model::fromQuantity(
+    SimQuantity &sq, float time, int dim) {
     static QVector<QVector<GLuint>> order{
         {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
         {1, 4, 0, 0, 4, 3, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 8, 4, 5, 7, 4, 8},
@@ -193,6 +193,18 @@ std::unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
     float ymin = sq.getMin();
     float ymax = sq.getMax();
     float ydiff = ymax - ymin;
+
+    if (ydiff == 0) {
+        if (ymin == 0) {
+            ymin = -1;
+            ymax = 1;
+            ydiff = 2;
+        } else {
+            ymin *= 0.9;
+            ymax *= 1.1;
+            ydiff = ymax - ymin;
+        }
+    }
 
     for (int i = 0; i < x.size(); i++) {
         ret->point[i] = QVector3D((x[i] - xmin) / xdiff, (y[i] - ymin) / ydiff, 0);

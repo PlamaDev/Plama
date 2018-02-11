@@ -5,8 +5,7 @@
 #include <QVector3D>
 #include <QOpenGLFunctions>
 #include <QPair>
-
-
+#include <QMatrix4x4>
 
 class Axis {
 public:
@@ -14,13 +13,15 @@ public:
     QVector<QVector3D> &getPoint();
     QVector<QVector3D> &getColor();
     QVector<GLuint> &getIndex();
-    QVector<QPair<int, int>> getSlice(int dir, int rotX, int rotY);
+    QVector<QPair<int, int>> getSlice(int rotX, int rotY);
     QVector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
             bool zStrait, bool xyStrait, bool invert);
-    QVector<QVector<QVector3D>> &getNumber(int dir,
-            bool xEnable, bool yEnable, bool zEnable,bool zStrait, bool xyStrait);
-    QVector<QVector<QVector3D>> &getNumber(int dir, int rotX, int rotY);
-
+    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(int dir,
+        bool xEnable, bool yEnable, bool zEnable,bool zStrait, bool xyStrait);
+    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(int rotX,
+        int rotY);
+    QMatrix4x4 getTransform(int rotX, int rotY);
+    QMatrix4x4 getTransform(int dir, bool flipX);
 private:
     QVector<QVector3D> point;
     QVector<QVector3D> color;

@@ -65,11 +65,15 @@ WindowMain::WindowMain(QWidget *parent)
 
             if (sq->getSizeData().length() == 0) {
                 QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
-                d->setWidget(new Plot(*sq, 0));
+                Plot *p = new Plot(*sq, 0);
+                p->setRotation(90, 90);
+                d->setWidget(p);
                 addDockWidget(Qt::RightDockWidgetArea, d);
             } else if (sq->getSizeData().length() == 2) {
                 QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
-                d->setWidget(new Plot(*sq, 0, 0));
+                Plot *p = new Plot(*sq, 0);
+                p->setRotation(90, 90);
+                d->setWidget(p);
                 addDockWidget(Qt::RightDockWidgetArea, d);
             }
         }
