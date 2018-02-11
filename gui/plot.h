@@ -6,8 +6,10 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLContext>
 #include <QOpenGLPaintDevice>
+#include <QVector>
 #include <memory>
 #include <render/engine.h>
+#include <data/fileadapter.h>
 
 class OpenGLWindow : public QWindow, protected QOpenGLFunctions {
     Q_OBJECT
@@ -27,9 +29,11 @@ private:
     QOpenGLPaintDevice *m_device;
 };
 
-class OpenGLPlotInternal : public OpenGLWindow {
+class PlotInternal : public OpenGLWindow {
+    Q_OBJECT
 public:
-    OpenGLPlotInternal(std::unique_ptr<Model> &model);
+    PlotInternal(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+        const QVector<QVector2D> &size);
     void setRotation(int x, int y);
     void render(QPainter &p) override;
     void initialize() override;
@@ -45,15 +49,19 @@ protected:
     void mouseReleaseEvent(QMouseEvent *) override;
 };
 
-class OpenGLPlot : public QWidget {
+class Plot : public QWidget {
+    Q_OBJECT
 public:
-    OpenGLPlot(std::unique_ptr<Model> &model);
+    Plot(SimQuantity &quantity, float time, int dim);
+    Plot(SimQuantity &quantity, int dim);
+    Plot(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+        const QVector<QVector2D> &size);
     void setRotation(int x, int y);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
 private:
-    OpenGLPlotInternal *plot;
+    PlotInternal *plot;
 };
 
 #endif // OPENGLPLOT_H

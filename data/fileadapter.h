@@ -4,7 +4,7 @@
 
 #include <QObject>
 #include <QVector>
-#include <QPoint>
+#include <QVector2D>
 #include <QList>
 #include <QMap>
 #include <QFile>
@@ -19,23 +19,30 @@ class SimTreeNode;
 class SimQuantity {
 public:
     SimQuantity(PyObject *data);
-    bool isUniform() const;
     const QString &getName() const;
     const QVector<float> &getTimes() const;
-    const QVector<float> &getSizeModel() const;
+    const QVector<QVector2D> &getSizeModel() const;
     const QVector<int> &getSizeData() const;
     const QVector<float> &getDataAt(float time, int dim = 0) const;
+    const QVector<float> &getDataAt(float time, int dim = 0);
+    const QVector<QVector<float>> &getData();
+    float getMax() const;
+    float getMin() const;
+    QVector2D getExtreme() const;
+    QVector2D getExtreme();
+    int getDim() const;
 
 private:
     PyObject *raw;
     QString name;
     int dimData;
     bool uniform;
-    QSharedPointer<QVector<float>> times;
-    QSharedPointer<QVector<float>> sizeModel;
-    QSharedPointer<QVector<int>> sizeData;
-    QSharedPointer<QList<QVector<float>>> data;
-    void initData() const;
+    QVector<float> times;
+    QVector<QVector2D> sizeModel;
+    QVector<int> sizeData;
+    QVector<QVector<float>> data;
+    void initData();
+    float max, min;
 };
 
 class SimTreeNode {

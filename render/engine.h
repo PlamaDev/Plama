@@ -13,7 +13,7 @@
 
 class Engine {
 public:
-    Engine(std::unique_ptr<Model> &model, std::unique_ptr<Axis> &axis);
+    Engine(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis);
     virtual ~Engine() = default;
     virtual void initialize() = 0;
     virtual void render(QPainter &p) = 0;
@@ -33,7 +33,8 @@ protected:
 
 class EngineSimple : public Engine, protected QOpenGLFunctions {
 public:
-    EngineSimple(std::unique_ptr<Model> &model, std::unique_ptr<Axis> &axis);
+    EngineSimple(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+        const QVector<QVector2D> &size);
     void initialize() override;
     void render(QPainter &p) override;
     void resize(int sizeX, int sizeY) override;
@@ -56,6 +57,7 @@ private:
 
     std::unique_ptr<QOpenGLShaderProgram> programFlat;
     std::unique_ptr<QOpenGLShaderProgram> programPlain;
+    QVector<QVector2D> size;
 };
 
 #endif // ENGINE_H

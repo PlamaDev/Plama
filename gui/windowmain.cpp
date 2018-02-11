@@ -12,7 +12,7 @@
 #include <QWidget>
 #include <QSizePolicy>
 #include "data/fileadapter.h"
-#include "gui/openglplot.h"
+#include "gui/plot.h"
 
 
 QTreeWidgetItem *generateTree(const SimTreeNode &n) {
@@ -42,10 +42,10 @@ WindowMain::WindowMain(QWidget *parent)
     : QMainWindow(parent), data() {
     static FileAdapterManager m;
 
-    QWidget *w = new QWidget();
-    QHBoxLayout *l = new QHBoxLayout();
-    w->setLayout(l);
-    setCentralWidget(w);
+    //QWidget *w = new QWidget();
+    //QHBoxLayout *l = new QHBoxLayout();
+    //w->setLayout(l);
+    setCentralWidget(nullptr);
 
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks);
     QDockWidget *dock = new QDockWidget("Data list", this);
@@ -61,14 +61,17 @@ WindowMain::WindowMain(QWidget *parent)
             SimTreeNode *sp = (SimTreeNode *)p.value <void *>();
             SimQuantity *sq = (SimQuantity *)q.value <void *>();
             QVector<int> size = sq->getSizeData();
+            //l->addWidget(new OpenGLPlot(m));
 
-            std::unique_ptr<Model> m = std::make_unique<ModelDivided>(
-                    sq->getDataAt(0).constData(), sq->getSizeData()[0],
-                    sq->getSizeData()[1], QVector3D(1, 1, 1));
-            l->addWidget(new OpenGLPlot(m));
-            //QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
-            //d->setWidget(new OpenGLPlot(m));
-            //addDockWidget(Qt::RightDockWidgetArea, d);
+            if (sq->getSizeData().length() == 0) {
+                QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
+                d->setWidget(new Plot(*sq, 0));
+                addDockWidget(Qt::RightDockWidgetArea, d);
+            } else if (sq->getSizeData().length() == 2) {
+                QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
+                d->setWidget(new Plot(*sq, 0, 0));
+                addDockWidget(Qt::RightDockWidgetArea, d);
+            }
         }
     });
 

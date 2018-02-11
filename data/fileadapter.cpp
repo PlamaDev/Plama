@@ -104,72 +104,78 @@ const QList <SimTreeNode> &SimTreeNode::getChildren() const { return *children; 
 SimQuantity::SimQuantity(PyObject *data) :
     raw(data), name(PyUnicode_AsUTF8(PyDict_GetItemString(data, "name"))),
     dimData(PyLong_AsLong(PyDict_GetItemString(data, "dimData"))),
-    times(new QVector <float>()), sizeModel(new QVector <float>()),
-    sizeData(new QVector <int>()), data(new QList <QVector <float> >()) {
+    times(), sizeModel(), sizeData(), data(), max(0), min(0) {
     PyObject *pTimes = PyDict_GetItemString(data, "times");
     PyObject *pSizeData = PyDict_GetItemString(data, "sizeData");
     PyObject *pSizeModel = PyDict_GetItemString(data, "sizeModel");
     Py_ssize_t len = PyList_Size(pTimes);
 
     for (Py_ssize_t i = 0; i < len; i++)
-        times->append(PyFloat_AsDouble(PyList_GetItem(pTimes, i)));
+        times.append(PyFloat_AsDouble(PyList_GetItem(pTimes, i)));
     len = PyList_Size(pSizeModel);
-    for (Py_ssize_t i = 0; i < len; i++)
-        sizeModel->append(PyFloat_AsDouble(PyList_GetItem(pSizeModel, i)));
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyObject *o = PyList_GetItem(pSizeModel, i);
+        sizeModel.append(QVector2D(PyFloat_AsDouble(PyList_GetItem(o, 0)),
+                PyFloat_AsDouble(PyList_GetItem(o, 1))));
+    }
+
     len = PyList_Size(pSizeData);
     for (Py_ssize_t i = 0; i < len; i++)
-        sizeData->append(PyLong_AsLong(PyList_GetItem(pSizeData, i)));
-
-    if (times->size() < 2)
-        uniform = true;
-    else {
-        uniform = true;
-        float step = (times->last() - times->first()) / times->size();
-        float error = step / 40;
-        QVector <float>::iterator ip = times->begin();
-        QVector <float>::iterator ie = times->end();
-        for (QVector <float>::iterator i = ip + 1; i != ie; i++) {
-            float diff = *i - *ip - step;
-            if (diff < -error || diff > error) {
-                uniform = false;
-                break;
-            }
-        }
-    }
+        sizeData.append(PyLong_AsLong(PyList_GetItem(pSizeData, i)));
 }
 
-bool SimQuantity::isUniform() const { return uniform; }
 const QString &SimQuantity::getName() const { return name; }
-const QVector <float> &SimQuantity::getTimes() const { return *times; }
-const QVector <float> &SimQuantity::getSizeModel() const { return *sizeModel; }
-const QVector <int> &SimQuantity::getSizeData() const { return *sizeData; }
+const QVector <float> &SimQuantity::getTimes() const { return times; }
+const QVector <QVector2D> &SimQuantity::getSizeModel() const { return sizeModel; }
+const QVector <int> &SimQuantity::getSizeData() const { return sizeData; }
 
-const QVector <float> &SimQuantity::getDataAt(float time, int dim) const {
-    if (data->size() == 0)
-        initData();
-    if (uniform) {
-        float step = (times->last() - times->first()) / times->size();
-        int index = time / step;
-        if (index >= times->size()) index = times->size();
-        return (*data)[index * dimData + dim];
-    } else {
-        return (*data)[0]; // TODO
-    }
+const QVector<float> &SimQuantity::getDataAt(float time, int dim) const {
+    return data[0];  // TODO
 }
 
-void SimQuantity::initData() const {
+const QVector <float> &SimQuantity::getDataAt(float time, int dim) {
+    if (data.size() == 0) initData();
+    return ((const SimQuantity *)this)->getDataAt(time, dim);
+}
+
+const QVector<QVector<float>> &SimQuantity::getData() {
+    if (data.size() == 0) initData();
+    return data;
+}
+
+float SimQuantity::getMax() const { return max; }
+float SimQuantity::getMin() const { return min; }
+QVector2D SimQuantity::getExtreme() const { return QVector2D(min, max); }
+
+QVector2D SimQuantity::getExtreme() {
+    if (data.size() == 0) initData();
+    return ((const SimQuantity *)this)->getExtreme();
+}
+
+int SimQuantity::getDim() const { return dimData; }
+
+void SimQuantity::initData() {
     PyObject *args = PyTuple_New(0);
     PyObject *pDataF = PyDict_GetItemString(raw, "data");
     PyObject *pData = PyObject_CallObject(pDataF, args);
 
     Py_DECREF(args);
-    Py_ssize_t lenI = PyList_Size(pData);
+    PyErr_Print();
+    Py_ssize_t lenI =  PyList_Size(pData);
+    float f = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(pData, 0), 0));
+    max = f;
+    min = f;
+
     for (Py_ssize_t i = 0; i < lenI; i++) {
         QVector <float> buf;
         PyObject *pBuf = PyList_GetItem(pData, i);
         Py_ssize_t lenJ = PyList_Size(pBuf);
-        for (Py_ssize_t j = 0; j < lenJ; j++)
-            buf.append(PyFloat_AsDouble(PyList_GetItem(pBuf, j)));
-        data->append(buf);
+        for (Py_ssize_t j = 0; j < lenJ; j++) {
+            float f = PyFloat_AsDouble(PyList_GetItem(pBuf, j));
+            if (f > max) max = f;
+            if (f < min) min = f;
+            buf.append(f);
+        }
+        data.append(buf);
     }
 }

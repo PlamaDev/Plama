@@ -11,11 +11,8 @@
 #include "render/axis.h"
 #include "util.h"
 
-Engine::Engine(std::unique_ptr<Model> &model,
-    std::unique_ptr<Axis> &axis) : rotX(0), rotY(0) {
-    this->model.swap(model);
-    this->axis.swap(axis);
-}
+Engine::Engine(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis)
+    : rotX(0), rotY(0), model(std::move(model)), axis(std::move(axis)) {}
 
 void Engine::resize(int sizeX, int sizeY) {
     this->sizeX = sizeX;
@@ -36,8 +33,9 @@ void Engine::setBackGround(const QColor &color) {
             (float)color.greenF(), (float)color.blueF());
 }
 
-EngineSimple::EngineSimple(std::unique_ptr<Model> &model,
-    std::unique_ptr<Axis> &axis) : Engine (model, axis) {}
+EngineSimple::EngineSimple(std::unique_ptr<Model> &&model,
+    std::unique_ptr<Axis> &&axis, const QVector<QVector2D> &size)
+    : Engine (std::move(model), std::move(axis)), size(size) {}
 
 void EngineSimple::initialize() {
     initializeOpenGLFunctions();
@@ -73,7 +71,6 @@ void EngineSimple::initialize() {
 
     glClearColor(color.x(), color.y(), color.z(), 1.0f);
     glEnable(GL_BLEND);
-
     glEnable(GL_POLYGON_SMOOTH);
     //glEnable(GL_CULL_FACE);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
@@ -103,7 +100,8 @@ void EngineSimple::render(QPainter &p) {
     rotation.rotate(-rotY, 0, 1, 0);
     // transform matrix
     QMatrix4x4 matTrans;
-    matTrans.ortho(-1, 1, -1, 1, 0.1, 100);
+    matTrans.translate(0.1, 0);
+    matTrans.ortho(-1.1, 1.1, -1.1, 1.1, 0.1, 100);
     matTrans.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
     matTrans.rotate(rotY, 0, 1, 0);
     matTrans.rotate(rotX, 0, 0, 1);
@@ -137,23 +135,31 @@ void EngineSimple::render(QPainter &p) {
     glEnableVertexAttribArray(argFlatVecNormal);
     glEnableVertexAttribArray(argFlatVecColor);
 
-    glDrawElements(GL_TRIANGLES,
-        model->getIndex(0).size(), GL_UNSIGNED_INT,
-        model->getIndex(0).constData());
+    glDrawElements(GL_TRIANGLES, model->getIndexT(0).size(), GL_UNSIGNED_INT,
+        model->getIndexT(0).constData());
 
     glDisableVertexAttribArray(argFlatVecPnt);
     glDisableVertexAttribArray(argFlatVecPos);
     glDisableVertexAttribArray(argFlatVecNormal);
     glDisableVertexAttribArray(argFlatVecColor);
-
     programFlat->release();
 
     programPlain->bind();
-    programFlat->setUniformValue(argPlainMatModel, rotateAxis*matModel);
-    programFlat->setUniformValue(argPlainMatTrans, matTrans);
+    programPlain->setUniformValue(argPlainMatModel, matModel);
+    programPlain->setUniformValue(argPlainMatTrans, matTrans);
 
     glEnableVertexAttribArray(argPlainVecPnt);
     glEnableVertexAttribArray(argPlainVecColor);
+
+    glVertexAttribPointer(argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0,
+        model->getPoint().constData());
+    glVertexAttribPointer(argPlainVecColor, 3, GL_FLOAT, GL_FALSE, 0,
+        model->getColorF().constData());
+
+    glDrawElements(GL_LINES, model->getIndexL(0).size(), GL_UNSIGNED_INT,
+        model->getIndexL(0).constData());
+
+    programPlain->setUniformValue(argPlainMatModel, rotateAxis*matModel);
 
     glVertexAttribPointer(argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0,
         axis->getPoint().constData());
@@ -167,6 +173,7 @@ void EngineSimple::render(QPainter &p) {
 
     glDisableVertexAttribArray(argPlainVecPnt);
     glDisableVertexAttribArray(argPlainVecColor);
+
     glDisable(GL_DEPTH_TEST);
 
     programPlain->release();
@@ -178,20 +185,22 @@ void EngineSimple::render(QPainter &p) {
     QMatrix4x4 matText = matScreen * matTrans * rotateAxis * matModel;
 
     QVector<QVector<QVector3D>> &num = axis->getNumber(dir, rotXDiff, rotY);
-    const QVector3D &size = model->getSize();
     QString format("%1");
     for (int i = 0; i < 3; i++) {
         if (num[i].isEmpty()) continue;
 
-        float diff = size[i] / (num[i].size()-1);
-        int f = (i == 0 ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter;
+        bool left = i == 0;
+        if (dir % 4 > 1) left = !left;
+
+        float diff = (size[i].y() - size[i].x()) / (num[i].size()-1);
+        int f = (left ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter;
         QVector<QVector3D> &ax = num[i];
         for (int j = 0; j < ax.size(); j++) {
             QPoint n = (matText * ax[j]).toPoint();
-            QRect r = i == 0 ? QRect(n.x(), n.y() - 10, 100, 20) :
+            QRect r = left ? QRect(n.x(), n.y() - 10, 100, 20) :
                 QRect(n.x() - 100, n.y() - 10, 100, 20);
 
-            p.drawText(r, f, format.arg(diff * j, 0, 'g', 2));
+            p.drawText(r, f, format.arg(size[i].x() + diff * j, 0, 'g', 2));
         }
     }
 }

@@ -1,10 +1,11 @@
-#include "openglplot.h"
+#include "plot.h"
 #include <QHBoxLayout>
 #include <QMouseEvent>
 #include <QWidget>
 #include <QSize>
 #include <QPainter>
 #include "util.h"
+#include "render/model.h"
 
 int mouseFuncForward(int x) {
     const int width = 20;
@@ -38,40 +39,48 @@ int mouseFuncInverseLoop(int x) {
     return p.first * (2 * width + (int)(90 / slope)) + mouseFuncInverse(p.second);
 }
 
-OpenGLPlot::OpenGLPlot(std::unique_ptr<Model> &model) {
+Plot::Plot(SimQuantity &quantity, float time, int dim)
+    : Plot(Model::fromQuantity(quantity, time, dim), std::make_unique<Axis>(5, 5,
+              5),
+{quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()}) {}
+
+Plot::Plot(SimQuantity &quantity, int dim)
+    : Plot(Model::fromQuantity(quantity, dim), std::make_unique<Axis>(5, 5, 5),
+{ {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]}, quantity.getExtreme(), {0, 1}}) {}
+
+Plot::Plot(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+    const QVector<QVector2D> &sizeData) {
     QHBoxLayout *l = new QHBoxLayout;
-    plot = new OpenGLPlotInternal(model);
+    plot = new PlotInternal(std::move(model), std::move(axis), sizeData);
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
     setLayout(l);
 }
 
-void OpenGLPlot::setRotation(int x, int y) {
-    plot->setRotation(x, y);
-}
+void Plot::setRotation(int x, int y) { plot->setRotation(x, y);}
+QSize Plot::sizeHint() const { return QSize(500, 500); }
+QSize Plot::minimumSizeHint() const { return QSize(100, 100); }
 
-QSize OpenGLPlot::sizeHint() const { return QSize(200, 200); }
-QSize OpenGLPlot::minimumSizeHint() const { return QSize(50, 50); }
-
-OpenGLPlotInternal::OpenGLPlotInternal(std::unique_ptr<Model> &model) {
-    std::unique_ptr<Axis> a = std::make_unique<Axis>(5, 5, 5);
-    engine = std::make_unique<EngineSimple>(model, a);
-    QWidget w;
+PlotInternal::PlotInternal(
+    std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+    const QVector<QVector2D> &size) {
+    engine = std::make_unique<EngineSimple>(
+            std::move(model), std::move(axis), size);
     engine->setBackGround(Qt::white);
 }
 
-void OpenGLPlotInternal::setRotation(int x, int y) {
+void PlotInternal::setRotation(int x, int y) {
     engine->setRotation(x, y);
 }
 
-void OpenGLPlotInternal::render(QPainter &p) {
+void PlotInternal::render(QPainter &p) {
     engine->resize(size().width(), size().height());
     engine->render(p);
 }
 
-void OpenGLPlotInternal::initialize() { engine->initialize(); }
+void PlotInternal::initialize() { engine->initialize(); }
 
-void OpenGLPlotInternal::mouseMoveEvent(QMouseEvent *event) {
+void PlotInternal::mouseMoveEvent(QMouseEvent *event) {
     if ((event->buttons() & Qt::LeftButton) == 0) return;
 
     QPoint diff = event->pos() - mouse;
@@ -84,14 +93,13 @@ void OpenGLPlotInternal::mouseMoveEvent(QMouseEvent *event) {
     requestUpdate();
 }
 
-void OpenGLPlotInternal::mousePressEvent(QMouseEvent *event) {
+void PlotInternal::mousePressEvent(QMouseEvent *event) {
     if ((event->buttons() & Qt::LeftButton) == 0) return;
-    //setMouseGrabEnabled(true);
     mouse = event->pos();
     rotation = engine->getRotation();
 }
 
-void OpenGLPlotInternal::mouseReleaseEvent(QMouseEvent *) {
+void PlotInternal::mouseReleaseEvent(QMouseEvent *) {
     setMouseGrabEnabled(false);
 }
 

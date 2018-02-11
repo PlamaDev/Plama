@@ -25,9 +25,11 @@ def init(configs):
                 if 'name' and 'load' in dir(plugin):
                     plugins[plugin.name()] = plugin
                 else:
-                    print('Failed to load file "' + script + '": attribute not met')
+                    print('Failed to load file "' +
+                          script + '": attribute not met')
             except Exception:
-                print('Failed to load file "' + script + '": exception caught.')
+                print('Failed to load file "' +
+                      script + '": exception caught.')
 
     ret = [i for i in plugins.keys()]
     return ret
@@ -58,7 +60,7 @@ class LoaderDummy:
                 'times': [1, 2],
                 'dimData': 1,
                 'sizeData': [3, 2],
-                'sizeModel': [1, 2],
+                'sizeModel': [[2, 3], [4, 5]],
                 'data': lambda: [
                     [0, 1, 0, 0, 0, 0],
                     [1, 1, 1, 2, 0, 0]
@@ -72,6 +74,8 @@ class LoaderMd2d:
     pat_time = _re.compile(r'# *time *= *(.+?)\s')
     pat_data = _re.compile(r'( +\S+)+?')
     pat_comp = _re.compile(r'# *(\w)-components')
+    pat_par = _re.compile(r'n\s+(\S+)\s+\S+\s+\S+')
+    pat_rea = _re.compile(r'R\d\s{2,}(\S.+\S)\s{2,}\S+\s{2,}\S+')
 
     @staticmethod
     def name():
@@ -130,9 +134,35 @@ class LoaderMd2d:
                 'quantities': qtt
             }
 
+        def gen_ov(file):
+            def item(name):
+                return {
+                    'name': name,
+                    'times': t,
+                    'dimData': 1,
+                    'sizeData': [],
+                    'sizeModel': [],
+                    'data': lambda: cache[name]
+                }
+
+            with open(file) as f:
+                s = f.readline()
+                names = LoaderMd2d.pat_split.split(s)[:-1]
+                data = [[] for i in names]
+                for s in f:
+                    ns = LoaderMd2d.pat_split.split(s)[:-1]
+                    for i, n in enumerate(ns):
+                        data[i].append([float(n)])
+                for i, n in enumerate(names):
+                    cache[n] = data[i]
+
+            t = [i[0] for i in cache['t']]
+            return [item(n) for n in names if n != 't']
+
         particles, reactions = LoaderMd2d.read_info(files)
-        size_model = [1, 1]
+        size_model = [[0, 1], [2, 3]]
         times = gen_time()
+        cache = {}
 
         return [{
             'abbr': 'Par',
@@ -144,11 +174,15 @@ class LoaderMd2d:
             'name': 'Reactions',
             'children': [gen_rea(j, i) for i, j in enumerate(reactions)],
             'quantities': []
+        }, {
+            'abbr': 'Ov',
+            'name': 'Overview',
+            'children': [],
+            'quantities': gen_ov(find_name0('history.out'))
         }]
 
     @staticmethod
-    def read_info(files, pat_par=_re.compile(r'n\s+(\S+)\s+\S+\s+\S+'),
-                  pat_rea=_re.compile(r'R\d\s{2,}(\S.+\S)\s{2,}\S+\s{2,}\S+')):
+    def read_info(files):
         data = []
         reactions = []
         particles = []
@@ -165,11 +199,11 @@ class LoaderMd2d:
                         s = f.readline()
                 break
         for key in data:
-            m = pat_par.match(key)
+            m = LoaderMd2d.pat_par.match(key)
             if m:
                 particles.append(m.group(1))
                 continue
-            m = pat_rea.match(key)
+            m = LoaderMd2d.pat_rea.match(key)
             if m:
                 reactions.append(m.group(1))
         return particles, reactions
@@ -247,3 +281,9 @@ class LoaderMd2d:
                         data.append(buf)
                         buf = []
         return data
+
+# if __name__ == "__main__":
+#     d = '/run/media/towdium/Files/Work/FYP/software/data'
+#     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
+#     ret = LoaderMd2d().load(files_)
+#     print(ret)

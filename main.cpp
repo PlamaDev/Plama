@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     {
         QSurfaceFormat format;
 
-        format.setSamples(4);
+        format.setSamples(6);
         format.setSwapInterval(0);
         format.setDepthBufferSize(16);
         format.setRenderableType(QSurfaceFormat::OpenGL);

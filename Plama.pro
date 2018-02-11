@@ -10,18 +10,18 @@ SOURCES += \
     data/fileadapter.cpp \
     render/engine.cpp \
     render/model.cpp \
-    gui/openglplot.cpp \
     render/axis.cpp \
-    util.cpp
+    util.cpp \
+    gui/plot.cpp
 
 HEADERS += \
     gui/windowmain.h \
     data/fileadapter.h \
     render/engine.h \
     render/model.h \
-    gui/openglplot.h \
     render/axis.h \
-    util.h
+    util.h \
+    gui/plot.h
 
 RESOURCES += res/resources.qrc
 

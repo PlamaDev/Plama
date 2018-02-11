@@ -58,37 +58,39 @@ Model::indexFunc{f0, f0, f1, f1, f3, f3, f2, f2};
 Gradient Model::gradientHeightmap({{Qt::blue, 0.0f}, {Qt::cyan, 0.2f},
     {Qt::green, 0.4f}, {Qt::yellow, 0.6f}, {Qt::red, 1.0f}}, 200);
 
-QVector<QVector<GLuint>> ModelDivided::order{
-    {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
-    {1, 4, 0, 0, 4, 3, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 8, 4, 5, 7, 4, 8},
-    {2, 4, 1, 5, 4, 2, 1, 4, 0, 0, 4, 3, 8, 4, 5, 7, 4, 8, 3, 4, 6, 6, 4, 7},
-    {5, 4, 2, 2, 4, 1, 1, 4, 0, 0, 4, 3, 8, 4, 5, 7, 4, 8, 6, 4, 7, 3, 4, 6},
-    {8, 4, 5, 7, 4, 8, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 1, 4, 0, 0, 4, 3},
-    {7, 4, 8, 8, 4, 5, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 0, 4, 3, 1, 4, 0},
-    {6, 4, 7, 3, 4, 6, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 5, 4, 2, 2, 4, 1},
-    {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}
-};
+const QVector<GLuint> &Model::getIndexT(int dir) const { return indexT[dir]; }
+const QVector<GLuint> &Model::getIndexL(int dir) const { return indexL[dir]; }
+const QVector<QVector3D> &Model::getPoint() const { return point; }
+const QVector<QVector3D> &Model::getNormal() const { return normal; }
+const QVector<QVector3D> &Model::getColorF() const { return colorF; }
+const QVector<QVector3D> &Model::getPosition() const { return position; }
+const QVector<const QColor *> &Model::getColorQ() const { return colorQ; }
 
-ModelDivided::ModelDivided(const float *data, int sizeX, int sizeY,
-    QVector3D size) : ModelDivided(data, sizeX, sizeY,
-            Model::getExtreme(data, sizeX*sizeY), size) {}
-
-ModelDivided::ModelDivided(const float *data, int sizeX, int sizeY,
-    QPair<float, float> extreme, QVector3D size) :
-    size(size), gradient(Model::gradientHeightmap) {
+std::unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time,
+    int dim) {
+    static QVector<QVector<GLuint>> order{
+        {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
+        {1, 4, 0, 0, 4, 3, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 8, 4, 5, 7, 4, 8},
+        {2, 4, 1, 5, 4, 2, 1, 4, 0, 0, 4, 3, 8, 4, 5, 7, 4, 8, 3, 4, 6, 6, 4, 7},
+        {5, 4, 2, 2, 4, 1, 1, 4, 0, 0, 4, 3, 8, 4, 5, 7, 4, 8, 6, 4, 7, 3, 4, 6},
+        {8, 4, 5, 7, 4, 8, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 1, 4, 0, 0, 4, 3},
+        {7, 4, 8, 8, 4, 5, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 0, 4, 3, 1, 4, 0},
+        {6, 4, 7, 3, 4, 6, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 5, 4, 2, 2, 4, 1},
+        {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}
+    };
+    QVector2D extreme = sq.getExtreme();
+    int sizeX = sq.getSizeData()[0];
+    int sizeY = sq.getSizeData()[1];
+    QVector<float> data = sq.getDataAt(time, dim);
     int sizePoint = (sizeX - 1) * (sizeY - 1) * 9;
     int sizeIndex = (sizeX - 1) * (sizeY - 1) * 24;
-    point = QVector<QVector3D>(sizePoint);
-    normal = QVector<QVector3D>(sizePoint);
-    colorF = QVector<QVector3D>(sizePoint);
-    position = QVector<QVector3D>(sizePoint);
-    colorQ = QVector<QColor const *>(sizePoint);
-    index = QVector<GLuint>(sizeIndex);
-    dir = 0;
+
+    std::unique_ptr<Model> ret =
+        std::unique_ptr<Model>(new Model(sizePoint, sizeIndex, 0));
 
     float sx = sizeX - 1;
     float sy = sizeY - 1;
-    float height = extreme.second - extreme.first;
+    float height = extreme.y() - extreme.x();
     for (int y = 0; y < sizeY - 1; y++) {
         for (int x = 0; x < sizeX - 1; x++) {
             float d[9];
@@ -103,10 +105,10 @@ ModelDivided::ModelDivided(const float *data, int sizeX, int sizeY,
             d[2] = data[offsetRaw + 1];
             d[6] = data[offsetRaw + sizeX];
             d[8] = data[offsetRaw + sizeX + 1];
-            d[0] = (d[0] - extreme.first) / height;
-            d[2] = (d[2] - extreme.first) / height;
-            d[6] = (d[6] - extreme.first) / height;
-            d[8] = (d[8] - extreme.first) / height;
+            d[0] = (d[0] - extreme.x()) / height;
+            d[2] = (d[2] - extreme.x()) / height;
+            d[6] = (d[6] - extreme.x()) / height;
+            d[8] = (d[8] - extreme.x()) / height;
             d[1] = (d[0] + d[2]) / 2;
             d[3] = (d[0] + d[6]) / 2;
             d[5] = (d[2] + d[8]) / 2;
@@ -125,63 +127,95 @@ ModelDivided::ModelDivided(const float *data, int sizeX, int sizeY,
                 }
             }
 
-            for (int i = 0; i < 9; i++) point[offsetPoint + i] = p[i];
+            for (int i = 0; i < 9; i++) ret->point[offsetPoint + i] = p[i];
 
-            normal[offsetPoint] = QVector3D::crossProduct(p[1] - p[0], p[4] - p[0]);
-            normal[offsetPoint + 1] = QVector3D::crossProduct(p[2] - p[1], p[4] - p[1]);
-            normal[offsetPoint + 2] = QVector3D::crossProduct(p[5] - p[2], p[4] - p[2]);
-            normal[offsetPoint + 3] = QVector3D::crossProduct(p[0] - p[3], p[4] - p[3]);
-            normal[offsetPoint + 4] = QVector3D(1, 1, 1);
-            normal[offsetPoint + 5] = QVector3D::crossProduct(p[8] - p[5], p[4] - p[5]);
-            normal[offsetPoint + 6] = QVector3D::crossProduct(p[3] - p[6], p[4] - p[6]);
-            normal[offsetPoint + 7] = QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
-            normal[offsetPoint + 8] = QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
+            ret->normal[offsetPoint] = QVector3D::crossProduct(p[1] - p[0], p[4] - p[0]);
+            ret->normal[offsetPoint+1] = QVector3D::crossProduct(p[2] - p[1], p[4] - p[1]);
+            ret->normal[offsetPoint+2] = QVector3D::crossProduct(p[5] - p[2], p[4] - p[2]);
+            ret->normal[offsetPoint+3] = QVector3D::crossProduct(p[0] - p[3], p[4] - p[3]);
+            ret->normal[offsetPoint+4] = QVector3D(1, 1, 1);
+            ret->normal[offsetPoint+5] = QVector3D::crossProduct(p[8] - p[5], p[4] - p[5]);
+            ret->normal[offsetPoint+6] = QVector3D::crossProduct(p[3] - p[6], p[4] - p[6]);
+            ret->normal[offsetPoint+7] = QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
+            ret->normal[offsetPoint+8] = QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
 
-            for (int i = 0; i < 9; i++) normal[offsetPoint + i].normalize();
+            for (int i = 0; i < 9; i++) ret->normal[offsetPoint + i].normalize();
 
-            colorQ[offsetPoint] = &(gradient.getColor((d[0] + d[4]) / 2));
-            colorQ[offsetPoint + 3] = colorQ[offsetPoint];
-            colorQ[offsetPoint + 1] = &gradient.getColor((d[2] + d[4]) / 2);
-            colorQ[offsetPoint + 2] = colorQ[offsetPoint + 1];
-            colorQ[offsetPoint + 5] = &gradient.getColor((d[8] + d[4]) / 2);
-            colorQ[offsetPoint + 8] = colorQ[offsetPoint + 5];
-            colorQ[offsetPoint + 7] = &gradient.getColor((d[6] + d[4]) / 2);
-            colorQ[offsetPoint + 6] = colorQ[offsetPoint + 7];
-            colorQ[offsetPoint + 4] = &gradient.getColor(0);
+            ret->colorQ[offsetPoint] = &(gradientHeightmap.getColor((d[0] + d[4]) / 2));
+            ret->colorQ[offsetPoint + 3] = ret->colorQ[offsetPoint];
+            ret->colorQ[offsetPoint + 1] = &gradientHeightmap.getColor((d[2] + d[4]) / 2);
+            ret->colorQ[offsetPoint + 2] = ret->colorQ[offsetPoint + 1];
+            ret->colorQ[offsetPoint + 5] = &gradientHeightmap.getColor((d[8] + d[4]) / 2);
+            ret->colorQ[offsetPoint + 8] = ret->colorQ[offsetPoint + 5];
+            ret->colorQ[offsetPoint + 7] = &gradientHeightmap.getColor((d[6] + d[4]) / 2);
+            ret->colorQ[offsetPoint + 6] = ret->colorQ[offsetPoint + 7];
+            ret->colorQ[offsetPoint + 4] = &gradientHeightmap.getColor(0);
 
             for (int i = offsetPoint; i < offsetPoint + 9; i++ ) {
-                const QColor *c = colorQ[i];
-                colorF[i] = QVector3D(c->redF(), c->greenF(), c->blueF());
+                const QColor *c = ret->colorQ[i];
+                ret->colorF[i] = QVector3D(c->redF(), c->greenF(), c->blueF());
             }
 
-            position[offsetPoint] = (p[0] + p[1] + p[4]) / 3;
-            position[offsetPoint + 1] = (p[1] + p[2] + p[4]) / 3;
-            position[offsetPoint + 2] = (p[2] + p[5] + p[4]) / 3;
-            position[offsetPoint + 3] = (p[0] + p[3] + p[4]) / 3;
-            position[offsetPoint + 4] = p[4];
-            position[offsetPoint + 5] = (p[5] + p[8] + p[4]) / 3;
-            position[offsetPoint + 6] = (p[6] + p[3] + p[4]) / 3;
-            position[offsetPoint + 7] = (p[6] + p[7] + p[4]) / 3;
-            position[offsetPoint + 8] = (p[7] + p[8] + p[4]) / 3;
+            ret->position[offsetPoint] = (p[0] + p[1] + p[4]) / 3;
+            ret->position[offsetPoint + 1] = (p[1] + p[2] + p[4]) / 3;
+            ret->position[offsetPoint + 2] = (p[2] + p[5] + p[4]) / 3;
+            ret->position[offsetPoint + 3] = (p[0] + p[3] + p[4]) / 3;
+            ret->position[offsetPoint + 4] = p[4];
+            ret->position[offsetPoint + 5] = (p[5] + p[8] + p[4]) / 3;
+            ret->position[offsetPoint + 6] = (p[6] + p[3] + p[4]) / 3;
+            ret->position[offsetPoint + 7] = (p[6] + p[7] + p[4]) / 3;
+            ret->position[offsetPoint + 8] = (p[7] + p[8] + p[4]) / 3;
 
             int offsetIndex = (y * (sizeX - 1) + x) * 24;
-            for (int i = 0; i < 24;
-                i++) index[offsetIndex + i] = order[dir][i] + offsetPoint;
+
+            for(int j = 0; j < 8; j++)
+                for (int i = 0; i < 24; i++)
+                    ret->indexT[j][offsetIndex + i] = order[j][i] + offsetPoint;
         }
     }
+    return ret;
 }
 
-const QVector<GLuint> &ModelDivided::getIndex(int dir) const {
-    return index;  // TODO
+std::unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
+    static QColor c = Qt::blue;
+
+    QVector<float> y(sq.getData().size());
+    for (int i = 0; i < sq.getData().size(); i++)
+        y[i] = sq.getData()[sq.getDim() * i + dim][0];
+    const QVector<float> &x = sq.getTimes();
+
+    std::unique_ptr<Model> ret =
+        std::unique_ptr<Model>(new Model(x.size(), 0, (x.size() - 1) * 2));
+
+    float xmin = x[0];
+    float xmax = x[x.size() - 1];
+    float xdiff = xmax - xmin;
+    float ymin = sq.getMin();
+    float ymax = sq.getMax();
+    float ydiff = ymax - ymin;
+
+    for (int i = 0; i < x.size(); i++) {
+        ret->point[i] = QVector3D((x[i] - xmin) / xdiff, (y[i] - ymin) / ydiff, 0);
+        ret->normal[i] = QVector3D(0, 0, 1);
+        ret->colorQ[i] = &c;
+        ret->colorF[i] = QVector3D(0, 0, 1);
+        ret->position[i] = ret->point[i];
+    }
+
+    for (int j = 0; j < 8; j++) {
+        for (int i = 0; i < x.size() - 1; i++) {
+            ret->indexL[j][2 * i] = i;
+            ret->indexL[j][2 * i + 1] = i + 1;
+        }
+    }
+
+    return ret;
 }
 
-const QVector<QVector3D> &ModelDivided::getPoint() const { return point; }
-const QVector<QVector3D> &ModelDivided::getNormal() const { return normal; }
-const QVector<QVector3D> &ModelDivided::getColorF() const { return colorF; }
-const QVector<QColor const *> &ModelDivided::getColorQ() const { return colorQ; }
-const QVector<QVector3D> &ModelDivided::getPosition() const { return position; }
-const QVector3D &ModelDivided::getSize() const { return size; }
-bool ModelDivided::isFlat() const { return true; }
+Model::Model(int sPoint, int sIndexT, int sIndexL)
+    : point(sPoint), normal(sPoint), colorF(sPoint), colorQ(sPoint),
+      position(sPoint), indexT(8, QVector<GLuint>(sIndexT)),
+      indexL(8, QVector<GLuint>(sIndexL)) {}
 
 QPair<float, float> Model::getExtreme(const float *data, int total) {
     float max = *data;
