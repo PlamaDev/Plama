@@ -7,21 +7,21 @@ CONFIG += no_keywords
 SOURCES += \
     main.cpp \
     gui/windowmain.cpp \
-    data/fileadapter.cpp \
     render/engine.cpp \
     render/model.cpp \
     render/axis.cpp \
     util.cpp \
-    gui/plot.cpp
+    gui/plot.cpp \
+    data/project.cpp
 
 HEADERS += \
     gui/windowmain.h \
-    data/fileadapter.h \
     render/engine.h \
     render/model.h \
     render/axis.h \
     util.h \
-    gui/plot.h
+    gui/plot.h \
+    data/project.h
 
 RESOURCES += res/resources.qrc
 

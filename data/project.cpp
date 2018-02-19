@@ -1,4 +1,4 @@
-#include "fileadapter.h"
+#include "project.h"
 #include <Python.h>
 #include <QtDebug>
 #include <QVector>
@@ -7,7 +7,7 @@
 #include <QScopedPointer>
 #include <algorithm>
 
-FileAdapterManager::FileAdapterManager() :
+ProjectLoader::ProjectLoader() :
     main(PyImport_AddModule("__main__")), list() {
     // read script
     QFile f(":/res/script/plugins.py");
@@ -45,11 +45,11 @@ FileAdapterManager::FileAdapterManager() :
     Py_DECREF(plugins);
 }
 
-const QStringList &FileAdapterManager::plugins() const {
+const QStringList &ProjectLoader::plugins() const {
     return list;
 }
 
-std::unique_ptr<FileAdapter> FileAdapterManager::load(QString name,
+std::unique_ptr<Project> ProjectLoader::load(QString name,
     QStringList files) const {
     PyObject *pfiles = PyList_New(0);
 
@@ -65,11 +65,11 @@ std::unique_ptr<FileAdapter> FileAdapterManager::load(QString name,
 
     if (data == Py_None) {
         Py_DECREF(data);
-        return std::unique_ptr <FileAdapter>();
-    } else return std::make_unique <FileAdapter>(data);
+        return std::unique_ptr <Project>();
+    } else return std::make_unique <Project>(data);
 }
 
-FileAdapter::FileAdapter(PyObject *data) :
+Project::Project(PyObject *data) :
     nodes(new QList <SimTreeNode>()),
     data(data, [](PyObject *p) {
     Py_DECREF(p);
@@ -79,7 +79,7 @@ FileAdapter::FileAdapter(PyObject *data) :
         nodes->append(SimTreeNode(PyList_GetItem(data, i)));
 }
 
-const QList <SimTreeNode> &FileAdapter::getTopLevelNodes() const { return *nodes; }
+const QList <SimTreeNode> &Project::getTopLevelNodes() const { return *nodes; }
 
 SimTreeNode::SimTreeNode(PyObject *data) : raw(data),
     name(PyUnicode_AsUTF8(PyDict_GetItemString(data, "name"))),
@@ -130,7 +130,10 @@ const QVector <QVector2D> &SimQuantity::getSizeModel() const { return sizeModel;
 const QVector <int> &SimQuantity::getSizeData() const { return sizeData; }
 
 const QVector<float> &SimQuantity::getDataAt(float time, int dim) const {
-    return data[0];  // TODO
+    auto t = std::lower_bound(times.begin(), times.end(), time);
+    int d = t - times.begin();
+    const QVector<float> &ret = data[dimData * d + dim];
+    return ret;
 }
 
 const QVector <float> &SimQuantity::getDataAt(float time, int dim) {

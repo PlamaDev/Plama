@@ -9,7 +9,7 @@
 #include <QVector>
 #include <memory>
 #include <render/engine.h>
-#include <data/fileadapter.h>
+#include <data/project.h>
 
 class OpenGLWindow : public QWindow, protected QOpenGLFunctions {
     Q_OBJECT
@@ -35,6 +35,8 @@ public:
     PlotInternal(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
         const QVector<QVector2D> &size);
     void setRotation(int x, int y);
+    void setLabel(float pos);
+    void setModel(std::unique_ptr<Model> model);
     void render(QPainter &p) override;
     void initialize() override;
 
@@ -53,14 +55,16 @@ class Plot : public QWidget {
     Q_OBJECT
 public:
     Plot(SimQuantity &quantity, int dim);
-    Plot(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
-        const QVector<QVector2D> &size);
     void setRotation(int x, int y);
+    void setTime(float t);
+    void setPartition(float p);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
 private:
     PlotInternal *plot;
+    SimQuantity *quantity;
+    const QVector<float> *data;
 };
 
 #endif // OPENGLPLOT_H

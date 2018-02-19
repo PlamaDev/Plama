@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <memory>
-#include "data/fileadapter.h"
+#include "data/project.h"
 
 class WindowMain : public QMainWindow {
     Q_OBJECT
@@ -13,7 +13,7 @@ public:
     ~WindowMain() = default;
 
 private:
-    std::unique_ptr<FileAdapter> data;
+    std::unique_ptr<Project> data;
 };
 
 #endif // WINDOWMAIN_H

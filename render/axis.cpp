@@ -3,17 +3,22 @@
 #include<QVector>
 #include<QVector3D>
 #include<QDebug>
+#include<QColor>
 
-const float Axis::dist = 0.1f;
-const float Axis::extra = 0.05f;
-const QVector3D Axis::black = QVector3D(0.4, 0.4, 0.4);
-const QVector3D Axis::grey = QVector3D(0.8, 0.8, 0.8);
+const float Axis::DIST = 0.1f;
+const float Axis::EXTRA = 0.05f;
+const QVector3D Axis::BLACK_F = QVector3D(0.4, 0.4, 0.4);
+const QVector3D Axis::GREY_F = QVector3D(0.8, 0.8, 0.8);
+const QColor Axis::BLACK_Q = Qt::black;
+const QColor Axis::GREY_Q = Qt::gray;
 
 Axis::Axis(int sizeX, int sizeY, int sizeZ)
-    : sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ), offset(2 * OFFSET) {
-    point = QVector<QVector3D>(12 * (sizeX + sizeY + sizeZ + 1));
-    color = QVector<QVector3D>(12 * (sizeX + sizeY + sizeZ + 1));
-    index = QVector<GLuint>((sizeX + sizeY + sizeY + 3) * 16 + 12);
+    : point(12 * (sizeX + sizeY + sizeZ + 1)),
+      colorF(12 * (sizeX + sizeY + sizeZ + 1)),
+      colorQ(12 * (sizeX + sizeY + sizeZ + 1)),
+      index((sizeX + sizeY + sizeY + 3) * 16 + 12),
+      sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ),
+      offset(2 * OFFSET) {
 
     int countPnt = 0;
     int countIdx = 0;
@@ -26,92 +31,112 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
 
         int xyStart = countPnt;
         for (int i = 0; i < sizeX; i++) {
-            point[countPnt] = QVector3D(diffX * i, 0, -dist);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(diffX * i, 0, -DIST);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         for (int i = 0; i < sizeY; i++) {
-            point[countPnt] = QVector3D(1, diffY * i, -dist);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(1, diffY * i, -DIST);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         tmp = countPnt;
         for (int i = 0; i < sizeX; i++) {
-            point[countPnt] = QVector3D(1 - diffX * i, 1, -dist);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(1 - diffX * i, 1, -DIST);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         for (int i = 0; i < sizeY; i++) {
-            point[countPnt] = QVector3D(0, 1 - diffY * i, -dist);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(0, 1 - diffY * i, -DIST);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
-        color[tmp] = black;
+        colorF[tmp] = BLACK_F;
+        colorQ[tmp] = &BLACK_Q;
 
         int markXStrt = countPnt;
         for (int i = 0; i < sizeX + 1; i++) {
-            point[countPnt] = QVector3D(diffX * i, 1 + extra, -dist);
-            color[countPnt++] = black;
+            point[countPnt] = QVector3D(diffX * i, 1 + EXTRA, -DIST);
+            colorF[countPnt] = BLACK_F;
+            colorQ[countPnt++] = &BLACK_Q;
         }
         int markXRight = countPnt;
         for (int i = 0; i < sizeX + 1; i++) {
-            point[countPnt] = QVector3D(diffX * i, 1, -dist - extra);
-            color[countPnt++] = black;
+            point[countPnt] = QVector3D(diffX * i, 1, -DIST - EXTRA);
+            colorF[countPnt] = BLACK_F;
+            colorQ[countPnt++] = &BLACK_Q;
         }
         int markYStrt = countPnt;
         for (int i = 0; i < sizeY + 1; i++) {
-            point[countPnt] = QVector3D(1 + extra, diffY * i, -dist);
-            color[countPnt++] = black;
+            point[countPnt] = QVector3D(1 + EXTRA, diffY * i, -DIST);
+            colorF[countPnt] = BLACK_F;
+            colorQ[countPnt++] = &BLACK_Q;
         }
         int markYRight = countPnt;
         for (int i = 0; i < sizeY + 1; i++) {
-            point[countPnt] = QVector3D(1, diffY * i, -dist - extra);
-            color[countPnt++] = black;
+            point[countPnt] = QVector3D(1, diffY * i, -DIST - EXTRA);
+            colorF[countPnt] = BLACK_F;
+            colorQ[countPnt++] = &BLACK_Q;
         }
 
         int xzStart = countPnt;
         for (int i = 0; i < sizeX; i++) {
-            point[countPnt] = QVector3D(diffX * i, -dist, 0);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(diffX * i, -DIST, 0);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         for (int i = 0; i < sizeZ; i++) {
-            point[countPnt] = QVector3D(1, -dist, diffZ * i);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(1, -DIST, diffZ * i);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         tmp = countPnt;
         for (int i = 0; i < sizeX; i++) {
-            point[countPnt] = QVector3D(1 - diffX * i, -dist, 1);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(1 - diffX * i, -DIST, 1);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         for (int i = 0; i < sizeZ; i++) {
-            point[countPnt] = QVector3D(0, -dist, 1 - diffZ * i);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(0, -DIST, 1 - diffZ * i);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
-        color[tmp] = black;
+        colorF[tmp] = BLACK_F;
+        colorQ[tmp] = &BLACK_Q;
 
         int markZStrt = countPnt;
         for (int i = 0; i < sizeZ + 1; i++) {
-            point[countPnt] = QVector3D(1 + extra, -dist, diffZ * i);
-            color[countPnt++] = black;
+            point[countPnt] = QVector3D(1 + EXTRA, -DIST, diffZ * i);
+            colorF[countPnt] = BLACK_F;
+            colorQ[countPnt++] = &BLACK_Q;
         }
         int markZRight = countPnt;
         for (int i = 0; i < sizeZ + 1; i++) {
-            point[countPnt] = QVector3D(1, -dist - extra, diffZ * i);
-            color[countPnt++] = black;
+            point[countPnt] = QVector3D(1, -DIST - EXTRA, diffZ * i);
+            colorF[countPnt] = BLACK_F;
+            colorQ[countPnt++] = &BLACK_Q;
         }
 
         int yzStart = countPnt;
         for (int i = 0; i < sizeY; i++) {
-            point[countPnt] = QVector3D(-dist, diffY * i, 0);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(-DIST, diffY * i, 0);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         for (int i = 0; i < sizeZ; i++) {
-            point[countPnt] = QVector3D(-dist, 1, diffZ * i);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(-DIST, 1, diffZ * i);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         for (int i = 0; i < sizeY; i++) {
-            point[countPnt] = QVector3D(-dist, 1 - diffY * i, 1);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(-DIST, 1 - diffY * i, 1);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
         for (int i = 0; i < sizeZ; i++) {
-            point[countPnt] = QVector3D(-dist, 0, 1 - diffZ * i);
-            color[countPnt++] = grey;
+            point[countPnt] = QVector3D(-DIST, 0, 1 - diffZ * i);
+            colorF[countPnt] = GREY_F;
+            colorQ[countPnt++] = &GREY_Q;
         }
 
         offset[XY_X_B + j * OFFSET] = countIdx;
@@ -154,21 +179,19 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
             index[countIdx++] = markYRight + i;
         }
 
-        offset[XZ_X + j * OFFSET] = countIdx;
+        offset[XZ + j * OFFSET] = countIdx;
+        index[countIdx++] = xzStart + sizeX;
+        index[countIdx++] = xzStart + sizeX + sizeZ;
+        for (int i = 0; i < sizeX; i++) {
+            index[countIdx++] = xzStart + 2 * sizeX + sizeZ - i;
+            index[countIdx++] = xzStart + i;
+        }
         tmp = countIdx;
         for (int i = 0; i < sizeZ + 1; i++) {
             index[countIdx++] = xzStart + sizeX + i;
             index[countIdx++] = xzStart + 2 * sizeX + 2 * sizeZ - i;
         }
         index[tmp + 1] = xzStart;
-        offset[XZ_Z_B + j * OFFSET] = countIdx;
-        index[countIdx++] = xzStart + sizeX;
-        index[countIdx++] = xzStart + sizeX + sizeZ;
-        offset[XZ_Z_G + j * OFFSET] = countIdx;
-        for (int i = 0; i < sizeX + 1; i++) {
-            index[countIdx++] = xzStart + 2 * sizeX + sizeZ - i;
-            index[countIdx++] = xzStart + i;
-        }
 
         offset[Z_S + j * OFFSET] = countIdx;
         for (int i = 0; i < sizeZ + 1; i++) {
@@ -181,14 +204,13 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
             index[countIdx++] = markZRight + i;
         }
 
-        offset[YZ_Y + j * OFFSET] = countIdx;
+        offset[YZ + j * OFFSET] = countIdx;
         tmp = countIdx;
         for (int i = 0; i < sizeZ + 1; i++) {
             index[countIdx++] = yzStart + sizeY + i;
             index[countIdx++] = yzStart + 2 * sizeY + 2 * sizeZ - i;
         }
         index[tmp + 1] = yzStart;
-        offset[YZ_Z + j * OFFSET] = countIdx;
         for (int i = 0; i < sizeY + 1; i++) {
             index[countIdx++] = yzStart + 2 * sizeY + sizeZ - i;
             index[countIdx++] = yzStart + i;
@@ -201,7 +223,8 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
 }
 
 QVector<QVector3D> &Axis::getPoint() { return point; }
-QVector<QVector3D> &Axis::getColor() { return color; }
+QVector<QVector3D> &Axis::getColorF() { return colorF; }
+QVector<const QColor *> &Axis::getColorQ() { return colorQ; }
 QVector<GLuint> &Axis::getIndex() { return index; }
 
 QVector<QPair<int, int> > Axis::getSlice(int rotX, int rotY) {
@@ -223,9 +246,9 @@ QVector<QPair<int, int> > Axis::getSlice(
     ret.append(P(offset[(yEnable ? XY_Y_B : XY_Y_G) + i], x + 1));
     if (xEnable) ret.append(P(offset[(xyStrait ? X_S : X_R) + i], x + 1));
     if (yEnable) ret.append(P(offset[(xyStrait ? Y_S : Y_R) + i], y + 1));
-    if (zEnable) ret.append(P(offset[XZ_X + i], x + sizeZ + 2));
+    if (zEnable) ret.append(P(offset[XZ + i], x + sizeZ + 2));
     if (zEnable) ret.append(P(offset[(zStrait ? Z_S : Z_R) + i], sizeZ + 1));
-    if (zEnable) ret.append(P(offset[YZ_Y + i], sizeZ + y + 2));
+    if (zEnable) ret.append(P(offset[YZ + i], sizeZ + y + 2));
     return ret;
 }
 
@@ -254,53 +277,53 @@ QVector<QPair<bool, QVector<QVector3D>>> &Axis::getNumber(int dir,
     float diffX = 1.0f / sizeX;
     float diffY = 1.0f / sizeY;
     float diffZ = 1.0f / sizeZ;
-    float xyEx = xyStrait ? 2 * extra : 0;
-    float zEx = xyStrait ? 0 : -2 * extra;
-    float xEx = zStrait ? 2 * extra : 0;
-    float yEx = -dist + (zStrait ? 0 : -2 * extra);
+    float xyEx = xyStrait ? 2 * EXTRA : 0;
+    float zEx = xyStrait ? 0 : -2 * EXTRA;
+    float xEx = zStrait ? 2 * EXTRA : 0;
+    float yEx = -DIST + (zStrait ? 0 : -2 * EXTRA);
 
     int d = dir/2;
     if (d == 0) {
         if (xEnable) for (int i = 0; i < sizeX + 1; i++)
-                ret[0].second.append(QVector3D(diffX * i, 1 + xyEx, -dist + zEx));
+                ret[0].second.append(QVector3D(diffX * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable) for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, diffY * i, -dist + zEx));
+                    ret[1].second.append(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
             else for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, 1 - diffY * i, -dist + zEx));
+                    ret[1].second.append(QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
         }
         ret[0].first = !zEnable;
         ret[1].first = true;
     } else if (d == 1) {
         if (xEnable) for (int i = 0; i < sizeY + 1; i++)
-                ret[1].second.append(QVector3D(diffY * i, 1 + xyEx, -dist + zEx));
+                ret[1].second.append(QVector3D(diffY * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable) for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, 1 - diffX * i, -dist + zEx));
+                    ret[0].second.append(QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
             else for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, diffX * i, -dist + zEx));
+                    ret[0].second.append(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
         }
         ret[0].first = true;
         ret[1].first = !zEnable;
     } else if (d == 2) {
         if (xEnable) for (int i = 0; i < sizeX + 1; i++)
-                ret[0].second.append(QVector3D(1 - diffX * i, 1 + xyEx, -dist + zEx));
+                ret[0].second.append(QVector3D(1 - diffX * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable) for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, 1 - diffY * i, -dist + zEx));
+                    ret[1].second.append(QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
             else for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, diffY * i, -dist + zEx));
+                    ret[1].second.append(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
         }
         ret[0].first = !zEnable;
         ret[1].first = true;
     } else {
         if (xEnable) for (int i = 0; i < sizeY + 1; i++)
-                ret[1].second.append(QVector3D(1 - diffY * i, 1 + xyEx, -dist + zEx));
+                ret[1].second.append(QVector3D(1 - diffY * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable) for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, diffX * i, -dist + zEx));
+                    ret[0].second.append(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
             else for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, 1 - diffX * i, -dist + zEx));
+                    ret[0].second.append(QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
         }
         ret[0].first = true;
         ret[1].first = !zEnable;

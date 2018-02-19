@@ -1,6 +1,7 @@
 #include <render/model.h>
 #include <QColor>
 #include <QPair>
+#include <QDebug>
 
 Gradient::Gradient(QVector<QPair<QColor, float>> data, int steps)
     : cache(steps), step(1.0f / steps) {
@@ -165,14 +166,19 @@ std::unique_ptr<Model> Model::fromQuantity(
             ret->position[offsetPoint + 6] = (p[6] + p[3] + p[4]) / 3;
             ret->position[offsetPoint + 7] = (p[6] + p[7] + p[4]) / 3;
             ret->position[offsetPoint + 8] = (p[7] + p[8] + p[4]) / 3;
-
-            int offsetIndex = (y * (sizeX - 1) + x) * 24;
-
-            for(int j = 0; j < 8; j++)
-                for (int i = 0; i < 24; i++)
-                    ret->indexT[j][offsetIndex + i] = order[j][i] + offsetPoint;
         }
     }
+
+    for (int i = 0; i < 8; i++) {
+        int cnt = 0;
+        std::function<void(int)> func = [&](int j) {
+            int offsetPoint = j * 9;
+            for (int j = 0; j < 24; j++)
+                ret->indexT[i][cnt++] = order[i][j] + offsetPoint;
+        };
+        indexFunc[i](func, sizeX - 1, sizeY - 1);
+    }
+
     return ret;
 }
 

@@ -19,9 +19,10 @@ public:
     virtual void render(QPainter &p) = 0;
     virtual void resize(int sizeX, int sizeY);
     QPoint getRotation();
-    //void setModel(std::unique_ptr<Model> &model);
+    void setModel(std::unique_ptr<Model> &&model);
     void setRotation(int rotX, int rotY);
     void setBackGround(const QColor &color);
+    void setLabel(float pos);
 
 protected:
     int rotX, rotY;
@@ -29,15 +30,15 @@ protected:
     QVector3D color;
     std::unique_ptr<Model> model;
     std::unique_ptr<Axis> axis;
+    float label;
 };
 
-class EngineSimple : public Engine, protected QOpenGLFunctions {
+class EngineGL : public Engine, protected QOpenGLFunctions {
 public:
-    EngineSimple(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+    EngineGL(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
         const QVector<QVector2D> &size);
     void initialize() override;
     void render(QPainter &p) override;
-    void resize(int sizeX, int sizeY) override;
 
 private:
     int argFlatVecPos;
@@ -57,6 +58,17 @@ private:
 
     std::unique_ptr<QOpenGLShaderProgram> programFlat;
     std::unique_ptr<QOpenGLShaderProgram> programPlain;
+    QVector<QVector2D> size;
+};
+
+class EngineQt : public Engine {
+public:
+    EngineQt(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+        const QVector<QVector2D> &size);
+    void initialize() override {};
+    void render(QPainter &p) override;
+
+private:
     QVector<QVector2D> size;
 };
 

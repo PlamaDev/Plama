@@ -60,23 +60,23 @@ private:
     QSharedPointer<QList<SimTreeNode>> children;
 };
 
-class FileAdapter {
+class Project {
 public:
-    FileAdapter(PyObject *data);
+    Project(PyObject *data);
     const QList<SimTreeNode> &getTopLevelNodes() const;
 private:
     QSharedPointer<QList<SimTreeNode>> nodes;
     QSharedPointer<PyObject> data;
 };
 
-class FileAdapterManager {
+class ProjectLoader {
 public:
-    FileAdapterManager();
+    ProjectLoader();
     const QStringList &plugins() const;
-    std::unique_ptr<FileAdapter> load(QString name, QStringList files) const;
+    std::unique_ptr<Project> load(QString name, QStringList files) const;
 private:
     PyObject *main;
     QStringList list;
 };
 
-#endif // QFILEADAPTER_H
+#endif // PROJECT_H

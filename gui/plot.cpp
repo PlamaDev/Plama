@@ -52,34 +52,76 @@ QVector<QVector2D> genRange(SimQuantity &quantity) {
     }
 }
 
-Plot::Plot(SimQuantity &quantity, int dim)
-    : Plot(quantity.getSizeData().size() == 0 ? Model::fromQuantity(quantity, dim) :
-          Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
-          std::make_unique<Axis>(5, 5, 5), genRange(quantity)) {}
+Plot::Plot(SimQuantity &quantity, int dim) {
+    QVector<QVector2D> range;
+    if (quantity.getSizeModel().size() == 0) {
+        range = {
+            {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
+            quantity.getExtreme(), {0, 1}
+        };
+    } else {
+        range = {
+            quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()
+        };
+    }
 
-Plot::Plot(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
-    const QVector<QVector2D> &sizeData) {
     QHBoxLayout *l = new QHBoxLayout;
-    plot = new PlotInternal(std::move(model), std::move(axis), sizeData);
+    plot = new PlotInternal(quantity.getSizeData().size() == 0 ?
+        Model::fromQuantity(quantity, dim)
+        : Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
+        std::make_unique<Axis>(5, 5, 5), range);
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
     setLayout(l);
+    this->quantity = &quantity;
 }
 
 void Plot::setRotation(int x, int y) { plot->setRotation(x, y);}
+
+void Plot::setTime(float t) {
+    if (quantity->getSizeData().size() == 0) {
+        const QVector<float> &times = quantity->getTimes();
+        float t1 = times[0];
+        float t2 = times[times.size() - 1];
+        float td = t2 - t1;
+        plot->setLabel((t - t1) / td);
+    } else if (quantity->getSizeData().size() == 2) {
+        const QVector<float> &d = quantity->getDataAt(t, 0);
+        if (&d != data) {
+            plot->setModel(Model::fromQuantity(*quantity, t, 0));
+            data = &d;
+        }
+    }
+}
+
+void Plot::setPartition(float p) {
+    const QVector<float> &times = quantity->getTimes();
+    float t1 = times[0];
+    float t2 = times[times.size() - 1];
+    float td = t2 - t1;
+    setTime(t1 + td * p);
+}
+
 QSize Plot::sizeHint() const { return QSize(500, 500); }
 QSize Plot::minimumSizeHint() const { return QSize(100, 100); }
 
 PlotInternal::PlotInternal(
     std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
     const QVector<QVector2D> &size) {
-    engine = std::make_unique<EngineSimple>(
+    engine = std::make_unique<EngineQt>(
             std::move(model), std::move(axis), size);
     engine->setBackGround(Qt::white);
 }
 
-void PlotInternal::setRotation(int x, int y) {
-    engine->setRotation(x, y);
+void PlotInternal::setRotation(int x, int y) { engine->setRotation(x, y); }
+void PlotInternal::setLabel(float pos) {
+    engine->setLabel(pos);
+    requestUpdate();
+}
+
+void PlotInternal::setModel(std::unique_ptr<Model> model) {
+    engine->setModel(std::move(model));
+    requestUpdate();
 }
 
 void PlotInternal::render(QPainter &p) {

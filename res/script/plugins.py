@@ -57,13 +57,14 @@ class LoaderDummy:
             'children': [],
             'quantities': [{
                 'name': 'example',
-                'times': [1, 2],
+                'times': [1, 2, 3],
                 'dimData': 1,
                 'sizeData': [3, 2],
                 'sizeModel': [[2, 3], [4, 5]],
                 'data': lambda: [
                     [0, 1, 0, 0, 0, 0],
-                    [1, 1, 1, 2, 0, 0]
+                    [1, 1, 1, 2, 0, 0],
+                    [0, 2, 0, 0, 0, 0]
                 ]
             }]
         }]

@@ -11,7 +11,10 @@
 #include <QFileDialog>
 #include <QWidget>
 #include <QSizePolicy>
-#include "data/fileadapter.h"
+#include <QToolBar>
+#include <QSlider>
+#include <QSet>
+#include "data/project.h"
 #include "gui/plot.h"
 
 
@@ -29,7 +32,7 @@ QTreeWidgetItem *generateTree(const SimTreeNode &n) {
     return ret;
 }
 
-QList <QTreeWidgetItem *> generateTree(const FileAdapter &a) {
+QList <QTreeWidgetItem *> generateTree(const Project &a) {
     const QList <SimTreeNode> &nodes = a.getTopLevelNodes();
 
     QList <QTreeWidgetItem *> ret;
@@ -40,11 +43,19 @@ QList <QTreeWidgetItem *> generateTree(const FileAdapter &a) {
 
 WindowMain::WindowMain(QWidget *parent)
     : QMainWindow(parent), data() {
-    static FileAdapterManager m;
+    static ProjectLoader m;
+    static QSet<Plot *> activePlots;
 
     //QWidget *w = new QWidget();
     //QHBoxLayout *l = new QHBoxLayout();
     //w->setLayout(l);
+    QToolBar *toolbar = new QToolBar("Hello");
+    QSlider *slider = new QSlider(Qt::Horizontal);
+    slider->setMaximum(10000);
+    slider->setMinimum(0);
+    toolbar->addWidget(slider);
+    addToolBar(toolbar);
+
     setCentralWidget(nullptr);
 
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks);
@@ -63,20 +74,24 @@ WindowMain::WindowMain(QWidget *parent)
             QVector<int> size = sq->getSizeData();
             //l->addWidget(new OpenGLPlot(m));
 
-            if (sq->getSizeData().length() == 0) {
-                QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
-                Plot *p = new Plot(*sq, 0);
-                p->setRotation(90, 90);
-                d->setWidget(p);
-                addDockWidget(Qt::RightDockWidgetArea, d);
-            } else if (sq->getSizeData().length() == 2) {
-                QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
-                Plot *p = new Plot(*sq, 0);
-                p->setRotation(90, 90);
-                d->setWidget(p);
-                addDockWidget(Qt::RightDockWidgetArea, d);
-            }
+            QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
+            Plot *plot = new Plot(*sq, 0);
+            plot->setRotation(90, 90);
+            d->setWidget(plot);
+            plot->setPartition(slider->value() / (float) 10000);
+
+            addDockWidget(Qt::RightDockWidgetArea, d);
+
+            connect(d, &QDockWidget::visibilityChanged, [=](bool v) {
+                if (v) activePlots.insert(plot);
+                else activePlots.remove(plot);
+            });
         }
+    });
+
+    connect(slider, &QSlider::sliderMoved, [](int i) {
+        for(auto p : activePlots)
+            p->setPartition(i / (float) 10000);
     });
 
     QMenu *mFile = menuBar()->addMenu("File");

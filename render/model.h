@@ -6,7 +6,7 @@
 #include <QVector3D>
 #include <QPair>
 #include <QOpenGLFunctions>
-#include "data/fileadapter.h"
+#include "data/project.h"
 
 class Gradient {
 public:
