@@ -56,7 +56,7 @@ class LoaderDummy:
             'name': 'Reaction A + B <=> C',
             'children': [],
             'quantities': [{
-                'name': 'example',
+                'name': 'example-2D',
                 'times': [1, 2, 3],
                 'dimData': 1,
                 'sizeData': [3, 2],
@@ -65,6 +65,15 @@ class LoaderDummy:
                     [0, 1, 0, 0, 0, 0],
                     [1, 1, 1, 2, 0, 0],
                     [0, 2, 0, 0, 0, 0]
+                ]
+            }, {
+                'name': 'example-0D',
+                'times': [1, 2, 3],
+                'dimData': 1,
+                'sizeData': [],
+                'sizeModel': [],
+                'data': lambda: [
+                    [0], [3], [2]
                 ]
             }]
         }]
@@ -161,7 +170,7 @@ class LoaderMd2d:
             return [item(n) for n in names if n != 't']
 
         particles, reactions = LoaderMd2d.read_info(files)
-        size_model = [[0, 1], [2, 3]]
+        size_model = [[0, 1], [0, 1]]
         times = gen_time()
         cache = {}
 
