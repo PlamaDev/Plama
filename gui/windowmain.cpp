@@ -14,6 +14,7 @@
 #include <QToolBar>
 #include <QSlider>
 #include <QSet>
+#include <QMessageBox>
 #include "data/project.h"
 #include "gui/plot.h"
 
@@ -33,10 +34,10 @@ QTreeWidgetItem *generateTree(const SimTreeNode &n) {
 }
 
 QList <QTreeWidgetItem *> generateTree(const Project &a) {
-    const QList <SimTreeNode> &nodes = a.getTopLevelNodes();
+    const std::vector<SimTreeNode> &nodes = a.getTopLevelNodes();
 
     QList <QTreeWidgetItem *> ret;
-    for (const SimTreeNode &i : nodes)
+    for (auto &i : nodes)
         ret.append(generateTree(i));
     return ret;
 }
@@ -74,18 +75,20 @@ WindowMain::WindowMain(QWidget *parent)
             QVector<int> size = sq->getSizeData();
             //l->addWidget(new OpenGLPlot(m));
 
-            QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
-            Plot *plot = new Plot(*sq, 0);
-            plot->setRotation(90, 90);
-            d->setWidget(plot);
-            plot->setPartition(slider->value() / (float) 10000);
+            if (sq->getError().isEmpty()) {
+                QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
+                Plot *plot = new Plot(*sq, 0);
+                plot->setRotation(90, 90);
+                d->setWidget(plot);
+                plot->setPartition(slider->value() / (float) 10000);
 
-            addDockWidget(Qt::RightDockWidgetArea, d);
+                addDockWidget(Qt::RightDockWidgetArea, d);
 
-            connect(d, &QDockWidget::visibilityChanged, [=](bool v) {
-                if (v) activePlots.insert(plot);
-                else activePlots.remove(plot);
-            });
+                connect(d, &QDockWidget::visibilityChanged, [=](bool v) {
+                    if (v) activePlots.insert(plot);
+                    else activePlots.remove(plot);
+                });
+            } else QMessageBox::warning(this, "Data Reading Error", sq->getError());
         }
     });
 
@@ -100,11 +103,14 @@ WindowMain::WindowMain(QWidget *parent)
         QAction *a = new QAction(i, this);
         mFOpen->addAction(a);
         connect(a, &QAction::triggered, [ = ]() {
-            data = m.load(i, QFileDialog::getOpenFileNames(
+            std::unique_ptr<Project> tmp = m.load(i, QFileDialog::getOpenFileNames(
                         this, "Select Data Files", "", "Any Files(*.*)"));
-            tree->clear();
-            //s->clear();
-            if (data) tree->addTopLevelItems(generateTree(*data));
+
+            if (tmp->getError().isEmpty()) {
+                data = std::move(tmp);
+                tree->clear();
+                tree->addTopLevelItems(generateTree(*data));
+            } else QMessageBox::warning(this, "File Loading Error", tmp->getError());
         });
     }
 }

@@ -15,6 +15,7 @@ def init(configs):
 
     plugins['Dummy'] = LoaderDummy()
     plugins['MD2D'] = LoaderMd2d()
+    plugins['Error'] = LoaderError()
     for script in scripts(configs):
         variables = {}
         with open(script) as s:
@@ -35,18 +36,91 @@ def init(configs):
     return ret
 
 
+def _chk_qtt(qtt, path):
+    def f1(i):
+        if len(i) != 2:
+            s = 'Quantity {}/{} has incorrectly formatted \
+            model size, find {:d} expecting {:d}.'
+            raise ValueError(s.format(path, ret['name'], len(i), 2))
+        else:
+            return [float(j) for j in i]
+
+    def f2(i):
+        ret_ = []
+
+        try:
+            if len(i) != len(ret['times']) * ret['dimData']:
+                s = 'Data of quantity {}/{} has incorrect \
+                section amount, find {:d} expecting {:d}.'
+                raise ValueError(s.format(path, ret['name'], len(
+                    i), len(ret['times']) * ret['dimData']))
+            size = 1
+            for j in ret['sizeData']:
+                size *= j
+            for n, j in enumerate(i):
+                if len(j) != size:
+                    s = 'Data section {:d} of quantity {}/{} \
+                    has incorrect size, find {:d} expecting {:d}.'
+                    raise ValueError(
+                        s.format(n, path, ret['name'], len(j), size))
+                ret_.append([float(k) for k in j])
+            print(ret_)
+            return ret_, None
+        except Exception as e:
+            return None, str(e)
+
+    ret = {}
+    ret['name'] = str(qtt['name'])
+    ret['times'] = [float(i) for i in qtt['times']]
+    ret['dimData'] = int(qtt['dimData'])
+    ret['sizeData'] = [int(i) for i in qtt['sizeData']]
+    ret['sizeModel'] = [f1(i) for i in qtt['sizeModel']]
+    ret['data'] = lambda: f2(qtt['data']())
+    return ret
+
+
+def _chk_node(node, path):
+    def f1(n, i, p):
+        print('Checking sub-node number {:d} in node {}'.format(i, p))
+        return _chk_node(n, p)
+
+    def f2(q, i, p):
+        print('Checking quantity number {:d} in node {}'.format(i, p))
+        return _chk_qtt(q, p)
+
+    ret = {}
+    ret['abbr'] = str(node['abbr'])
+    ret['name'] = str(node['name'])
+    p = '{}/{}'.format(path, ret['name'])
+    ret['children'] = [f1(n, i, p) for i, n in enumerate(node['children'])]
+    ret['quantities'] = [f2(q, i, p) for i, q in enumerate(node['quantities'])]
+    return ret
+
+
 def load(name, files):
     plugin = plugins.get(name)
     if plugin is None:
-        return "Plugin not found."
+        return "Plugin not found.", None
     else:
-        return plugin.load(files)
+        try:
+            data = plugin.load(files)
+            return [_chk_node(j, '/{:d}'.format(i)) for i, j in enumerate(data)], None
+        except Exception as e:
+            return None, str(e)
 
+class LoaderError:
+    @staticmethod
+    def name():
+        return 'Error'
+
+    @staticmethod
+    def load(files):
+        raise NotImplementedError('This is a exception test')
 
 class LoaderDummy:
     @staticmethod
     def name():
-        return "Dummy"
+        return 'Dummy'
 
     # noinspection PyUnusedLocal
     @staticmethod
@@ -75,6 +149,13 @@ class LoaderDummy:
                 'data': lambda: [
                     [0], [3], [2]
                 ]
+            }, {
+                'name': 'example-err',
+                'times': [1, 2, 3],
+                'dimData': 1,
+                'sizeData': [],
+                'sizeModel': [],
+                'data': lambda: [[1], [2]]
             }]
         }]
 
@@ -293,7 +374,8 @@ class LoaderMd2d:
         return data
 
 # if __name__ == "__main__":
+#     init([])
 #     d = '/run/media/towdium/Files/Work/FYP/software/data'
 #     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-#     ret = LoaderMd2d().load(files_)
-#     print(ret)
+#     d, r = load('Dummy', files_)
+#     a, r = d[0]['quantities'][1]['data']()  #pylint: disable=E1126

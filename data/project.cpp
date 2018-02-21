@@ -6,6 +6,7 @@
 #include <QSharedPointer>
 #include <QScopedPointer>
 #include <algorithm>
+#include <vector>
 
 ProjectLoader::ProjectLoader() :
     main(PyImport_AddModule("__main__")), list() {
@@ -63,48 +64,52 @@ std::unique_ptr<Project> ProjectLoader::load(QString name,
     Py_DECREF(load);
     Py_DECREF(args);
 
-    if (data == Py_None) {
-        Py_DECREF(data);
-        return std::unique_ptr <Project>();
-    } else return std::make_unique <Project>(data);
+    return std::make_unique <Project>(data);
 }
 
 Project::Project(PyObject *data) :
-    nodes(new QList <SimTreeNode>()),
-    data(data, [](PyObject *p) {
-    Py_DECREF(p);
-}) {
-    Py_ssize_t len = PyList_Size(data);
-    for (Py_ssize_t i = 0; i < len; i++)
-        nodes->append(SimTreeNode(PyList_GetItem(data, i)));
+    nodes(), data(data, [](PyObject* o) {Py_DECREF(o);}) {
+    PyObject *value = PyTuple_GetItem(data, 0);
+    PyObject *error = PyTuple_GetItem(data, 1);
+
+    if (error == Py_None) {
+        Py_ssize_t len = PyList_Size(value);
+        for (Py_ssize_t i = 0; i < len; i++)
+            nodes.emplace_back(PyList_GetItem(value, i));
+    }
 }
 
-const QList <SimTreeNode> &Project::getTopLevelNodes() const { return *nodes; }
+QString Project::getError() const {
+    PyObject *err = PyTuple_GetItem(data.get(), 1);
+    return err == Py_None ? "" : QString(PyUnicode_AsUTF8(err));
+}
+
+const std::vector<SimTreeNode> &Project::getTopLevelNodes() const { return nodes; }
 
 SimTreeNode::SimTreeNode(PyObject *data) : raw(data),
     name(PyUnicode_AsUTF8(PyDict_GetItemString(data, "name"))),
     abbr(PyUnicode_AsUTF8(PyDict_GetItemString(data, "abbr"))),
-    quantities(new QList <SimQuantity>()), children(new QList <SimTreeNode> ) {
+    quantities(), children() {
     PyObject *pchildren = PyDict_GetItemString(data, "children");
     PyObject *pquantities = PyDict_GetItemString(data, "quantities");
     Py_ssize_t len = PyList_Size(pchildren);
 
     for (Py_ssize_t i = 0; i < len; i++)
-        children->append(SimTreeNode(PyList_GetItem(pchildren, i)));
+        children.emplace_back(PyList_GetItem(pchildren, i));
     len = PyList_Size(pquantities);
     for (Py_ssize_t i = 0; i < len; i++)
-        quantities->append(SimQuantity(PyList_GetItem(pquantities, i)));
+        quantities.emplace_back(PyList_GetItem(pquantities, i));
 }
 
 const QString &SimTreeNode::getName() const { return name; }
 const QString &SimTreeNode::getAbbr() const { return abbr; }
-const QList <SimQuantity> &SimTreeNode::getData() const { return *quantities; }
-const QList <SimTreeNode> &SimTreeNode::getChildren() const { return *children; }
+const std::vector<SimQuantity> &SimTreeNode::getData() const { return quantities; }
+const std::vector<SimTreeNode> &SimTreeNode::getChildren() const { return children; }
 
 SimQuantity::SimQuantity(PyObject *data) :
     raw(data), name(PyUnicode_AsUTF8(PyDict_GetItemString(data, "name"))),
-    dimData(PyLong_AsLong(PyDict_GetItemString(data, "dimData"))),
-    times(), sizeModel(), sizeData(), data(), max(0), min(0) {
+    dimData(PyLong_AsLong(PyDict_GetItemString(data, "dimData"))), times(),
+    sizeModel(), sizeData(), data(), max(0), min(0), initialized(false) {
     PyObject *pTimes = PyDict_GetItemString(data, "times");
     PyObject *pSizeData = PyDict_GetItemString(data, "sizeData");
     PyObject *pSizeModel = PyDict_GetItemString(data, "sizeModel");
@@ -133,16 +138,19 @@ const QVector<float> &SimQuantity::getDataAt(float time, int dim) const {
     auto t = std::lower_bound(times.begin(), times.end(), time);
     int d = t - times.begin();
     const QVector<float> &ret = data[dimData * d + dim];
+    //static QVector<float> ret(100, 0);
     return ret;
 }
 
 const QVector <float> &SimQuantity::getDataAt(float time, int dim) {
-    if (data.size() == 0) initData();
+    if (!initialized) initData();
     return ((const SimQuantity *)this)->getDataAt(time, dim);
 }
 
 const QVector<QVector<float>> &SimQuantity::getData() {
-    if (data.size() == 0) initData();
+    if (!initialized) initData();
+    //static QVector<QVector<float>> ret(100, QVector<float> {0});
+    //return ret;
     return data;
 }
 
@@ -151,20 +159,34 @@ float SimQuantity::getMin() const { return min; }
 QVector2D SimQuantity::getExtreme() const { return QVector2D(min, max); }
 
 QVector2D SimQuantity::getExtreme() {
-    if (data.size() == 0) initData();
+    if (!initialized) initData();
     return ((const SimQuantity *)this)->getExtreme();
 }
 
 int SimQuantity::getDim() const { return dimData; }
 
-void SimQuantity::initData() {
-    PyObject *args = PyTuple_New(0);
-    PyObject *pDataF = PyDict_GetItemString(raw, "data");
-    PyObject *pData = PyObject_CallObject(pDataF, args);
+QString SimQuantity::getError() const {
+    if (!initialized) return "Data not initialized";
+    else return error;
+}
 
-    Py_DECREF(args);
-    PyErr_Print();
-    Py_ssize_t lenI =  PyList_Size(pData);
+QString SimQuantity::getError() {
+    if (!initialized) initData();
+    return error;
+}
+
+void SimQuantity::initData() {
+
+    PyObject *pDataFunc = PyDict_GetItemString(raw, "data");
+    PyObject *pDataRet = PyObject_CallObject(pDataFunc, NULL);
+    PyObject *pData = PyTuple_GetItem(pDataRet, 0);
+    PyObject *pErr = PyTuple_GetItem(pDataRet, 1);
+    error = pErr == Py_None ? "" : QString(PyUnicode_AsUTF8(pErr));
+    initialized = true;
+
+    if (!error.isEmpty()) return;
+
+    Py_ssize_t lenI = PyList_Size(pData);
     float f = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(pData, 0), 0));
     max = f;
     min = f;
@@ -181,4 +203,6 @@ void SimQuantity::initData() {
         }
         data.append(buf);
     }
+
+    Py_DECREF(pDataRet);
 }

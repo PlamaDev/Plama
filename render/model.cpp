@@ -102,19 +102,26 @@ std::unique_ptr<Model> Model::fromQuantity(
             int offsetRaw = y * sizeX + x;
             int offsetPoint = (y * (sizeX - 1) + x) * 9;
 
-            d[0] = data[offsetRaw];
-            d[2] = data[offsetRaw + 1];
-            d[6] = data[offsetRaw + sizeX];
-            d[8] = data[offsetRaw + sizeX + 1];
-            d[0] = (d[0] - extreme.x()) / height;
-            d[2] = (d[2] - extreme.x()) / height;
-            d[6] = (d[6] - extreme.x()) / height;
-            d[8] = (d[8] - extreme.x()) / height;
-            d[1] = (d[0] + d[2]) / 2;
-            d[3] = (d[0] + d[6]) / 2;
-            d[5] = (d[2] + d[8]) / 2;
-            d[7] = (d[6] + d[8]) / 2;
-            d[4] = (d[3] + d[5]) / 2;
+            if (height == 0) {
+                for (int i = 0; i < 9; i++)
+                    d[i] = data[offsetPoint];
+            } else {
+                d[0] = data[offsetRaw];
+                d[2] = data[offsetRaw + 1];
+                d[6] = data[offsetRaw + sizeX];
+                d[8] = data[offsetRaw + sizeX + 1];
+                d[0] = (d[0] - extreme.x()) / height;
+                d[2] = (d[2] - extreme.x()) / height;
+                d[6] = (d[6] - extreme.x()) / height;
+                d[8] = (d[8] - extreme.x()) / height;
+                d[1] = (d[0] + d[2]) / 2;
+                d[3] = (d[0] + d[6]) / 2;
+                d[5] = (d[2] + d[8]) / 2;
+                d[7] = (d[6] + d[8]) / 2;
+                d[4] = (d[3] + d[5]) / 2;
+            }
+
+
 
             for (int i = 0; i < 3; i ++) {
                 px[i] = (x + 0.5f * i) / sx;

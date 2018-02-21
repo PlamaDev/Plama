@@ -1,6 +1,5 @@
 #ifndef QFILEADAPTER_H
 #define QFILEADAPTER_H
-#pragma clang diagnostic ignored "-Wunknown-warning-option"
 
 #include <QObject>
 #include <QVector>
@@ -10,7 +9,6 @@
 #include <QFile>
 #include <QTextStream>
 #include <QByteArray>
-#include <QSharedPointer>
 #include <memory>
 #include <Python.h>
 
@@ -31,10 +29,12 @@ public:
     QVector2D getExtreme() const;
     QVector2D getExtreme();
     int getDim() const;
+    QString getError() const;
+    QString getError();
 
 private:
     PyObject *raw;
-    QString name;
+    QString name, error;
     int dimData;
     bool uniform;
     QVector<float> times;
@@ -43,30 +43,34 @@ private:
     QVector<QVector<float>> data;
     void initData();
     float max, min;
+    bool initialized;
 };
 
 class SimTreeNode {
 public:
     SimTreeNode(PyObject *data);
+    SimTreeNode(SimTreeNode &&) = default;
+    SimTreeNode &operator= (const SimTreeNode &) = delete;
     const QString &getName() const;
     const QString &getAbbr() const;
-    const QList<SimQuantity> &getData() const;
-    const QList<SimTreeNode> &getChildren() const;
+    const std::vector<SimQuantity> &getData() const;
+    const std::vector<SimTreeNode> &getChildren() const;
 private:
     PyObject *raw;
     QString name;
     QString abbr;
-    QSharedPointer<QList<SimQuantity>> quantities;
-    QSharedPointer<QList<SimTreeNode>> children;
+    std::vector<SimQuantity> quantities;
+    std::vector<SimTreeNode> children;
 };
 
 class Project {
 public:
     Project(PyObject *data);
-    const QList<SimTreeNode> &getTopLevelNodes() const;
+    QString getError() const;
+    const std::vector<SimTreeNode> &getTopLevelNodes() const;
 private:
-    QSharedPointer<QList<SimTreeNode>> nodes;
-    QSharedPointer<PyObject> data;
+    std::vector<SimTreeNode> nodes;
+    std::unique_ptr<PyObject, std::function<void(PyObject *)>> data;
 };
 
 class ProjectLoader {
