@@ -23,7 +23,8 @@ HEADERS += \
     gui/plot.h \
     data/project.h
 
-RESOURCES += res/resources.qrc
+RESOURCES += \
+    res/res.qrc
 
 unix: LIBS += -lpython3.6m
 unix: INCLUDEPATH += /usr/include/python3.6m

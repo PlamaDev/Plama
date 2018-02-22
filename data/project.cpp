@@ -11,7 +11,7 @@
 ProjectLoader::ProjectLoader() :
     main(PyImport_AddModule("__main__")), list() {
     // read script
-    QFile f(":/res/script/plugins.py");
+    QFile f(":script/plugins.py");
 
     f.open(QFile::ReadOnly);
     QTextStream ts(&f);

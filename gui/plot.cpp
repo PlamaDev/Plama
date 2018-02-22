@@ -1,9 +1,12 @@
 #include "plot.h"
-#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QMouseEvent>
 #include <QWidget>
 #include <QSize>
 #include <QPainter>
+#include <QToolBar>
+#include <QPushButton>
+#include <QIcon>
 #include "util.h"
 #include "render/model.h"
 
@@ -65,7 +68,11 @@ Plot::Plot(SimQuantity &quantity, int dim) {
         };
     }
 
-    QHBoxLayout *l = new QHBoxLayout;
+    QVBoxLayout *l = new QVBoxLayout;
+    QToolBar *bar = new QToolBar;
+    bar->addAction(QIcon(":icons/drawing.svg"), "new");
+    l->addWidget(bar);
+
     plot = new PlotInternal(quantity.getSizeData().size() == 0 ?
         Model::fromQuantity(quantity, dim)
         : Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
@@ -74,6 +81,7 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     l->setMargin(0);
     setLayout(l);
     this->quantity = &quantity;
+    data = &quantity.getDataAt(quantity.getTimes()[0], dim);
 }
 
 void Plot::setRotation(int x, int y) { plot->setRotation(x, y);}
@@ -124,13 +132,6 @@ void PlotInternal::setModel(std::unique_ptr<Model> model) {
     requestUpdate();
 }
 
-void PlotInternal::render(QPainter &p) {
-    engine->resize(size().width(), size().height());
-    engine->render(p);
-}
-
-void PlotInternal::initialize() { engine->initialize(); }
-
 void PlotInternal::mouseMoveEvent(QMouseEvent *event) {
     if ((event->buttons() & Qt::LeftButton) == 0) return;
 
@@ -154,55 +155,15 @@ void PlotInternal::mouseReleaseEvent(QMouseEvent *) {
     setMouseGrabEnabled(false);
 }
 
-OpenGLWindow::OpenGLWindow(QWindow *parent)
-    : QWindow(parent), m_context(0), m_device(0) {
-    setFlags(flags() | Qt::FramelessWindowHint);
-    setSurfaceType(QWindow::OpenGLSurface);
+void PlotInternal::initializeGL() {
+    engine->initialize();
 }
 
-OpenGLWindow::~OpenGLWindow() {
-    delete m_device;
-    delete m_context;
+void PlotInternal::resizeGL(int w, int h) {
+    engine->resize(w, h);
 }
 
-void OpenGLWindow::initialize() {}
-
-void OpenGLWindow::render(QPainter &) {
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-}
-
-bool OpenGLWindow::event(QEvent *event) {
-    switch (event->type()) {
-    case QEvent::UpdateRequest:
-        doRender();
-        return true;
-    default:
-        return QWindow::event(event);
-    }
-}
-
-void OpenGLWindow::exposeEvent(QExposeEvent *) { if (isExposed()) doRender(); }
-
-void OpenGLWindow::doRender() {
-    if (!isExposed()) return;
-
-    if (!m_context) {
-        m_context = new QOpenGLContext(this);
-        m_context->create();
-        m_context->makeCurrent(this);
-
-        initializeOpenGLFunctions();
-        initialize();
-        m_device = new QOpenGLPaintDevice;
-    } else m_context->makeCurrent(this);
-    m_device->setSize(size());
-
-    const qreal retinaScale = devicePixelRatio();
-    glViewport(0, 0, width() * retinaScale, height() * retinaScale);
-
-    QPainter p(m_device);
-    p.setRenderHint(QPainter::Antialiasing, true);
-    render(p);
-    m_context->swapBuffers(this);
+void PlotInternal::paintGL() {
+    QPainter p(this);
+    engine->render(p);
 }

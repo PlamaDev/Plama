@@ -79,15 +79,16 @@ WindowMain::WindowMain(QWidget *parent)
                 QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
                 Plot *plot = new Plot(*sq, 0);
                 plot->setRotation(90, 90);
-                d->setWidget(plot);
                 plot->setPartition(slider->value() / (float) 10000);
-
+                d->setWidget(plot);
                 addDockWidget(Qt::RightDockWidgetArea, d);
 
                 connect(d, &QDockWidget::visibilityChanged, [=](bool v) {
                     if (v) activePlots.insert(plot);
                     else activePlots.remove(plot);
                 });
+
+
             } else QMessageBox::warning(this, "Data Reading Error", sq->getError());
         }
     });

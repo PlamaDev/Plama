@@ -64,7 +64,6 @@ def _chk_qtt(qtt, path):
                     raise ValueError(
                         s.format(n, path, ret['name'], len(j), size))
                 ret_.append([float(k) for k in j])
-            print(ret_)
             return ret_, None
         except Exception as e:
             return None, str(e)
@@ -80,20 +79,12 @@ def _chk_qtt(qtt, path):
 
 
 def _chk_node(node, path):
-    def f1(n, i, p):
-        print('Checking sub-node number {:d} in node {}'.format(i, p))
-        return _chk_node(n, p)
-
-    def f2(q, i, p):
-        print('Checking quantity number {:d} in node {}'.format(i, p))
-        return _chk_qtt(q, p)
-
     ret = {}
     ret['abbr'] = str(node['abbr'])
     ret['name'] = str(node['name'])
     p = '{}/{}'.format(path, ret['name'])
-    ret['children'] = [f1(n, i, p) for i, n in enumerate(node['children'])]
-    ret['quantities'] = [f2(q, i, p) for i, q in enumerate(node['quantities'])]
+    ret['children'] = [_chk_node(n, p) for n in node['children']]
+    ret['quantities'] = [_chk_qtt(q, p) for q in node['quantities']]
     return ret
 
 

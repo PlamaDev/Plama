@@ -46,16 +46,16 @@ void EngineGL::initialize() {
 
     programFlat.reset(new QOpenGLShaderProgram());
     programFlat->addShaderFromSourceFile(QOpenGLShader::Vertex,
-        ":res/render/flat.vsh");
+        ":render/flat.vsh");
     programFlat->addShaderFromSourceFile(QOpenGLShader::Fragment,
-        ":res/render/flat.fsh");
+        ":render/flat.fsh");
     programFlat->link();
 
     programPlain.reset(new QOpenGLShaderProgram());
     programPlain->addShaderFromSourceFile(QOpenGLShader::Vertex,
-        ":res/render/plain.vsh");
+        ":render/plain.vsh");
     programPlain->addShaderFromSourceFile(QOpenGLShader::Fragment,
-        ":res/render/plain.fsh");
+        ":render/plain.fsh");
     programPlain->link();
 
     argFlatVecPnt = programFlat->attributeLocation("vecPnt");
