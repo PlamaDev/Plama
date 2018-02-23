@@ -1,13 +1,14 @@
 #define Py_LIMITED_API
+#include "gui/windowmain.h"
 #include <Python.h>
 #include <QApplication>
-#include <QSurfaceFormat>
 #include <QList>
-#include "gui/windowmain.h"
-
+#include <QSurfaceFormat>
+#include <QDebug>
 
 int main(int argc, char *argv[]) {
     Py_Initialize();
+
     int ret;
     {
         QSurfaceFormat format;

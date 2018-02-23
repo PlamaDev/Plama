@@ -1,16 +1,16 @@
 #ifndef QFILEADAPTER_H
 #define QFILEADAPTER_H
 
-#include <QObject>
-#include <QVector>
-#include <QVector2D>
+#include <Python.h>
+#include <QByteArray>
+#include <QFile>
 #include <QList>
 #include <QMap>
-#include <QFile>
+#include <QObject>
 #include <QTextStream>
-#include <QByteArray>
+#include <QVector2D>
+#include <QVector>
 #include <memory>
-#include <Python.h>
 
 class SimTreeNode;
 
@@ -50,11 +50,12 @@ class SimTreeNode {
 public:
     SimTreeNode(PyObject *data);
     SimTreeNode(SimTreeNode &&) = default;
-    SimTreeNode &operator= (const SimTreeNode &) = delete;
+    SimTreeNode &operator=(const SimTreeNode &) = delete;
     const QString &getName() const;
     const QString &getAbbr() const;
     const std::vector<SimQuantity> &getData() const;
     const std::vector<SimTreeNode> &getChildren() const;
+
 private:
     PyObject *raw;
     QString name;
@@ -68,6 +69,7 @@ public:
     Project(PyObject *data);
     QString getError() const;
     const std::vector<SimTreeNode> &getTopLevelNodes() const;
+
 private:
     std::vector<SimTreeNode> nodes;
     std::unique_ptr<PyObject, std::function<void(PyObject *)>> data;
@@ -78,6 +80,7 @@ public:
     ProjectLoader();
     const QStringList &plugins() const;
     std::unique_ptr<Project> load(QString name, QStringList files) const;
+
 private:
     PyObject *main;
     QStringList list;

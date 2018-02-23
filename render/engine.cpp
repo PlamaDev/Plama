@@ -13,8 +13,8 @@
 #include "render/axis.h"
 #include "util.h"
 
-Engine::Engine(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis)
-    : rotX(0), rotY(0), model(std::move(model)), axis(std::move(axis)), label(-1) {}
+Engine::Engine(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis)
+    : rotX(0), rotY(0), model(model), axis(axis), label(-1) {}
 
 void Engine::resize(int sizeX, int sizeY) {
     this->sizeX = sizeX;
@@ -23,7 +23,7 @@ void Engine::resize(int sizeX, int sizeY) {
 
 QPoint Engine::getRotation() { return QPoint(rotX, rotY); }
 
-void Engine::setModel(std::unique_ptr<Model> &&model) { this->model = std::move(model); }
+void Engine::setModel(std::shared_ptr<Model> &model) { this->model = model; }
 
 void Engine::setRotation(int rotX, int rotY) {
     this->rotX = rotX;
@@ -37,9 +37,9 @@ void Engine::setBackGround(const QColor &color) {
 
 void Engine::setLabel(float pos) { label = pos; }
 
-EngineGL::EngineGL(std::unique_ptr<Model> &&model,
-    std::unique_ptr<Axis> &&axis, const QVector<QVector2D> &size)
-    : Engine (std::move(model), std::move(axis)), size(size) {}
+EngineGL::EngineGL(std::shared_ptr<Model> &model,
+    std::shared_ptr<Axis> &axis, const QVector<QVector2D> &size)
+    : Engine (model, axis), size(size) {}
 
 void EngineGL::initialize() {
     initializeOpenGLFunctions();
@@ -209,9 +209,9 @@ void EngineGL::render(QPainter &p) {
     }
 }
 
-EngineQt::EngineQt(std::unique_ptr<Model> &&model,
-    std::unique_ptr<Axis> &&axis, const QVector<QVector2D> &size)
-    : Engine (std::move(model), std::move(axis)), size(size) {}
+EngineQt::EngineQt(std::shared_ptr<Model> &model,
+    std::shared_ptr<Axis> &axis, const QVector<QVector2D> &size)
+    : Engine (model, axis), size(size) {}
 
 QVector3D reflect(const QVector3D &d, const QVector3D &n) {
     return d - 2 * QVector3D::dotProduct(d, n) * n;

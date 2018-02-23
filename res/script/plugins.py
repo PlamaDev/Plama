@@ -99,6 +99,7 @@ def load(name, files):
         except Exception as e:
             return None, str(e)
 
+
 class LoaderError:
     @staticmethod
     def name():
@@ -107,6 +108,7 @@ class LoaderError:
     @staticmethod
     def load(files):
         raise NotImplementedError('This is a exception test')
+
 
 class LoaderDummy:
     @staticmethod

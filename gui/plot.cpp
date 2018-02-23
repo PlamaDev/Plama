@@ -1,29 +1,36 @@
 #include "plot.h"
-#include <QVBoxLayout>
-#include <QMouseEvent>
-#include <QWidget>
-#include <QSize>
-#include <QPainter>
-#include <QToolBar>
-#include <QPushButton>
-#include <QIcon>
-#include "util.h"
 #include "render/model.h"
+#include "util.h"
+#include <QFileDialog>
+#include <QIcon>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QPushButton>
+#include <QSize>
+#include <QToolBar>
+#include <QVBoxLayout>
+#include <QWidget>
 
 int mouseFuncForward(int x) {
     const int width = 20;
     const float slope = 0.5;
-    if (x < width) return 0;
-    else if (x < 90/slope + width) return (x - width) * slope;
-    else return 90;
+    if (x < width)
+        return 0;
+    else if (x < 90 / slope + width)
+        return (x - width) * slope;
+    else
+        return 90;
 }
 
 int mouseFuncInverse(int x) {
     const int width = 20;
     const float slope = 0.5;
-    if (x == 0) return 0;
-    else if (x == 90) return 2 * width + 90 / slope;
-    else return width + x / slope;
+    if (x == 0)
+        return 0;
+    else if (x == 90)
+        return 2 * width + 90 / slope;
+    else
+        return width + x / slope;
 }
 
 int mouseFuncForwardLoop(int x) {
@@ -44,14 +51,11 @@ int mouseFuncInverseLoop(int x) {
 
 QVector<QVector2D> genRange(SimQuantity &quantity) {
     if (quantity.getSizeModel().size() == 0) {
-        return  {
-            {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
-            quantity.getExtreme(), {0, 1}
-        };
-    } else {
         return {
-            quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()
-        };
+            {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
+            quantity.getExtreme(), {0, 1}};
+    } else {
+        return {quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()};
     }
 }
 
@@ -60,22 +64,27 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     if (quantity.getSizeModel().size() == 0) {
         range = {
             {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
-            quantity.getExtreme(), {0, 1}
-        };
+            quantity.getExtreme(), {0, 1}};
     } else {
-        range = {
-            quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()
-        };
+        range = {quantity.getSizeModel()[0], quantity.getSizeModel()[1],
+            quantity.getExtreme()};
     }
 
     QVBoxLayout *l = new QVBoxLayout;
+    l->setMargin(0);
     QToolBar *bar = new QToolBar;
-    bar->addAction(QIcon(":icons/drawing.svg"), "new");
+    QAction *aExport = new QAction(QIcon::fromTheme("document-export"), "Export");
+    connect(aExport, &QAction::triggered, [=]() {
+        QString name = QFileDialog::getSaveFileName(
+            this, "Export file", "", "JPEG image (*.jpg, *.jpeg, *.jpe)");
+        qDebug() << name;
+    });
+    bar->addAction(aExport);
     l->addWidget(bar);
 
-    plot = new PlotInternal(quantity.getSizeData().size() == 0 ?
-        Model::fromQuantity(quantity, dim)
-        : Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
+    plot = new PlotInternal(quantity.getSizeData().size() == 0
+            ? Model::fromQuantity(quantity, dim)
+            : Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
         std::make_unique<Axis>(5, 5, 5), range);
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
@@ -84,7 +93,7 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     data = &quantity.getDataAt(quantity.getTimes()[0], dim);
 }
 
-void Plot::setRotation(int x, int y) { plot->setRotation(x, y);}
+void Plot::setRotation(int x, int y) { plot->setRotation(x, y); }
 
 void Plot::setTime(float t) {
     if (quantity->getSizeData().size() == 0) {
@@ -113,23 +122,37 @@ void Plot::setPartition(float p) {
 QSize Plot::sizeHint() const { return QSize(500, 500); }
 QSize Plot::minimumSizeHint() const { return QSize(100, 100); }
 
-PlotInternal::PlotInternal(
-    std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
+PlotInternal::PlotInternal(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
     const QVector<QVector2D> &size) {
-    engine = std::make_unique<EngineQt>(
-            std::move(model), std::move(axis), size);
-    engine->setBackGround(Qt::white);
+    std::shared_ptr<Model> pm = std::move(model);
+    std::shared_ptr<Axis> pa = std::move(axis);
+    engineGL = std::make_unique<EngineGL>(pm, pa, size);
+    engineQt = std::make_unique<EngineQt>(pm, pa, size);
+    engineGL->setBackGround(Qt::white);
+    engineQt->setBackGround(Qt::transparent);
 }
 
-void PlotInternal::setRotation(int x, int y) { engine->setRotation(x, y); }
+void PlotInternal::setRotation(int x, int y) {
+    engineGL->setRotation(x, y);
+    engineQt->setRotation(x, y);
+}
+
 void PlotInternal::setLabel(float pos) {
-    engine->setLabel(pos);
+    engineGL->setLabel(pos);
+    engineQt->setLabel(pos);
     requestUpdate();
 }
 
 void PlotInternal::setModel(std::unique_ptr<Model> model) {
-    engine->setModel(std::move(model));
+    std::shared_ptr<Model> pm = std::move(model);
+    engineGL->setModel(pm);
+    engineQt->setModel(pm);
     requestUpdate();
+}
+
+void PlotInternal::renderTo(QPaintDevice &d) {
+    QPainter p(&d);
+    engineQt->render(p);
 }
 
 void PlotInternal::mouseMoveEvent(QMouseEvent *event) {
@@ -139,8 +162,10 @@ void PlotInternal::mouseMoveEvent(QMouseEvent *event) {
     int mx = mouseFuncInverseLoop(rotation.x()) + diff.x();
     int my = mouseFuncInverseLoop(rotation.y()) + diff.y();
     int ry = mouseFuncForwardLoop(my);
-    if (ry > 90) ry = 90;
-    else if (ry < 0) ry = 0;
+    if (ry > 90)
+        ry = 90;
+    else if (ry < 0)
+        ry = 0;
     setRotation(unify(mouseFuncForwardLoop(mx), 360).second, ry);
     requestUpdate();
 }
@@ -148,22 +173,16 @@ void PlotInternal::mouseMoveEvent(QMouseEvent *event) {
 void PlotInternal::mousePressEvent(QMouseEvent *event) {
     if ((event->buttons() & Qt::LeftButton) == 0) return;
     mouse = event->pos();
-    rotation = engine->getRotation();
+    rotation = engineGL->getRotation();
 }
 
-void PlotInternal::mouseReleaseEvent(QMouseEvent *) {
-    setMouseGrabEnabled(false);
-}
+void PlotInternal::mouseReleaseEvent(QMouseEvent *) { setMouseGrabEnabled(false); }
 
-void PlotInternal::initializeGL() {
-    engine->initialize();
-}
+void PlotInternal::initializeGL() { engineGL->initialize(); }
 
-void PlotInternal::resizeGL(int w, int h) {
-    engine->resize(w, h);
-}
+void PlotInternal::resizeGL(int w, int h) { engineGL->resize(w, h); }
 
 void PlotInternal::paintGL() {
     QPainter p(this);
-    engine->render(p);
+    engineGL->render(p);
 }

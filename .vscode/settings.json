@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "qsurfaceformat": "cpp",
+        "istream": "cpp",
+        "optional": "cpp",
+        "ostream": "cpp",
+        "ratio": "cpp",
+        "system_error": "cpp",
+        "type_traits": "cpp",
+        "array": "cpp",
+        "string_view": "cpp"
+    }
+}

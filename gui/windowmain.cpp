@@ -88,7 +88,6 @@ WindowMain::WindowMain(QWidget *parent)
                     else activePlots.remove(plot);
                 });
 
-
             } else QMessageBox::warning(this, "Data Reading Error", sq->getError());
         }
     });

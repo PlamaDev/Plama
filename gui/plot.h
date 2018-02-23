@@ -8,6 +8,7 @@
 #include <QOpenGLPaintDevice>
 #include <QVector>
 #include <QOpenGLWindow>
+#include <QImage>
 #include <memory>
 #include <render/engine.h>
 #include <data/project.h>
@@ -19,9 +20,11 @@ public:
     void setRotation(int x, int y);
     void setLabel(float pos);
     void setModel(std::unique_ptr<Model> model);
+    void renderTo(QPaintDevice &d);
 
 private:
-    std::unique_ptr<Engine> engine;
+    std::unique_ptr<EngineGL> engineGL;
+    std::unique_ptr<EngineQt> engineQt;
     QPoint mouse;
     QPoint rotation;
 

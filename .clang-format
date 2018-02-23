@@ -1,0 +1,16 @@
+﻿---
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: 'false'
+AlignConsecutiveDeclarations: 'false'
+AlignEscapedNewlinesLeft: 'false'
+AlignOperands: 'false'
+AlignTrailingComments: 'false'
+AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: 'true'
+IndentWidth: 4
+SpaceAfterTemplateKeyword: 'false'
+ColumnLimit: 90
+AccessModifierOffset: -4
+...
