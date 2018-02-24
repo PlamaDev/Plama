@@ -1,22 +1,22 @@
-#ifndef OPENGLPLOT_H
-#define OPENGLPLOT_H
+#ifndef PLOT_H
+#define PLOT_H
 
+#include "data/project.h"
+#include "render/engine.h"
+#include <QImage>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+#include <QOpenGLPaintDevice>
+#include <QOpenGLWindow>
 #include <QWidget>
 #include <QWindow>
-#include <QOpenGLFunctions>
-#include <QOpenGLContext>
-#include <QOpenGLPaintDevice>
-#include <QVector>
-#include <QOpenGLWindow>
-#include <QImage>
 #include <memory>
-#include <render/engine.h>
-#include <data/project.h>
+#include <vector>
 
 class PlotInternal : public QOpenGLWindow {
 public:
     PlotInternal(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
-        const QVector<QVector2D> &size);
+        std::unique_ptr<std::vector<QVector2D>> &&size);
     void setRotation(int x, int y);
     void setLabel(float pos);
     void setModel(std::unique_ptr<Model> model);
@@ -49,7 +49,7 @@ public:
 private:
     PlotInternal *plot;
     SimQuantity *quantity;
-    const QVector<float> *data;
+    const std::vector<float> *data;
 };
 
-#endif // OPENGLPLOT_H
+#endif // PLOT_H

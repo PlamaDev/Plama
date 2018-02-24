@@ -1,9 +1,11 @@
-#include <render/model.h>
 #include <QColor>
-#include <QPair>
 #include <QDebug>
+#include <QPair>
+#include <render/model.h>
 
-Gradient::Gradient(QVector<QPair<QColor, float>> data, int steps)
+using namespace std;
+
+Gradient::Gradient(vector<QPair<QColor, float>> data, int steps)
     : cache(steps), step(1.0f / steps) {
     QColor c1 = data[0].first;
     QColor c2 = data[0].first;
@@ -15,7 +17,7 @@ Gradient::Gradient(QVector<QPair<QColor, float>> data, int steps)
         p1 = p2;
         c2 = i.first;
         p2 = i.second;
-        for (float pos = count*step; pos < p2; count++, pos = count*step) {
+        for (float pos = count * step; pos < p2; count++, pos = count * step) {
             float diff1 = pos - p1;
             float diff2 = p2 - pos;
             float diffT = p2 - p1;
@@ -28,48 +30,52 @@ Gradient::Gradient(QVector<QPair<QColor, float>> data, int steps)
 }
 
 const QColor &Gradient::getColor(float pos) const {
-    int index = pos/step;
+    int index = pos / step;
     int size = cache.size();
     return cache[index >= size ? size - 1 : index];
 }
 
-std::function<void(std::function<void(int)>&, int, int)> f0 =
-[](std::function<void(int)> &f, int x, int y) {
-    for (int i = 0; i < x; i++) for (int j = 0; j < y; j++) f(j * x + i);
+function<void(function<void(int)> &, int, int)> f0 = [](function<void(int)> &f, int x,
+                                                         int y) {
+    for (int i = 0; i < x; i++)
+        for (int j = 0; j < y; j++) f(j * x + i);
 };
 
-std::function<void(std::function<void(int)>&, int, int)> f1 =
-[](std::function<void(int)> &f, int x, int y) {
-    for (int i = x-1; i >= 0; i--) for (int j = 0; j < y; j++) f(j * x + i);
+function<void(function<void(int)> &, int, int)> f1 = [](function<void(int)> &f, int x,
+                                                         int y) {
+    for (int i = x - 1; i >= 0; i--)
+        for (int j = 0; j < y; j++) f(j * x + i);
 };
 
-std::function<void(std::function<void(int)>&, int, int)> f2 =
-[](std::function<void(int)> &f, int x, int y) {
-    for (int i = 0; i < x; i++) for (int j = y-1; j >= 0; j--) f(j * x + i);
+function<void(function<void(int)> &, int, int)> f2 = [](function<void(int)> &f, int x,
+                                                         int y) {
+    for (int i = 0; i < x; i++)
+        for (int j = y - 1; j >= 0; j--) f(j * x + i);
 };
 
-std::function<void(std::function<void(int)>&, int, int)> f3 =
-[](std::function<void(int)> &f, int x, int y) {
-    for (int i = x-1; i >= 0; i--) for (int j = y-1; j >= 0; j--) f(j * x + i);
+function<void(function<void(int)> &, int, int)> f3 = [](function<void(int)> &f, int x,
+                                                         int y) {
+    for (int i = x - 1; i >= 0; i--)
+        for (int j = y - 1; j >= 0; j--) f(j * x + i);
 };
 
-QVector<std::function<void(std::function<void(int)>&, int, int)>>
-Model::indexFunc{f0, f0, f1, f1, f3, f3, f2, f2};
+vector<function<void(function<void(int)> &, int, int)>> Model::indexFunc{
+    f0, f0, f1, f1, f3, f3, f2, f2};
 
-Gradient Model::gradientHeightmap({{Qt::blue, 0.0f}, {Qt::cyan, 0.2f},
-    {Qt::green, 0.4f}, {Qt::yellow, 0.6f}, {Qt::red, 1.0f}}, 200);
+Gradient Model::gradientHeightmap({{Qt::blue, 0.0f}, {Qt::cyan, 0.2f}, {Qt::green, 0.4f},
+                                      {Qt::yellow, 0.6f}, {Qt::red, 1.0f}},
+    200);
 
-const QVector<GLuint> &Model::getIndexT(int dir) const { return indexT[dir]; }
-const QVector<GLuint> &Model::getIndexL(int dir) const { return indexL[dir]; }
-const QVector<QVector3D> &Model::getPoint() const { return point; }
-const QVector<QVector3D> &Model::getNormal() const { return normal; }
-const QVector<QVector3D> &Model::getColorF() const { return colorF; }
-const QVector<QVector3D> &Model::getPosition() const { return position; }
-const QVector<const QColor *> &Model::getColorQ() const { return colorQ; }
+const vector<GLuint> &Model::getIndexT(int dir) const { return indexT[dir]; }
+const vector<GLuint> &Model::getIndexL(int dir) const { return indexL[dir]; }
+const vector<QVector3D> &Model::getPoint() const { return point; }
+const vector<QVector3D> &Model::getNormal() const { return normal; }
+const vector<QVector3D> &Model::getColorF() const { return colorF; }
+const vector<QVector3D> &Model::getPosition() const { return position; }
+const vector<const QColor *> &Model::getColorQ() const { return colorQ; }
 
-std::unique_ptr<Model> Model::fromQuantity(
-    SimQuantity &sq, float time, int dim) {
-    static QVector<QVector<GLuint>> order{
+unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time, int dim) {
+    static vector<vector<GLuint>> order{
         {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
         {1, 4, 0, 0, 4, 3, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 8, 4, 5, 7, 4, 8},
         {2, 4, 1, 5, 4, 2, 1, 4, 0, 0, 4, 3, 8, 4, 5, 7, 4, 8, 3, 4, 6, 6, 4, 7},
@@ -77,17 +83,15 @@ std::unique_ptr<Model> Model::fromQuantity(
         {8, 4, 5, 7, 4, 8, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 1, 4, 0, 0, 4, 3},
         {7, 4, 8, 8, 4, 5, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 0, 4, 3, 1, 4, 0},
         {6, 4, 7, 3, 4, 6, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 5, 4, 2, 2, 4, 1},
-        {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}
-    };
+        {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}};
     QVector2D extreme = sq.getExtreme();
     int sizeX = sq.getSizeData()[0];
     int sizeY = sq.getSizeData()[1];
-    QVector<float> data = sq.getDataAt(time, dim);
+    vector<float> data = sq.getDataAt(time, dim);
     int sizePoint = (sizeX - 1) * (sizeY - 1) * 9;
     int sizeIndex = (sizeX - 1) * (sizeY - 1) * 24;
 
-    std::unique_ptr<Model> ret =
-        std::unique_ptr<Model>(new Model(sizePoint, sizeIndex, 0));
+    unique_ptr<Model> ret = unique_ptr<Model>(new Model(sizePoint, sizeIndex, 0));
 
     float sx = sizeX - 1;
     float sy = sizeY - 1;
@@ -103,8 +107,7 @@ std::unique_ptr<Model> Model::fromQuantity(
             int offsetPoint = (y * (sizeX - 1) + x) * 9;
 
             if (height == 0) {
-                for (int i = 0; i < 9; i++)
-                    d[i] = data[offsetPoint];
+                for (int i = 0; i < 9; i++) d[i] = data[offsetPoint];
             } else {
                 d[0] = data[offsetRaw];
                 d[2] = data[offsetRaw + 1];
@@ -121,9 +124,7 @@ std::unique_ptr<Model> Model::fromQuantity(
                 d[4] = (d[3] + d[5]) / 2;
             }
 
-
-
-            for (int i = 0; i < 3; i ++) {
+            for (int i = 0; i < 3; i++) {
                 px[i] = (x + 0.5f * i) / sx;
                 py[i] = (y + 0.5f * i) / sy;
             }
@@ -138,14 +139,21 @@ std::unique_ptr<Model> Model::fromQuantity(
             for (int i = 0; i < 9; i++) ret->point[offsetPoint + i] = p[i];
 
             ret->normal[offsetPoint] = QVector3D::crossProduct(p[1] - p[0], p[4] - p[0]);
-            ret->normal[offsetPoint+1] = QVector3D::crossProduct(p[2] - p[1], p[4] - p[1]);
-            ret->normal[offsetPoint+2] = QVector3D::crossProduct(p[5] - p[2], p[4] - p[2]);
-            ret->normal[offsetPoint+3] = QVector3D::crossProduct(p[0] - p[3], p[4] - p[3]);
-            ret->normal[offsetPoint+4] = QVector3D(1, 1, 1);
-            ret->normal[offsetPoint+5] = QVector3D::crossProduct(p[8] - p[5], p[4] - p[5]);
-            ret->normal[offsetPoint+6] = QVector3D::crossProduct(p[3] - p[6], p[4] - p[6]);
-            ret->normal[offsetPoint+7] = QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
-            ret->normal[offsetPoint+8] = QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
+            ret->normal[offsetPoint + 1] =
+                QVector3D::crossProduct(p[2] - p[1], p[4] - p[1]);
+            ret->normal[offsetPoint + 2] =
+                QVector3D::crossProduct(p[5] - p[2], p[4] - p[2]);
+            ret->normal[offsetPoint + 3] =
+                QVector3D::crossProduct(p[0] - p[3], p[4] - p[3]);
+            ret->normal[offsetPoint + 4] = QVector3D(1, 1, 1);
+            ret->normal[offsetPoint + 5] =
+                QVector3D::crossProduct(p[8] - p[5], p[4] - p[5]);
+            ret->normal[offsetPoint + 6] =
+                QVector3D::crossProduct(p[3] - p[6], p[4] - p[6]);
+            ret->normal[offsetPoint + 7] =
+                QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
+            ret->normal[offsetPoint + 8] =
+                QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
 
             for (int i = 0; i < 9; i++) ret->normal[offsetPoint + i].normalize();
 
@@ -159,7 +167,7 @@ std::unique_ptr<Model> Model::fromQuantity(
             ret->colorQ[offsetPoint + 6] = ret->colorQ[offsetPoint + 7];
             ret->colorQ[offsetPoint + 4] = &gradientHeightmap.getColor(0);
 
-            for (int i = offsetPoint; i < offsetPoint + 9; i++ ) {
+            for (int i = offsetPoint; i < offsetPoint + 9; i++) {
                 const QColor *c = ret->colorQ[i];
                 ret->colorF[i] = QVector3D(c->redF(), c->greenF(), c->blueF());
             }
@@ -178,7 +186,7 @@ std::unique_ptr<Model> Model::fromQuantity(
 
     for (int i = 0; i < 8; i++) {
         int cnt = 0;
-        std::function<void(int)> func = [&](int j) {
+        function<void(int)> func = [&](int j) {
             int offsetPoint = j * 9;
             for (int j = 0; j < 24; j++)
                 ret->indexT[i][cnt++] = order[i][j] + offsetPoint;
@@ -189,38 +197,37 @@ std::unique_ptr<Model> Model::fromQuantity(
     return ret;
 }
 
-std::unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
+unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
     static QColor c = Qt::blue;
 
-    QVector<float> y(sq.getData().size());
-    for (int i = 0; i < sq.getData().size(); i++)
+    vector<float> y(sq.getData().size());
+    for (size_t i = 0; i < sq.getData().size(); i++)
         y[i] = sq.getData()[sq.getDim() * i + dim][0];
-    const QVector<float> &x = sq.getTimes();
+    const vector<float> &x = sq.getTimes();
 
-    std::unique_ptr<Model> ret =
-        std::unique_ptr<Model>(new Model(x.size(), 0, (x.size() - 1) * 2));
+    unique_ptr<Model> ret = unique_ptr<Model>(new Model(x.size(), 0, (x.size() - 1) * 2));
 
-    float xmin = x[0];
-    float xmax = x[x.size() - 1];
-    float xdiff = xmax - xmin;
-    float ymin = sq.getMin();
-    float ymax = sq.getMax();
-    float ydiff = ymax - ymin;
+    float xMin = x[0];
+    float xMax = x[x.size() - 1];
+    float xDiff = xMax - xMin;
+    float yMin = sq.getMin();
+    float yMax = sq.getMax();
+    float yDiff = yMax - yMin;
 
-    if (ydiff == 0) {
-        if (ymin == 0) {
-            ymin = -1;
-            ymax = 1;
-            ydiff = 2;
+    if (yDiff == 0) {
+        if (yMin == 0) {
+            yMin = -1;
+            yMax = 1;
+            yDiff = 2;
         } else {
-            ymin *= 0.9;
-            ymax *= 1.1;
-            ydiff = ymax - ymin;
+            yMin *= 0.9;
+            yMax *= 1.1;
+            yDiff = yMax - yMin;
         }
     }
 
-    for (int i = 0; i < x.size(); i++) {
-        ret->point[i] = QVector3D((x[i] - xmin) / xdiff, (y[i] - ymin) / ydiff, 0);
+    for (size_t i = 0; i < x.size(); i++) {
+        ret->point[i] = QVector3D((x[i] - xMin) / xDiff, (y[i] - yMin) / yDiff, 0);
         ret->normal[i] = QVector3D(0, 0, 1);
         ret->colorQ[i] = &c;
         ret->colorF[i] = QVector3D(0, 0, 1);
@@ -228,7 +235,7 @@ std::unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
     }
 
     for (int j = 0; j < 8; j++) {
-        for (int i = 0; i < x.size() - 1; i++) {
+        for (size_t i = 0; i < x.size() - 1; i++) {
             ret->indexL[j][2 * i] = i;
             ret->indexL[j][2 * i + 1] = i + 1;
         }
@@ -238,9 +245,8 @@ std::unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
 }
 
 Model::Model(int sPoint, int sIndexT, int sIndexL)
-    : point(sPoint), normal(sPoint), colorF(sPoint), colorQ(sPoint),
-      position(sPoint), indexT(8, QVector<GLuint>(sIndexT)),
-      indexL(8, QVector<GLuint>(sIndexL)) {}
+    : point(sPoint), normal(sPoint), colorF(sPoint), colorQ(sPoint), position(sPoint),
+      indexT(8, vector<GLuint>(sIndexT)), indexL(8, vector<GLuint>(sIndexL)) {}
 
 QPair<float, float> Model::getExtreme(const float *data, int total) {
     float max = *data;

@@ -9,8 +9,8 @@ AllowShortCaseLabelsOnASingleLine: 'true'
 AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: true
 AllowShortLoopsOnASingleLine: 'true'
+AccessModifierOffset: -4
+ColumnLimit: 90
 IndentWidth: 4
 SpaceAfterTemplateKeyword: 'false'
-ColumnLimit: 90
-AccessModifierOffset: -4
 ...

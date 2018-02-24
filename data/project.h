@@ -1,5 +1,5 @@
-#ifndef QFILEADAPTER_H
-#define QFILEADAPTER_H
+#ifndef PROJECT_H
+#define PROJECT_H
 
 #include <Python.h>
 #include <QByteArray>
@@ -9,7 +9,6 @@
 #include <QObject>
 #include <QTextStream>
 #include <QVector2D>
-#include <QVector>
 #include <memory>
 
 class SimTreeNode;
@@ -18,12 +17,12 @@ class SimQuantity {
 public:
     SimQuantity(PyObject *data);
     const QString &getName() const;
-    const QVector<float> &getTimes() const;
-    const QVector<QVector2D> &getSizeModel() const;
-    const QVector<int> &getSizeData() const;
-    const QVector<float> &getDataAt(float time, int dim = 0) const;
-    const QVector<float> &getDataAt(float time, int dim = 0);
-    const QVector<QVector<float>> &getData();
+    const std::vector<float> &getTimes() const;
+    const std::vector<QVector2D> &getSizeModel() const;
+    const std::vector<int> &getSizeData() const;
+    const std::vector<float> &getDataAt(float time, int dim = 0) const;
+    const std::vector<float> &getDataAt(float time, int dim = 0);
+    const std::vector<std::vector<float>> &getData();
     float getMax() const;
     float getMin() const;
     QVector2D getExtreme() const;
@@ -37,10 +36,10 @@ private:
     QString name, error;
     int dimData;
     bool uniform;
-    QVector<float> times;
-    QVector<QVector2D> sizeModel;
-    QVector<int> sizeData;
-    QVector<QVector<float>> data;
+    std::vector<float> times;
+    std::vector<QVector2D> sizeModel;
+    std::vector<int> sizeData;
+    std::vector<std::vector<float>> data;
     void initData();
     float max, min;
     bool initialized;

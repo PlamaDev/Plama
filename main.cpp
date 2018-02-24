@@ -2,9 +2,10 @@
 #include "gui/windowmain.h"
 #include <Python.h>
 #include <QApplication>
+#include <QDebug>
 #include <QList>
 #include <QSurfaceFormat>
-#include <QDebug>
+#include <vector>
 
 int main(int argc, char *argv[]) {
     Py_Initialize();

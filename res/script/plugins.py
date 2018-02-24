@@ -295,8 +295,8 @@ class LoaderMd2d:
     @staticmethod
     def read_dim(file):
         def width(s_):
-            nums = LoaderMd2d.pat_split.split(s_[:-1])
-            return len(nums) - 1
+            numbers = LoaderMd2d.pat_split.split(s_[:-1])
+            return len(numbers) - 1
 
         times = []
         two_d = False

@@ -1,9 +1,9 @@
 #ifndef WINDOWMAIN_H
 #define WINDOWMAIN_H
 
+#include "data/project.h"
 #include <QMainWindow>
 #include <memory>
-#include "data/project.h"
 
 class WindowMain : public QMainWindow {
     Q_OBJECT

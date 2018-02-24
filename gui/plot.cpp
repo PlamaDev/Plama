@@ -9,7 +9,11 @@
 #include <QSize>
 #include <QToolBar>
 #include <QVBoxLayout>
+#include <QVector2D>
 #include <QWidget>
+#include <vector>
+
+using namespace std;
 
 int mouseFuncForward(int x) {
     const int width = 20;
@@ -49,24 +53,25 @@ int mouseFuncInverseLoop(int x) {
     return p.first * (2 * width + (int)(90 / slope)) + mouseFuncInverse(p.second);
 }
 
-QVector<QVector2D> genRange(SimQuantity &quantity) {
+vector<QVector2D> genRange(SimQuantity &quantity) {
     if (quantity.getSizeModel().size() == 0) {
         return {
             {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
             quantity.getExtreme(), {0, 1}};
     } else {
-        return {quantity.getSizeModel()[0], quantity.getSizeModel()[1], quantity.getExtreme()};
+        return {quantity.getSizeModel()[0], quantity.getSizeModel()[1],
+            quantity.getExtreme()};
     }
 }
 
 Plot::Plot(SimQuantity &quantity, int dim) {
-    QVector<QVector2D> range;
+    auto range = make_unique<vector<QVector2D>>();
     if (quantity.getSizeModel().size() == 0) {
-        range = {
+        *range = {
             {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
             quantity.getExtreme(), {0, 1}};
     } else {
-        range = {quantity.getSizeModel()[0], quantity.getSizeModel()[1],
+        *range = {quantity.getSizeModel()[0], quantity.getSizeModel()[1],
             quantity.getExtreme()};
     }
 
@@ -85,7 +90,7 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     plot = new PlotInternal(quantity.getSizeData().size() == 0
             ? Model::fromQuantity(quantity, dim)
             : Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
-        std::make_unique<Axis>(5, 5, 5), range);
+        make_unique<Axis>(5, 5, 5), std::move(range));
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
     setLayout(l);
@@ -97,13 +102,13 @@ void Plot::setRotation(int x, int y) { plot->setRotation(x, y); }
 
 void Plot::setTime(float t) {
     if (quantity->getSizeData().size() == 0) {
-        const QVector<float> &times = quantity->getTimes();
+        const vector<float> &times = quantity->getTimes();
         float t1 = times[0];
         float t2 = times[times.size() - 1];
         float td = t2 - t1;
         plot->setLabel((t - t1) / td);
     } else if (quantity->getSizeData().size() == 2) {
-        const QVector<float> &d = quantity->getDataAt(t, 0);
+        const vector<float> &d = quantity->getDataAt(t, 0);
         if (&d != data) {
             plot->setModel(Model::fromQuantity(*quantity, t, 0));
             data = &d;
@@ -112,7 +117,7 @@ void Plot::setTime(float t) {
 }
 
 void Plot::setPartition(float p) {
-    const QVector<float> &times = quantity->getTimes();
+    const vector<float> &times = quantity->getTimes();
     float t1 = times[0];
     float t2 = times[times.size() - 1];
     float td = t2 - t1;
@@ -122,12 +127,13 @@ void Plot::setPartition(float p) {
 QSize Plot::sizeHint() const { return QSize(500, 500); }
 QSize Plot::minimumSizeHint() const { return QSize(100, 100); }
 
-PlotInternal::PlotInternal(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
-    const QVector<QVector2D> &size) {
-    std::shared_ptr<Model> pm = std::move(model);
-    std::shared_ptr<Axis> pa = std::move(axis);
-    engineGL = std::make_unique<EngineGL>(pm, pa, size);
-    engineQt = std::make_unique<EngineQt>(pm, pa, size);
+PlotInternal::PlotInternal(unique_ptr<Model> &&model, unique_ptr<Axis> &&axis,
+    unique_ptr<vector<QVector2D>> &&size) {
+    shared_ptr<Model> pm = move(model);
+    shared_ptr<Axis> pa = move(axis);
+    shared_ptr<vector<QVector2D>> ps = move(size);
+    engineGL = make_unique<EngineGL>(pm, pa, ps);
+    engineQt = make_unique<EngineQt>(pm, pa, ps);
     engineGL->setBackGround(Qt::white);
     engineQt->setBackGround(Qt::transparent);
 }
@@ -143,8 +149,8 @@ void PlotInternal::setLabel(float pos) {
     requestUpdate();
 }
 
-void PlotInternal::setModel(std::unique_ptr<Model> model) {
-    std::shared_ptr<Model> pm = std::move(model);
+void PlotInternal::setModel(unique_ptr<Model> model) {
+    shared_ptr<Model> pm = move(model);
     engineGL->setModel(pm);
     engineQt->setModel(pm);
     requestUpdate();

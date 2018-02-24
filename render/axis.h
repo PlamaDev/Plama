@@ -1,11 +1,11 @@
 #ifndef AXIS_H
 #define AXIS_H
 
-#include <QVector>
-#include <QVector3D>
+#include <QMatrix4x4>
 #include <QOpenGLFunctions>
 #include <QPair>
-#include <QMatrix4x4>
+#include <QVector3D>
+#include <QVector>
 
 class Axis {
 public:
@@ -16,15 +16,14 @@ public:
     QVector<GLuint> &getIndex();
     QVector<QPair<int, int>> getSlice(int rotX, int rotY);
     QVector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
-            bool zStrait, bool xyStrait, bool invert);
-    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(int dir,
-        bool xEnable, bool yEnable, bool zEnable,bool zStrait, bool xyStrait);
-    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(int rotX,
-        int rotY);
+        bool zStrait, bool xyStrait, bool invert);
+    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(
+        int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait);
+    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(int rotX, int rotY);
     QMatrix4x4 getTransform(int rotX, int rotY);
     QMatrix4x4 getTransform(int dir, bool flipX);
-private:
 
+private:
     QVector<QVector3D> point;
     QVector<QVector3D> colorF;
     QVector<const QColor *> colorQ;

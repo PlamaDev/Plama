@@ -13,7 +13,7 @@
 #include <memory>
 
 class Engine {
-  public:
+public:
     Engine(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis);
     virtual ~Engine() = default;
     virtual void initialize() = 0;
@@ -25,7 +25,7 @@ class Engine {
     void setBackGround(const QColor &color);
     void setLabel(float pos);
 
-  protected:
+protected:
     int rotX, rotY;
     int sizeX, sizeY;
     QVector3D color;
@@ -35,13 +35,13 @@ class Engine {
 };
 
 class EngineGL : public Engine, protected QOpenGLFunctions {
-  public:
+public:
     EngineGL(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-        const QVector<QVector2D> &size);
+        std::shared_ptr<std::vector<QVector2D>> &size);
     void initialize() override;
     void render(QPainter &p) override;
 
-  private:
+private:
     int argFlatVecPos;
     int argFlatVecPnt;
     int argFlatVecNormal;
@@ -59,19 +59,19 @@ class EngineGL : public Engine, protected QOpenGLFunctions {
 
     std::unique_ptr<QOpenGLShaderProgram> programFlat;
     std::unique_ptr<QOpenGLShaderProgram> programPlain;
-    QVector<QVector2D> size;
+    std::shared_ptr<std::vector<QVector2D>> size;
 };
 
 class EngineQt : public Engine {
-  public:
+public:
     EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-        const QVector<QVector2D> &size);
+        std::shared_ptr<std::vector<QVector2D>> size);
     void initialize() override{};
     void render(QPainter &p) override;
     void render(QPaintDevice &p);
 
-  private:
-    QVector<QVector2D> size;
+private:
+    std::shared_ptr<std::vector<QVector2D>> size;
 };
 
 #endif // ENGINE_H
