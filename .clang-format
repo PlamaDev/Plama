@@ -7,7 +7,7 @@ AlignOperands: 'false'
 AlignTrailingComments: 'false'
 AllowShortCaseLabelsOnASingleLine: 'true'
 AllowShortFunctionsOnASingleLine: All
-AllowShortIfStatementsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: 'true'
 AllowShortLoopsOnASingleLine: 'true'
 AccessModifierOffset: -4
 ColumnLimit: 90

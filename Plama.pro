@@ -1,4 +1,4 @@
-QT       += core gui widgets
+QT       += core gui widgets svg
 TARGET   = Plama
 TEMPLATE = app
 
@@ -28,11 +28,5 @@ RESOURCES += \
 
 unix: LIBS += -lpython3.6m
 unix: INCLUDEPATH += /usr/include/python3.6m
-
-DESTDIR = .build
-OBJECTS_DIR = .build
-MOC_DIR = .build
-RCC_DIR = .build
-UI_DIR = .build
 
 DISTFILES +=

@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QSize>
+#include <QSvgGenerator>
 #include <QToolBar>
 #include <QVBoxLayout>
 #include <QVector2D>
@@ -65,6 +66,24 @@ vector<QVector2D> genRange(SimQuantity &quantity) {
 }
 
 Plot::Plot(SimQuantity &quantity, int dim) {
+    static vector<Trio<QString, vector<QString>, function<void(QString)>>> types = {
+        {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
+            [&](QString s) {
+                QImage image(1000, 1000, QImage::Format_ARGB32_Premultiplied);
+                plot->renderTo(image);
+                image.save(s, Q_NULLPTR, 100);
+            }},
+        {"SVG image (*.svg)", {"svg"},
+            [&](QString s) {
+                QSvgGenerator generator;
+                generator.setFileName(s);
+                generator.setSize(QSize(800, 800));
+                generator.setViewBox(QRect(0, 0, 800, 800));
+                plot->renderTo(generator);
+            }},
+
+    };
+
     auto range = make_unique<vector<QVector2D>>();
     if (quantity.getSizeModel().size() == 0) {
         *range = {
@@ -79,10 +98,22 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     l->setMargin(0);
     QToolBar *bar = new QToolBar;
     QAction *aExport = new QAction(QIcon::fromTheme("document-export"), "Export");
-    connect(aExport, &QAction::triggered, [=]() {
-        QString name = QFileDialog::getSaveFileName(
-            this, "Export file", "", "JPEG image (*.jpg, *.jpeg, *.jpe)");
-        qDebug() << name;
+    connect(aExport, &QAction::triggered, [&]() {
+        QString selected;
+        QStringList filters;
+        for (auto &i : types) filters << i.a;
+        QString filter = filters.join(";;");
+        QString name =
+            QFileDialog::getSaveFileName(this, "Export file", "", filter, &selected);
+        for (auto &i : types) {
+            if (i.a == selected) {
+                bool ext = false;
+                for (auto &j : i.b)
+                    if (name.endsWith(j)) ext = true;
+                if (!ext) name += "." + i.b[0];
+                i.c(name);
+            }
+        }
     });
     bar->addAction(aExport);
     l->addWidget(bar);
@@ -158,7 +189,9 @@ void PlotInternal::setModel(unique_ptr<Model> model) {
 
 void PlotInternal::renderTo(QPaintDevice &d) {
     QPainter p(&d);
+    engineQt->resize(d.width(), d.height());
     engineQt->render(p);
+    p.end();
 }
 
 void PlotInternal::mouseMoveEvent(QMouseEvent *event) {

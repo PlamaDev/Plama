@@ -2,6 +2,7 @@
 #include "render/axis.h"
 #include "util.h"
 #include <QColor>
+#include <QFont>
 #include <QMatrix3x3>
 #include <QMatrix>
 #include <QOpenGLFunctions>
@@ -191,6 +192,9 @@ void EngineGL::render(QPainter &p) {
 
     QVector<QPair<bool, QVector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
+    QFont font = p.font();
+    font.setPixelSize(min(sizeX, sizeY) / 45 + 2);
+    p.setFont(font);
     for (int i = 0; i < 3; i++) {
         if (num[i].second.isEmpty()) continue;
 
@@ -219,6 +223,7 @@ void EngineQt::render(QPainter &p) {
     p.setBrush(Qt::white);
     p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
     p.setRenderHint(QPainter::Antialiasing, true);
+    p.setRenderHint(QPainter::HighQualityAntialiasing, true);
     int dir = (360 - rotX) / 45 % 8;
 
     // maxtries
@@ -268,6 +273,9 @@ void EngineQt::render(QPainter &p) {
 
     // draw text
     p.setPen(Qt::black);
+    QFont font = p.font();
+    font.setPixelSize(min(sizeX, sizeY) / 45 + 2);
+    p.setFont(font);
     QVector<QPair<bool, QVector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
     for (int i = 0; i < 3; i++) {
@@ -319,7 +327,7 @@ void EngineQt::render(QPainter &p) {
     static float (*dot)(const QVector3D &, const QVector3D &) = QVector3D::dotProduct;
     QVector3D vecLight(1, 1, 1);
     QPolygon poly;
-    p.setPen(Qt::NoPen);
+
     for (auto i : vIndexMT) {
         QVector3D pntWorld = matFinM * vPointM[i];
         poly << pntWorld.toPoint();
@@ -335,6 +343,7 @@ void EngineQt::render(QPainter &p) {
             QVector3D color = base * vColorMF[i] + 0.3 * spec * vecLight;
             QColor c(min(int(color.x() * 255), 255), min(int(color.y() * 255), 255),
                 min(int(color.z() * 255), 255));
+            p.setPen(c);
             p.setBrush(c);
             p.drawPolygon(poly);
             poly.clear();

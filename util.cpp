@@ -1,5 +1,6 @@
 #include "util.h"
 #include <QPoint>
+#include <QRegExp>
 
 QPair<int, int> unify(int number, int radix) {
     typedef QPair<int, int> P;
@@ -7,3 +8,5 @@ QPair<int, int> unify(int number, int radix) {
     int e = number % radix;
     return e == 0 ? P(number / radix, 0) : P(number / radix - 1, radix + e);
 }
+
+

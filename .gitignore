@@ -1,5 +1,1 @@
-.build
-.qmake.stash
-.vscode/c_cpp_properties.json
-.vscode/settings.json
-Makefile
+Plama.pro.user
