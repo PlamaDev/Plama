@@ -35,29 +35,29 @@ const QColor &Gradient::getColor(float pos) const {
     return cache[index >= size ? size - 1 : index];
 }
 
-function<void(function<void(int)> &, int, int)> f0 = [](function<void(int)> &f, int x,
-                                                         int y) {
-    for (int i = 0; i < x; i++)
-        for (int j = 0; j < y; j++) f(j * x + i);
-};
+function<void(function<void(int)> &, int, int)> f0 = //
+    [](function<void(int)> &f, int x, int y) {
+        for (int i = 0; i < x; i++)
+            for (int j = 0; j < y; j++) f(j * x + i);
+    };
 
-function<void(function<void(int)> &, int, int)> f1 = [](function<void(int)> &f, int x,
-                                                         int y) {
-    for (int i = x - 1; i >= 0; i--)
-        for (int j = 0; j < y; j++) f(j * x + i);
-};
+function<void(function<void(int)> &, int, int)> f1 = //
+    [](function<void(int)> &f, int x, int y) {
+        for (int i = x - 1; i >= 0; i--)
+            for (int j = 0; j < y; j++) f(j * x + i);
+    };
 
-function<void(function<void(int)> &, int, int)> f2 = [](function<void(int)> &f, int x,
-                                                         int y) {
-    for (int i = 0; i < x; i++)
-        for (int j = y - 1; j >= 0; j--) f(j * x + i);
-};
+function<void(function<void(int)> &, int, int)> f2 = //
+    [](function<void(int)> &f, int x, int y) {
+        for (int i = 0; i < x; i++)
+            for (int j = y - 1; j >= 0; j--) f(j * x + i);
+    };
 
-function<void(function<void(int)> &, int, int)> f3 = [](function<void(int)> &f, int x,
-                                                         int y) {
-    for (int i = x - 1; i >= 0; i--)
-        for (int j = y - 1; j >= 0; j--) f(j * x + i);
-};
+function<void(function<void(int)> &, int, int)> f3 = //
+    [](function<void(int)> &f, int x, int y) {
+        for (int i = x - 1; i >= 0; i--)
+            for (int j = y - 1; j >= 0; j--) f(j * x + i);
+    };
 
 vector<function<void(function<void(int)> &, int, int)>> Model::indexFunc{
     f0, f0, f1, f1, f3, f3, f2, f2};
