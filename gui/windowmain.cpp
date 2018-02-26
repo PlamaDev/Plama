@@ -9,12 +9,12 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QSet>
 #include <QSlider>
 #include <QToolBar>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QWidget>
+#include <set>
 
 using namespace std;
 
@@ -41,7 +41,8 @@ QList<QTreeWidgetItem *> generateTree(const Project &a) {
 
 WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
     static ProjectLoader m;
-    static QSet<Plot *> activePlots;
+    static set<Plot *> activePlots;
+    static set<QDockWidget *> activeDocks;
 
     QToolBar *toolbar = new QToolBar("Hello");
     QSlider *slider = new QSlider(Qt::Horizontal);
@@ -68,7 +69,8 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
             // l->addWidget(new OpenGLPlot(m));
 
             if (sq->getError().isEmpty()) {
-                QDockWidget *d = new QDockWidget(sp->getAbbr() + '>' + sq->getName());
+                QDockWidget *d =
+                    new QDockWidget(sp->getAbbr() + '>' + sq->getName(), this);
                 Plot *plot = new Plot(*sq, 0);
                 plot->setRotation(90, 90);
                 plot->setPartition(slider->value() / (float)10000);
@@ -76,10 +78,13 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
                 addDockWidget(Qt::RightDockWidgetArea, d);
 
                 connect(d, &QDockWidget::visibilityChanged, [=](bool v) {
-                    if (v)
+                    if (v) {
+                        activeDocks.insert(d);
                         activePlots.insert(plot);
-                    else
-                        activePlots.remove(plot);
+                    } else {
+                        activeDocks.erase(d);
+                        activePlots.erase(plot);
+                    }
                 });
 
             } else
@@ -105,6 +110,7 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
                 data = std::move(tmp);
                 tree->clear();
                 tree->addTopLevelItems(generateTree(*data));
+                for (auto i : activeDocks) i->close();
             } else
                 QMessageBox::warning(this, "File Loading Error", tmp->getError());
         });

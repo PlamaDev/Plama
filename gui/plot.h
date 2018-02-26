@@ -27,11 +27,13 @@ private:
     std::unique_ptr<EngineQt> engineQt;
     QPoint mouse;
     QPoint rotation;
+    float scale = 1;
 
 protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
+    void wheelEvent(QWheelEvent *);
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;

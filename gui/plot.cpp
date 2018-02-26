@@ -5,8 +5,10 @@
 #include <QIcon>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPdfWriter>
 #include <QPushButton>
 #include <QSize>
+#include <QSizeF>
 #include <QSvgGenerator>
 #include <QToolBar>
 #include <QVBoxLayout>
@@ -66,23 +68,31 @@ vector<QVector2D> genRange(SimQuantity &quantity) {
 }
 
 Plot::Plot(SimQuantity &quantity, int dim) {
-    static vector<Trio<QString, vector<QString>, function<void(QString)>>> types = {
-        {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
-            [&](QString s) {
-                QImage image(1000, 1000, QImage::Format_ARGB32_Premultiplied);
-                plot->renderTo(image);
-                image.save(s, Q_NULLPTR, 100);
-            }},
-        {"SVG image (*.svg)", {"svg"},
-            [&](QString s) {
-                QSvgGenerator generator;
-                generator.setFileName(s);
-                generator.setSize(QSize(800, 800));
-                generator.setViewBox(QRect(0, 0, 800, 800));
-                plot->renderTo(generator);
-            }},
-
-    };
+    static vector<Trio<QString, vector<QString>, function<void(QString, PlotInternal &)>>>
+        types = {
+            {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
+                [](QString s, PlotInternal &p) {
+                    QImage image(2000, 2000, QImage::Format_ARGB32_Premultiplied);
+                    p.renderTo(image);
+                    image.save(s, Q_NULLPTR, 100);
+                }},
+            {"SVG image (*.svg)", {"svg"},
+                [](QString s, PlotInternal &p) {
+                    QSvgGenerator generator;
+                    generator.setFileName(s);
+                    generator.setSize(QSize(800, 800));
+                    generator.setViewBox(QRect(0, 0, 800, 800));
+                    p.renderTo(generator);
+                }},
+            {"PDF image (*.pdf)", {"pdf"},
+                [](QString s, PlotInternal &p) {
+                    QPdfWriter writer(s);
+                    QSizeF size(100, 100);
+                    writer.setPageSizeMM(size);
+                    writer.setResolution(300);
+                    p.renderTo(writer);
+                }},
+        };
 
     auto range = make_unique<vector<QVector2D>>();
     if (quantity.getSizeModel().size() == 0) {
@@ -105,13 +115,14 @@ Plot::Plot(SimQuantity &quantity, int dim) {
         QString filter = filters.join(";;");
         QString name =
             QFileDialog::getSaveFileName(this, "Export file", "", filter, &selected);
+        if (name.isEmpty()) return;
         for (auto &i : types) {
             if (i.a == selected) {
                 bool ext = false;
                 for (auto &j : i.b)
                     if (name.endsWith(j)) ext = true;
                 if (!ext) name += "." + i.b[0];
-                i.c(name);
+                i.c(name, *plot);
             }
         }
     });
@@ -216,6 +227,15 @@ void PlotInternal::mousePressEvent(QMouseEvent *event) {
 }
 
 void PlotInternal::mouseReleaseEvent(QMouseEvent *) { setMouseGrabEnabled(false); }
+
+void PlotInternal::wheelEvent(QWheelEvent *e) {
+    int d = e->delta();
+    scale -= d / 2000.0;
+    if (scale < 0.4) scale = 0.4;
+    engineGL->setScale(scale);
+    engineQt->setScale(scale);
+    requestUpdate();
+}
 
 void PlotInternal::initializeGL() { engineGL->initialize(); }
 

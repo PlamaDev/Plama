@@ -10,6 +10,7 @@
 #include <QOpenGLShaderProgram>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPen>
 #include <QScopedPointer>
 #include <algorithm>
 #include <memory>
@@ -17,7 +18,7 @@
 using namespace std;
 
 Engine::Engine(shared_ptr<Model> &model, shared_ptr<Axis> &axis)
-    : rotX(0), rotY(0), model(model), axis(axis), label(-1) {}
+    : rotX(0), rotY(0), model(model), axis(axis), label(-1), scale(1) {}
 
 void Engine::resize(int sizeX, int sizeY) {
     this->sizeX = sizeX;
@@ -39,6 +40,7 @@ void Engine::setBackGround(const QColor &color) {
 }
 
 void Engine::setLabel(float pos) { label = pos; }
+void Engine::setScale(float scale) { this->scale = scale; }
 
 EngineGL::EngineGL(
     shared_ptr<Model> &model, shared_ptr<Axis> &axis, shared_ptr<vector<QVector2D>> &size)
@@ -97,7 +99,7 @@ void EngineGL::render(QPainter &p) {
     // transform matrix
     QMatrix4x4 matTrans;
     matTrans.translate(0.1, 0);
-    matTrans.ortho(-1.1, 1.1, -1.1, 1.1, 0.1, 100);
+    matTrans.ortho(-1.1 * scale, 1.1 * scale, -1.1 * scale, 1.1 * scale, 0.1, 100);
     matTrans.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
     matTrans.rotate(rotY, 0, 1, 0);
     matTrans.rotate(rotX, 0, 0, 1);
@@ -195,6 +197,7 @@ void EngineGL::render(QPainter &p) {
     QFont font = p.font();
     font.setPixelSize(min(sizeX, sizeY) / 45 + 2);
     p.setFont(font);
+    int sizeCavas = min(sizeX, sizeY);
     for (int i = 0; i < 3; i++) {
         if (num[i].second.isEmpty()) continue;
 
@@ -203,8 +206,10 @@ void EngineGL::render(QPainter &p) {
         QVector<QVector3D> &ax = num[i].second;
         for (int j = 0; j < ax.size(); j++) {
             QPoint n = (matText * ax[j]).toPoint();
-            QRect r = num[i].first ? QRect(n.x() - 100, n.y() - 10, 100, 20)
-                                   : QRect(n.x(), n.y() - 10, 100, 20);
+            QRect r = num[i].first
+                ? QRect(
+                      n.x() - sizeCavas, n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5)
+                : QRect(n.x(), n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5);
 
             p.drawText(r, f, format.arg((*size)[i].x() + diff * j, 0, 'g', 2));
         }
@@ -223,8 +228,10 @@ void EngineQt::render(QPainter &p) {
     p.setBrush(Qt::white);
     p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
     p.setRenderHint(QPainter::Antialiasing, true);
-    p.setRenderHint(QPainter::HighQualityAntialiasing, true);
+    // p.setRenderHint(QPainter::HighQualityAntialiasing, true);
     int dir = (360 - rotX) / 45 % 8;
+    int sizeCavas = min(sizeX, sizeY);
+    float lineWidth = sizeCavas / 500.0;
 
     // maxtries
     QVector3D view(1.5, 0, 0);
@@ -235,7 +242,7 @@ void EngineQt::render(QPainter &p) {
     QVector3D vecLightWorld = vecViewWorld;
     QMatrix4x4 matTrans;
     matTrans.translate(0.1, 0);
-    matTrans.ortho(-1.1, 1.1, -1.1, 1.1, 0.1, 100);
+    matTrans.ortho(-1.1 * scale, 1.1 * scale, -1.1 * scale, 1.1 * scale, 0.1, 100);
     matTrans.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
     matTrans.rotate(rotY, 0, 1, 0);
     matTrans.rotate(rotX, 0, 0, 1);
@@ -259,12 +266,12 @@ void EngineQt::render(QPainter &p) {
     QVector<QPair<int, int>> vSliceA = axis->getSlice(rotX, rotY);
     auto draw = [&](int index) {
         const QColor *c = vColorA[vIndexA[index + 1]];
-        p.setPen(*c);
+        p.setPen(QPen(*c, lineWidth));
 
         QVector3D pntWorld = matFinA * vPointA[vIndexA[index]];
-        QPoint p1 = pntWorld.toPoint();
+        QPointF p1 = pntWorld.toPointF();
         pntWorld = matFinA * vPointA[vIndexA[index + 1]];
-        QPoint p2 = pntWorld.toPoint();
+        QPointF p2 = pntWorld.toPointF();
         p.drawLine(p1, p2);
     };
     for (auto i : vSliceA)
@@ -272,12 +279,13 @@ void EngineQt::render(QPainter &p) {
     for (auto i : vSliceA) draw(i.first);
 
     // draw text
-    p.setPen(Qt::black);
+    p.setPen(QPen(Qt::black, lineWidth));
     QFont font = p.font();
     font.setPixelSize(min(sizeX, sizeY) / 45 + 2);
     p.setFont(font);
     QVector<QPair<bool, QVector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
+
     for (int i = 0; i < 3; i++) {
         if (num[i].second.isEmpty()) continue;
 
@@ -285,21 +293,23 @@ void EngineQt::render(QPainter &p) {
         int f = (num[i].first ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
         QVector<QVector3D> &ax = num[i].second;
         for (int j = 0; j < ax.size(); j++) {
-            QPoint n = (matFinA * ax[j]).toPoint();
-            QRect r = num[i].first ? QRect(n.x() - 100, n.y() - 10, 100, 20)
-                                   : QRect(n.x(), n.y() - 10, 100, 20);
+            QPointF n = (matFinA * ax[j]).toPointF();
+            QRect r = num[i].first
+                ? QRect(
+                      n.x() - sizeCavas, n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5)
+                : QRect(n.x(), n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5);
 
             p.drawText(r, f, format.arg((*size)[i].x() + diff * j, 0, 'g', 2));
         }
     }
 
     // draw label
-    if (label >= 0) {
-        QPoint p1 = (matFinM * QVector3D(label, 0, -0.0001)).toPoint();
-        QPoint p2 = (matFinM * QVector3D(label, 1, -0.0001)).toPoint();
-        p.setPen(Qt::red);
-        p.drawLine(p1, p2);
-    }
+    //    if (label >= 0) {
+    //        QPointF p1 = (matFinM * QVector3D(label, 0, -0.0001)).toPointF();
+    //        QPointF p2 = (matFinM * QVector3D(label, 1, -0.0001)).toPointF();
+    //        p.setPen(QPen(Qt::red, lineWidth));
+    //        p.drawLine(p1, p2);
+    //    }
 
     // model data
     const vector<QVector3D> &vNormalM = model->getNormal();
@@ -310,27 +320,27 @@ void EngineQt::render(QPainter &p) {
     const vector<GLuint> &vIndexMT = model->getIndexT(dir);
 
     // draw model lines
-    QPoint pnt;
+    QPointF pnt;
     int cnt = 0;
     const vector<GLuint> &vIndexML = model->getIndexL(dir);
     for (auto i : vIndexML) {
         if (cnt++ == 1) {
-            p.setPen(*vColorMQ[i]);
-            QPoint tmp = (matFinM * vPointM[i]).toPoint();
+            p.setPen(QPen(*vColorMQ[i], lineWidth));
+            QPointF tmp = (matFinM * vPointM[i]).toPointF();
             p.drawLine(pnt, tmp);
             cnt = 0;
         } else
-            pnt = (matFinM * vPointM[i]).toPoint();
+            pnt = (matFinM * vPointM[i]).toPointF();
     }
 
     // draw model triangles
     static float (*dot)(const QVector3D &, const QVector3D &) = QVector3D::dotProduct;
     QVector3D vecLight(1, 1, 1);
-    QPolygon poly;
+    QPolygonF poly;
 
     for (auto i : vIndexMT) {
         QVector3D pntWorld = matFinM * vPointM[i];
-        poly << pntWorld.toPoint();
+        poly << pntWorld.toPointF();
         if (cnt++ == 2) {
             QVector3D pos = matModel * vPositionM[i];
             QVector3D normal = matNormal * vNormalM[i];
@@ -343,7 +353,7 @@ void EngineQt::render(QPainter &p) {
             QVector3D color = base * vColorMF[i] + 0.3 * spec * vecLight;
             QColor c(min(int(color.x() * 255), 255), min(int(color.y() * 255), 255),
                 min(int(color.z() * 255), 255));
-            p.setPen(c);
+            p.setPen(QPen(c, min(sizeX, sizeY) / 1500.0));
             p.setBrush(c);
             p.drawPolygon(poly);
             poly.clear();
