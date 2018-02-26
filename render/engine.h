@@ -25,6 +25,7 @@ public:
     void setBackGround(const QColor &color);
     void setLabel(float pos);
     void setScale(float scale);
+    void setShader(bool en);
 
 protected:
     int rotX, rotY;
@@ -33,6 +34,7 @@ protected:
     std::shared_ptr<Model> model;
     std::shared_ptr<Axis> axis;
     float label, scale;
+    bool shader;
 };
 
 class EngineGL : public Engine, protected QOpenGLFunctions {

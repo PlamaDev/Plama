@@ -21,7 +21,6 @@
 #include <QVBoxLayout>
 #include <QVector2D>
 #include <QWidget>
-#include <cmath>
 #include <vector>
 
 using namespace std;
@@ -120,6 +119,8 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     l->setMargin(0);
     QToolBar *bar = new QToolBar;
     QAction *aExport = new QAction(QIcon::fromTheme("document-export"), "Export");
+    QAction *aShader = new QAction(QIcon::fromTheme("draw-cuboid"), "Enable shader");
+    aShader->setCheckable(true);
     connect(aExport, &QAction::triggered, [&]() {
         QString selected;
         QStringList filters;
@@ -142,9 +143,10 @@ Plot::Plot(SimQuantity &quantity, int dim) {
                 }
             }
         }
-
     });
+    connect(aShader, &QAction::toggled, [=](bool b) { plot->setShader(b); });
     bar->addAction(aExport);
+    bar->addAction(aShader);
     l->addWidget(bar);
 
     plot = new PlotInternal(quantity.getSizeData().size() == 0
@@ -257,6 +259,12 @@ void PlotInternal::setRotation(int x, int y) {
 void PlotInternal::setLabel(float pos) {
     engineGL->setLabel(pos);
     engineQt->setLabel(pos);
+    requestUpdate();
+}
+
+void PlotInternal::setShader(bool en) {
+    engineGL->setShader(en);
+    engineQt->setShader(en);
     requestUpdate();
 }
 

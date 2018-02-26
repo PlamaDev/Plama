@@ -21,6 +21,7 @@ public:
         std::unique_ptr<std::vector<QVector2D>> &&size);
     void setRotation(int x, int y);
     void setLabel(float pos);
+    void setShader(bool en);
     void setModel(std::unique_ptr<Model> model, bool update = true);
     void renderTo(QPaintDevice &d);
 

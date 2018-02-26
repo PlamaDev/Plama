@@ -18,7 +18,7 @@
 using namespace std;
 
 Engine::Engine(shared_ptr<Model> &model, shared_ptr<Axis> &axis)
-    : rotX(0), rotY(0), model(model), axis(axis), label(-1), scale(1) {}
+    : rotX(0), rotY(0), model(model), axis(axis), label(-1), scale(1), shader(false) {}
 
 void Engine::resize(int sizeX, int sizeY) {
     this->sizeX = sizeX;
@@ -41,6 +41,7 @@ void Engine::setBackGround(const QColor &color) {
 
 void Engine::setLabel(float pos) { label = pos; }
 void Engine::setScale(float scale) { this->scale = scale; }
+void Engine::setShader(bool en) { shader = en; }
 
 EngineGL::EngineGL(
     shared_ptr<Model> &model, shared_ptr<Axis> &axis, shared_ptr<vector<QVector2D>> &size)
@@ -110,35 +111,56 @@ void EngineGL::render(QPainter &p) {
     matNormal = matNormal.transposed();
     QMatrix4x4 matAxis = axis->getTransform(rotX, rotY);
 
-    programFlat->bind();
-    programFlat->setUniformValue(argFlatMatNormal, matNormal);
-    programFlat->setUniformValue(argFlatVecView, rotation * view);
-    programFlat->setUniformValue(argFlatVecLight, rotation * view);
-    programFlat->setUniformValue(argFlatMatTrans, matTrans);
-    programFlat->setUniformValue(argFlatMatModel, matModel);
+    if (shader) {
+        programFlat->bind();
+        programFlat->setUniformValue(argFlatMatNormal, matNormal);
+        programFlat->setUniformValue(argFlatVecView, rotation * view);
+        programFlat->setUniformValue(argFlatVecLight, rotation * view);
+        programFlat->setUniformValue(argFlatMatTrans, matTrans);
+        programFlat->setUniformValue(argFlatMatModel, matModel);
 
-    glVertexAttribPointer(
-        argFlatVecPnt, 3, GL_FLOAT, GL_FALSE, 0, model->getPoint().data());
-    glVertexAttribPointer(
-        argFlatVecPos, 3, GL_FLOAT, GL_FALSE, 0, model->getPosition().data());
-    glVertexAttribPointer(
-        argFlatVecNormal, 3, GL_FLOAT, GL_FALSE, 0, model->getNormal().data());
-    glVertexAttribPointer(
-        argFlatVecColor, 3, GL_FLOAT, GL_FALSE, 0, model->getColorF().data());
+        glVertexAttribPointer(
+            argFlatVecPnt, 3, GL_FLOAT, GL_FALSE, 0, model->getPoint().data());
+        glVertexAttribPointer(
+            argFlatVecPos, 3, GL_FLOAT, GL_FALSE, 0, model->getPosition().data());
+        glVertexAttribPointer(
+            argFlatVecNormal, 3, GL_FLOAT, GL_FALSE, 0, model->getNormal().data());
+        glVertexAttribPointer(
+            argFlatVecColor, 3, GL_FLOAT, GL_FALSE, 0, model->getColorF().data());
 
-    glEnableVertexAttribArray(argFlatVecPnt);
-    glEnableVertexAttribArray(argFlatVecPos);
-    glEnableVertexAttribArray(argFlatVecNormal);
-    glEnableVertexAttribArray(argFlatVecColor);
+        glEnableVertexAttribArray(argFlatVecPnt);
+        glEnableVertexAttribArray(argFlatVecPos);
+        glEnableVertexAttribArray(argFlatVecNormal);
+        glEnableVertexAttribArray(argFlatVecColor);
 
-    glDrawElements(GL_TRIANGLES, model->getIndexT(0).size(), GL_UNSIGNED_INT,
-        model->getIndexT(0).data());
+        glDrawElements(GL_TRIANGLES, model->getIndexT(0).size(), GL_UNSIGNED_INT,
+            model->getIndexT(0).data());
 
-    glDisableVertexAttribArray(argFlatVecPnt);
-    glDisableVertexAttribArray(argFlatVecPos);
-    glDisableVertexAttribArray(argFlatVecNormal);
-    glDisableVertexAttribArray(argFlatVecColor);
-    programFlat->release();
+        glDisableVertexAttribArray(argFlatVecPnt);
+        glDisableVertexAttribArray(argFlatVecPos);
+        glDisableVertexAttribArray(argFlatVecNormal);
+        glDisableVertexAttribArray(argFlatVecColor);
+        programFlat->release();
+    } else {
+        programPlain->bind();
+        programPlain->setUniformValue(argPlainMatModel, matModel);
+        programPlain->setUniformValue(argPlainMatTrans, matTrans);
+
+        glVertexAttribPointer(
+            argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0, model->getPoint().data());
+        glVertexAttribPointer(
+            argPlainVecColor, 3, GL_FLOAT, GL_FALSE, 0, model->getColorF().data());
+
+        glEnableVertexAttribArray(argPlainVecPnt);
+        glEnableVertexAttribArray(argPlainVecColor);
+
+        glDrawElements(GL_TRIANGLES, model->getIndexT(0).size(), GL_UNSIGNED_INT,
+            model->getIndexT(0).data());
+
+        glDisableVertexAttribArray(argPlainVecPnt);
+        glDisableVertexAttribArray(argPlainVecColor);
+        programPlain->release();
+    }
 
     programPlain->bind();
     programPlain->setUniformValue(argPlainMatModel, matModel);
@@ -343,18 +365,23 @@ void EngineQt::render(QPainter &p) {
         QVector3D pntWorld = matFinM * vPointM[i];
         poly << pntWorld.toPointF();
         if (cnt++ == 2) {
-            QVector3D pos = matModel * vPositionM[i];
-            QVector3D normal = matNormal * vNormalM[i];
-            normal.normalize();
-            QVector3D lightIn = pos - vecLightWorld;
-            lightIn.normalize();
-            QVector3D reflekt = reflect(lightIn, normal);
-            float spec = pow(max(dot(reflekt, -lightIn), 0.0f), 8);
-            float base = 0.55 + max(0.3f * dot(normal, -lightIn), 0.0f);
-            QVector3D color = base * vColorMF[i] + 0.3 * spec * vecLight;
-            QColor c(min(int(color.x() * 255), 255), min(int(color.y() * 255), 255),
-                min(int(color.z() * 255), 255));
-            // p.setPen(QPen(c, min(sizeX, sizeY) / 1500.0));
+            QColor c;
+            if (shader) {
+                QVector3D pos = matModel * vPositionM[i];
+                QVector3D normal = matNormal * vNormalM[i];
+                normal.normalize();
+                QVector3D lightIn = pos - vecLightWorld;
+                lightIn.normalize();
+                QVector3D reflekt = reflect(lightIn, normal);
+                float spec = pow(max(dot(reflekt, -lightIn), 0.0f), 8);
+                float base = 0.55 + max(0.3f * dot(normal, -lightIn), 0.0f);
+                QVector3D color = base * vColorMF[i] + 0.3 * spec * vecLight;
+                QColor c = QColor(min(int(color.x() * 255), 255),
+                    min(int(color.y() * 255), 255), min(int(color.z() * 255), 255));
+            } else {
+                c = QColor(vColorMF[i].x() * 255, vColorMF[i].y() * 255,
+                    vColorMF[i].z() * 255, 255);
+            }
             p.setBrush(c);
             p.drawPolygon(poly);
             poly.clear();
