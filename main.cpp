@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QList>
+#include <QProgressBar>
 #include <QSurfaceFormat>
 #include <vector>
 

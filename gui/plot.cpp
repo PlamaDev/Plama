@@ -1,19 +1,27 @@
 #include "plot.h"
 #include "render/model.h"
 #include "util.h"
+#include <QApplication>
+#include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QIcon>
+#include <QLatin1Char>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPdfWriter>
+#include <QProcess>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QSize>
 #include <QSizeF>
 #include <QSvgGenerator>
+#include <QTemporaryDir>
 #include <QToolBar>
 #include <QVBoxLayout>
 #include <QVector2D>
 #include <QWidget>
+#include <cmath>
 #include <vector>
 
 using namespace std;
@@ -68,30 +76,34 @@ vector<QVector2D> genRange(SimQuantity &quantity) {
 }
 
 Plot::Plot(SimQuantity &quantity, int dim) {
-    static vector<Trio<QString, vector<QString>, function<void(QString, PlotInternal &)>>>
-        types = {
+    static vector<Trio<QString, vector<QString>, function<void(QString, Plot &)>>> types =
+        {
             {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
-                [](QString s, PlotInternal &p) {
-                    QImage image(2000, 2000, QImage::Format_ARGB32_Premultiplied);
-                    p.renderTo(image);
-                    image.save(s, Q_NULLPTR, 100);
+                [](QString s, Plot &p) {
+                    QImage image(4000, 4000, QImage::Format_ARGB32);
+                    p.plot->renderTo(image);
+                    QImage scaled = image.scaled(
+                        2000, 2000, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                    scaled.save(s, "JPG", 100);
                 }},
             {"SVG image (*.svg)", {"svg"},
-                [](QString s, PlotInternal &p) {
+                [](QString s, Plot &p) {
                     QSvgGenerator generator;
                     generator.setFileName(s);
                     generator.setSize(QSize(800, 800));
                     generator.setViewBox(QRect(0, 0, 800, 800));
-                    p.renderTo(generator);
+                    p.plot->renderTo(generator);
                 }},
             {"PDF image (*.pdf)", {"pdf"},
-                [](QString s, PlotInternal &p) {
+                [](QString s, Plot &p) {
                     QPdfWriter writer(s);
                     QSizeF size(100, 100);
                     writer.setPageSizeMM(size);
                     writer.setResolution(300);
-                    p.renderTo(writer);
+                    p.plot->renderTo(writer);
                 }},
+            {"AVI video (*.avi)", {"avi"},
+                [](QString s, Plot &p) { p.renderVideo(s, 800, 800, 10, 20); }},
         };
 
     auto range = make_unique<vector<QVector2D>>();
@@ -116,15 +128,21 @@ Plot::Plot(SimQuantity &quantity, int dim) {
         QString name =
             QFileDialog::getSaveFileName(this, "Export file", "", filter, &selected);
         if (name.isEmpty()) return;
+
         for (auto &i : types) {
             if (i.a == selected) {
-                bool ext = false;
-                for (auto &j : i.b)
-                    if (name.endsWith(j)) ext = true;
-                if (!ext) name += "." + i.b[0];
-                i.c(name, *plot);
+                if (QFileInfo::exists(name))
+                    i.c(name, *this);
+                else {
+                    bool ext = false;
+                    for (auto &j : i.b)
+                        if (name.endsWith(j)) ext = true;
+                    if (!ext) name += "." + i.b[0];
+                    i.c(name, *this);
+                }
             }
         }
+
     });
     bar->addAction(aExport);
     l->addWidget(bar);
@@ -152,7 +170,8 @@ void Plot::setTime(float t) {
     } else if (quantity->getSizeData().size() == 2) {
         const vector<float> &d = quantity->getDataAt(t, 0);
         if (&d != data) {
-            plot->setModel(Model::fromQuantity(*quantity, t, 0));
+            plot->setModel(Model::fromData(d, quantity->getSizeData()[0],
+                quantity->getSizeData()[1], quantity->getExtreme()));
             data = &d;
         }
     }
@@ -168,6 +187,56 @@ void Plot::setPartition(float p) {
 
 QSize Plot::sizeHint() const { return QSize(500, 500); }
 QSize Plot::minimumSizeHint() const { return QSize(100, 100); }
+
+void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
+    QProgressDialog *progress = new QProgressDialog(this);
+    QProgressBar *bar = new QProgressBar(progress);
+    bar->setRange(0, 0);
+    progress->setLabelText("Processing...");
+    progress->setBar(bar);
+    progress->show();
+
+    QTemporaryDir *tmp = new QTemporaryDir();
+    int total = len * fps;
+    float lenData = quantity->getTimes()[quantity->getTimes().size() - 1];
+    float lenStep = lenData / total;
+    const vector<float> *dataTmp = nullptr;
+    int sizeName = QString::number(total).length();
+    QString format = "%1.bmp";
+    QString f1, f2;
+    f2 = format.arg(int(0), sizeName, 10, QLatin1Char('0'));
+    for (int i = 0; i < total; i++) {
+        f1 = f2;
+        f2 = format.arg(int(i), sizeName, 10, QLatin1Char('0'));
+
+        const vector<float> *dataNew = &quantity->getDataAt(i * lenStep, 0);
+        if (dataNew == dataTmp)
+            QFile::copy(tmp->filePath(f1), tmp->filePath(f2));
+        else {
+            QImage image(sizeX * 2, sizeY * 2, QImage::Format_ARGB32);
+            QString filePath = tmp->filePath(f2);
+            plot->setModel(Model::fromData(*dataNew, quantity->getSizeData()[0],
+                               quantity->getSizeData()[1], quantity->getExtreme()),
+                false);
+            plot->renderTo(image);
+            image.save(filePath, Q_NULLPTR, 100);
+            dataTmp = dataNew;
+        }
+        QApplication::processEvents();
+    }
+
+    QProcess *process = new QProcess(this);
+    process->setWorkingDirectory(tmp->path());
+    connect(progress, &QProgressDialog::canceled, [=]() { process->kill(); });
+    connect(process, QOverload<int>::of(&QProcess::finished), [=]() {
+        delete tmp;
+        progress->close();
+    });
+    QString cmd = "ffmpeg -y -r 10 -i %0" + QString::number(sizeName) +
+        "d.bmp -c:v libx264 -crf 12 -s " + QString::number(sizeX) + "x" +
+        QString::number(sizeY) + " " + dir;
+    process->start(cmd);
+}
 
 PlotInternal::PlotInternal(unique_ptr<Model> &&model, unique_ptr<Axis> &&axis,
     unique_ptr<vector<QVector2D>> &&size) {
@@ -191,11 +260,11 @@ void PlotInternal::setLabel(float pos) {
     requestUpdate();
 }
 
-void PlotInternal::setModel(unique_ptr<Model> model) {
+void PlotInternal::setModel(unique_ptr<Model> model, bool update) {
     shared_ptr<Model> pm = move(model);
     engineGL->setModel(pm);
     engineQt->setModel(pm);
-    requestUpdate();
+    if (update) requestUpdate();
 }
 
 void PlotInternal::renderTo(QPaintDevice &d) {

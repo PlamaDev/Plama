@@ -227,7 +227,7 @@ QVector3D reflect(const QVector3D &d, const QVector3D &n) {
 void EngineQt::render(QPainter &p) {
     p.setBrush(Qt::white);
     p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
-    p.setRenderHint(QPainter::Antialiasing, true);
+    // p.setRenderHint(QPainter::Antialiasing, true);
     // p.setRenderHint(QPainter::HighQualityAntialiasing, true);
     int dir = (360 - rotX) / 45 % 8;
     int sizeCavas = min(sizeX, sizeY);
@@ -338,6 +338,7 @@ void EngineQt::render(QPainter &p) {
     QVector3D vecLight(1, 1, 1);
     QPolygonF poly;
 
+    p.setPen(Qt::NoPen);
     for (auto i : vIndexMT) {
         QVector3D pntWorld = matFinM * vPointM[i];
         poly << pntWorld.toPointF();
@@ -353,7 +354,7 @@ void EngineQt::render(QPainter &p) {
             QVector3D color = base * vColorMF[i] + 0.3 * spec * vecLight;
             QColor c(min(int(color.x() * 255), 255), min(int(color.y() * 255), 255),
                 min(int(color.z() * 255), 255));
-            p.setPen(QPen(c, min(sizeX, sizeY) / 1500.0));
+            // p.setPen(QPen(c, min(sizeX, sizeY) / 1500.0));
             p.setBrush(c);
             p.drawPolygon(poly);
             poly.clear();

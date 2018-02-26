@@ -30,6 +30,8 @@ public:
 
     static std::unique_ptr<Model> fromQuantity(SimQuantity &sq, int dim = 0);
     static std::unique_ptr<Model> fromQuantity(SimQuantity &sq, float time, int dim = 0);
+    static std::unique_ptr<Model> fromData(
+        const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme);
 
 private:
     Model(int sPoint, int sIndexT, int sIndexL);

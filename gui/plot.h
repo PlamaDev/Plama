@@ -8,6 +8,8 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLPaintDevice>
 #include <QOpenGLWindow>
+#include <QProcess>
+#include <QProgressDialog>
 #include <QWidget>
 #include <QWindow>
 #include <memory>
@@ -19,7 +21,7 @@ public:
         std::unique_ptr<std::vector<QVector2D>> &&size);
     void setRotation(int x, int y);
     void setLabel(float pos);
-    void setModel(std::unique_ptr<Model> model);
+    void setModel(std::unique_ptr<Model> model, bool update = true);
     void renderTo(QPaintDevice &d);
 
 private:
@@ -33,7 +35,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
-    void wheelEvent(QWheelEvent *);
+    void wheelEvent(QWheelEvent *) override;
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
@@ -52,6 +54,8 @@ private:
     PlotInternal *plot;
     SimQuantity *quantity;
     const std::vector<float> *data;
+
+    void renderVideo(QString dir, int sizeX, int sizeY, int len, int fps);
 };
 
 #endif // PLOT_H

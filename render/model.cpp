@@ -75,6 +75,12 @@ const vector<QVector3D> &Model::getPosition() const { return position; }
 const vector<const QColor *> &Model::getColorQ() const { return colorQ; }
 
 unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time, int dim) {
+    return fromData(sq.getDataAt(time, dim), sq.getSizeData()[0], sq.getSizeData()[1],
+        sq.getExtreme());
+}
+
+std::unique_ptr<Model> Model::fromData(
+    const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme) {
     static vector<vector<GLuint>> order{
         {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
         {1, 4, 0, 0, 4, 3, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 8, 4, 5, 7, 4, 8},
@@ -84,10 +90,6 @@ unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time, int dim) {
         {7, 4, 8, 8, 4, 5, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 0, 4, 3, 1, 4, 0},
         {6, 4, 7, 3, 4, 6, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 5, 4, 2, 2, 4, 1},
         {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}};
-    QVector2D extreme = sq.getExtreme();
-    int sizeX = sq.getSizeData()[0];
-    int sizeY = sq.getSizeData()[1];
-    vector<float> data = sq.getDataAt(time, dim);
     int sizePoint = (sizeX - 1) * (sizeY - 1) * 9;
     int sizeIndex = (sizeX - 1) * (sizeY - 1) * 24;
 
