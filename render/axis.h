@@ -6,31 +6,33 @@
 #include <QPair>
 #include <QVector3D>
 #include <QVector>
+#include <vector>
 
 class Axis {
 public:
     Axis(int sizeX, int sizeY, int sizeZ);
-    QVector<QVector3D> &getPoint();
-    QVector<QVector3D> &getColorF();
-    QVector<const QColor *> &getColorQ();
-    QVector<GLuint> &getIndex();
-    QVector<QPair<int, int>> getSlice(int rotX, int rotY);
-    QVector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
+    std::vector<QVector3D> &getPoint();
+    std::vector<QVector3D> &getColorF();
+    std::vector<const QColor *> &getColorQ();
+    std::vector<GLuint> &getIndex();
+    std::vector<QPair<int, int>> getSlice(int rotX, int rotY);
+    std::vector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
         bool zStrait, bool xyStrait, bool invert);
-    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(
+    std::vector<QVector3D> getTester(int rotX, int rotY);
+    std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(
         int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait);
-    QVector<QPair<bool, QVector<QVector3D>>> &getNumber(int rotX, int rotY);
+    std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(int rotX, int rotY);
     QMatrix4x4 getTransform(int rotX, int rotY);
     QMatrix4x4 getTransform(int dir, bool flipX);
 
 private:
-    QVector<QVector3D> point;
-    QVector<QVector3D> colorF;
-    QVector<const QColor *> colorQ;
-    QVector<GLuint> index;
-    QVector<QVector<QVector3D>> number;
+    std::vector<QVector3D> point;
+    std::vector<QVector3D> colorF;
+    std::vector<const QColor *> colorQ;
+    std::vector<GLuint> index;
+    std::vector<std::vector<QVector3D>> number;
     int sizeX, sizeY, sizeZ;
-    QVector<int> offset;
+    std::vector<int> offset;
     static const float DIST, EXTRA;
     static const QVector3D BLACK_F, GREY_F;
     static const QColor BLACK_Q, GREY_Q;

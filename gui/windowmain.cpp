@@ -5,10 +5,12 @@
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QHeaderView>
+#include <QLabel>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QSizePolicy>
 #include <QSlider>
 #include <QToolBar>
 #include <QTreeWidget>
@@ -49,6 +51,7 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
     slider->setMaximum(10000);
     slider->setMinimum(0);
     toolbar->addWidget(slider);
+
     addToolBar(toolbar);
 
     setCentralWidget(nullptr);
@@ -58,6 +61,7 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
     QTreeWidget *tree = new QTreeWidget(dock);
     dock->setWidget(tree);
     tree->header()->close();
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea);
     addDockWidget(Qt::LeftDockWidgetArea, dock);
     connect(tree, &QTreeWidget::itemDoubleClicked, [=](QTreeWidgetItem *i) {
         QVariant q = i->data(0, 0x0100);
@@ -75,7 +79,9 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
                 plot->setRotation(90, 90);
                 plot->setPartition(slider->value() / (float)10000);
                 d->setWidget(plot);
-                addDockWidget(Qt::RightDockWidgetArea, d);
+
+                d->setAllowedAreas(Qt::LeftDockWidgetArea);
+                addDockWidget(Qt::LeftDockWidgetArea, d);
 
                 connect(d, &QDockWidget::visibilityChanged, [=](bool v) {
                     if (v) {

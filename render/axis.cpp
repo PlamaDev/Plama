@@ -4,7 +4,9 @@
 #include <QVector3D>
 #include <QVector>
 
-const float Axis::DIST = 0.1f;
+using namespace std;
+
+const float Axis::DIST = 0.05f;
 const float Axis::EXTRA = 0.05f;
 const QVector3D Axis::BLACK_F = QVector3D(0.4, 0.4, 0.4);
 const QVector3D Axis::GREY_F = QVector3D(0.8, 0.8, 0.8);
@@ -219,36 +221,36 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
     }
 }
 
-QVector<QVector3D> &Axis::getPoint() { return point; }
-QVector<QVector3D> &Axis::getColorF() { return colorF; }
-QVector<const QColor *> &Axis::getColorQ() { return colorQ; }
-QVector<GLuint> &Axis::getIndex() { return index; }
+vector<QVector3D> &Axis::getPoint() { return point; }
+vector<QVector3D> &Axis::getColorF() { return colorF; }
+vector<const QColor *> &Axis::getColorQ() { return colorQ; }
+vector<GLuint> &Axis::getIndex() { return index; }
 
-QVector<QPair<int, int>> Axis::getSlice(int rotX, int rotY) {
+vector<QPair<int, int>> Axis::getSlice(int rotX, int rotY) {
     int rx = (360 - rotX) % 90;
     int dir = (360 - rotX) / 45 % 8;
-    return getSlice(rx > 10 || rotY > 20, rx < 80 || rotY > 20, rotY<70, rx> 45,
+    return getSlice(rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45,
         rotY > 20, dir % 4 > 1);
 }
 
-QVector<QPair<int, int>> Axis::getSlice(
+vector<QPair<int, int>> Axis::getSlice(
     bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait, bool invert) {
     typedef QPair<int, int> P;
-    QVector<QPair<int, int>> ret;
+    vector<QPair<int, int>> ret;
     int i = invert ? OFFSET : 0;
     int x = invert ? sizeY : sizeX;
     int y = invert ? sizeX : sizeY;
-    ret.append(P(offset[(xEnable ? XY_X_B : XY_X_G) + i], y + 1));
-    ret.append(P(offset[(yEnable ? XY_Y_B : XY_Y_G) + i], x + 1));
-    if (xEnable) ret.append(P(offset[(xyStrait ? X_S : X_R) + i], x + 1));
-    if (yEnable) ret.append(P(offset[(xyStrait ? Y_S : Y_R) + i], y + 1));
-    if (zEnable) ret.append(P(offset[XZ + i], x + sizeZ + 2));
-    if (zEnable) ret.append(P(offset[(zStrait ? Z_S : Z_R) + i], sizeZ + 1));
-    if (zEnable) ret.append(P(offset[YZ + i], sizeZ + y + 2));
+    ret.push_back(P(offset[(xEnable ? XY_X_B : XY_X_G) + i], y + 1));
+    ret.push_back(P(offset[(yEnable ? XY_Y_B : XY_Y_G) + i], x + 1));
+    if (xEnable) ret.push_back(P(offset[(xyStrait ? X_S : X_R) + i], x + 1));
+    if (yEnable) ret.push_back(P(offset[(xyStrait ? Y_S : Y_R) + i], y + 1));
+    if (zEnable) ret.push_back(P(offset[XZ + i], x + sizeZ + 2));
+    if (zEnable) ret.push_back(P(offset[(zStrait ? Z_S : Z_R) + i], sizeZ + 1));
+    if (zEnable) ret.push_back(P(offset[YZ + i], sizeZ + y + 2));
     return ret;
 }
 
-QVector<QPair<bool, QVector<QVector3D>>> &Axis::getNumber(int rotX, int rotY) {
+vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int rotX, int rotY) {
     int rx = (360 - rotX) % 90;
     int dir = (360 - rotX) / 45 % 8;
     return getNumber(
@@ -266,9 +268,9 @@ QMatrix4x4 Axis::getTransform(int dir, bool flipX) {
     return ret * tmp;
 }
 
-QVector<QPair<bool, QVector<QVector3D>>> &Axis::getNumber(
+vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(
     int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) {
-    static QVector<QPair<bool, QVector<QVector3D>>> ret(3); // true for right align
+    static vector<QPair<bool, vector<QVector3D>>> ret(3); // true for right align
     for (int i = 0; i < 3; i++) ret[i].second.clear();
     float diffX = 1.0f / sizeX;
     float diffY = 1.0f / sizeY;
@@ -282,63 +284,67 @@ QVector<QPair<bool, QVector<QVector3D>>> &Axis::getNumber(
     if (d == 0) {
         if (xEnable)
             for (int i = 0; i < sizeX + 1; i++)
-                ret[0].second.append(QVector3D(diffX * i, 1 + xyEx, -DIST + zEx));
+                ret[0].second.push_back(QVector3D(diffX * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable)
                 for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
+                    ret[1].second.push_back(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
             else
                 for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
+                    ret[1].second.push_back(
+                        QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
         }
         ret[0].first = !zEnable;
         ret[1].first = true;
     } else if (d == 1) {
         if (xEnable)
             for (int i = 0; i < sizeY + 1; i++)
-                ret[1].second.append(QVector3D(diffY * i, 1 + xyEx, -DIST + zEx));
+                ret[1].second.push_back(QVector3D(diffY * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable)
                 for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
+                    ret[0].second.push_back(
+                        QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
             else
                 for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
+                    ret[0].second.push_back(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
         }
         ret[0].first = true;
         ret[1].first = !zEnable;
     } else if (d == 2) {
         if (xEnable)
             for (int i = 0; i < sizeX + 1; i++)
-                ret[0].second.append(QVector3D(1 - diffX * i, 1 + xyEx, -DIST + zEx));
+                ret[0].second.push_back(QVector3D(1 - diffX * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable)
                 for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
+                    ret[1].second.push_back(
+                        QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
             else
                 for (int i = 0; i < sizeY + 1; i++)
-                    ret[1].second.append(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
+                    ret[1].second.push_back(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
         }
         ret[0].first = !zEnable;
         ret[1].first = true;
     } else {
         if (xEnable)
             for (int i = 0; i < sizeY + 1; i++)
-                ret[1].second.append(QVector3D(1 - diffY * i, 1 + xyEx, -DIST + zEx));
+                ret[1].second.push_back(QVector3D(1 - diffY * i, 1 + xyEx, -DIST + zEx));
         if (yEnable) {
             if (zEnable)
                 for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
+                    ret[0].second.push_back(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
             else
                 for (int i = 0; i < sizeX + 1; i++)
-                    ret[0].second.append(QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
+                    ret[0].second.push_back(
+                        QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
         }
         ret[0].first = true;
         ret[1].first = !zEnable;
     }
     if (zEnable)
         for (int i = 0; i < sizeZ + 1; i++)
-            ret[2].second.append(QVector3D(1 + xEx, yEx, diffZ * i));
+            ret[2].second.push_back(QVector3D(1 + xEx, yEx, diffZ * i));
     ret[2].first = true;
 
     return ret;

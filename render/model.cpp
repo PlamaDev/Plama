@@ -73,13 +73,9 @@ const vector<QVector3D> &Model::getNormal() const { return normal; }
 const vector<QVector3D> &Model::getColorF() const { return colorF; }
 const vector<QVector3D> &Model::getPosition() const { return position; }
 const vector<const QColor *> &Model::getColorQ() const { return colorQ; }
+const Gradient &Model::getGradient() const { return gradientHeightmap; }
 
-unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time, int dim) {
-    return fromData(sq.getDataAt(time, dim), sq.getSizeData()[0], sq.getSizeData()[1],
-        sq.getExtreme());
-}
-
-std::unique_ptr<Model> Model::fromData(
+void Model::changeData(
     const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme) {
     static vector<vector<GLuint>> order{
         {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
@@ -90,10 +86,6 @@ std::unique_ptr<Model> Model::fromData(
         {7, 4, 8, 8, 4, 5, 5, 4, 2, 2, 4, 1, 6, 4, 7, 3, 4, 6, 0, 4, 3, 1, 4, 0},
         {6, 4, 7, 3, 4, 6, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 5, 4, 2, 2, 4, 1},
         {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}};
-    int sizePoint = (sizeX - 1) * (sizeY - 1) * 9;
-    int sizeIndex = (sizeX - 1) * (sizeY - 1) * 24;
-
-    unique_ptr<Model> ret = unique_ptr<Model>(new Model(sizePoint, sizeIndex, 0));
 
     float sx = sizeX - 1;
     float sy = sizeY - 1;
@@ -138,51 +130,44 @@ std::unique_ptr<Model> Model::fromData(
                 }
             }
 
-            for (int i = 0; i < 9; i++) ret->point[offsetPoint + i] = p[i];
+            for (int i = 0; i < 9; i++) point[offsetPoint + i] = p[i];
 
-            ret->normal[offsetPoint] = QVector3D::crossProduct(p[1] - p[0], p[4] - p[0]);
-            ret->normal[offsetPoint + 1] =
-                QVector3D::crossProduct(p[2] - p[1], p[4] - p[1]);
-            ret->normal[offsetPoint + 2] =
-                QVector3D::crossProduct(p[5] - p[2], p[4] - p[2]);
-            ret->normal[offsetPoint + 3] =
-                QVector3D::crossProduct(p[0] - p[3], p[4] - p[3]);
-            ret->normal[offsetPoint + 4] = QVector3D(1, 1, 1);
-            ret->normal[offsetPoint + 5] =
-                QVector3D::crossProduct(p[8] - p[5], p[4] - p[5]);
-            ret->normal[offsetPoint + 6] =
-                QVector3D::crossProduct(p[3] - p[6], p[4] - p[6]);
-            ret->normal[offsetPoint + 7] =
-                QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
-            ret->normal[offsetPoint + 8] =
-                QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
+            normal[offsetPoint] = QVector3D::crossProduct(p[1] - p[0], p[4] - p[0]);
+            normal[offsetPoint + 1] = QVector3D::crossProduct(p[2] - p[1], p[4] - p[1]);
+            normal[offsetPoint + 2] = QVector3D::crossProduct(p[5] - p[2], p[4] - p[2]);
+            normal[offsetPoint + 3] = QVector3D::crossProduct(p[0] - p[3], p[4] - p[3]);
+            normal[offsetPoint + 4] = QVector3D(1, 1, 1);
+            normal[offsetPoint + 5] = QVector3D::crossProduct(p[8] - p[5], p[4] - p[5]);
+            normal[offsetPoint + 6] = QVector3D::crossProduct(p[3] - p[6], p[4] - p[6]);
+            normal[offsetPoint + 7] = QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
+            normal[offsetPoint + 8] = QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
 
-            for (int i = 0; i < 9; i++) ret->normal[offsetPoint + i].normalize();
+            for (int i = 0; i < 9; i++) normal[offsetPoint + i].normalize();
 
-            ret->colorQ[offsetPoint] = &(gradientHeightmap.getColor((d[0] + d[4]) / 2));
-            ret->colorQ[offsetPoint + 3] = ret->colorQ[offsetPoint];
-            ret->colorQ[offsetPoint + 1] = &gradientHeightmap.getColor((d[2] + d[4]) / 2);
-            ret->colorQ[offsetPoint + 2] = ret->colorQ[offsetPoint + 1];
-            ret->colorQ[offsetPoint + 5] = &gradientHeightmap.getColor((d[8] + d[4]) / 2);
-            ret->colorQ[offsetPoint + 8] = ret->colorQ[offsetPoint + 5];
-            ret->colorQ[offsetPoint + 7] = &gradientHeightmap.getColor((d[6] + d[4]) / 2);
-            ret->colorQ[offsetPoint + 6] = ret->colorQ[offsetPoint + 7];
-            ret->colorQ[offsetPoint + 4] = &gradientHeightmap.getColor(0);
+            colorQ[offsetPoint] = &(gradientHeightmap.getColor((d[0] + d[4]) / 2));
+            colorQ[offsetPoint + 3] = colorQ[offsetPoint];
+            colorQ[offsetPoint + 1] = &gradientHeightmap.getColor((d[2] + d[4]) / 2);
+            colorQ[offsetPoint + 2] = colorQ[offsetPoint + 1];
+            colorQ[offsetPoint + 5] = &gradientHeightmap.getColor((d[8] + d[4]) / 2);
+            colorQ[offsetPoint + 8] = colorQ[offsetPoint + 5];
+            colorQ[offsetPoint + 7] = &gradientHeightmap.getColor((d[6] + d[4]) / 2);
+            colorQ[offsetPoint + 6] = colorQ[offsetPoint + 7];
+            colorQ[offsetPoint + 4] = &gradientHeightmap.getColor(0);
 
             for (int i = offsetPoint; i < offsetPoint + 9; i++) {
-                const QColor *c = ret->colorQ[i];
-                ret->colorF[i] = QVector3D(c->redF(), c->greenF(), c->blueF());
+                const QColor *c = colorQ[i];
+                colorF[i] = QVector3D(c->redF(), c->greenF(), c->blueF());
             }
 
-            ret->position[offsetPoint] = (p[0] + p[1] + p[4]) / 3;
-            ret->position[offsetPoint + 1] = (p[1] + p[2] + p[4]) / 3;
-            ret->position[offsetPoint + 2] = (p[2] + p[5] + p[4]) / 3;
-            ret->position[offsetPoint + 3] = (p[0] + p[3] + p[4]) / 3;
-            ret->position[offsetPoint + 4] = p[4];
-            ret->position[offsetPoint + 5] = (p[5] + p[8] + p[4]) / 3;
-            ret->position[offsetPoint + 6] = (p[6] + p[3] + p[4]) / 3;
-            ret->position[offsetPoint + 7] = (p[6] + p[7] + p[4]) / 3;
-            ret->position[offsetPoint + 8] = (p[7] + p[8] + p[4]) / 3;
+            position[offsetPoint] = (p[0] + p[1] + p[4]) / 3;
+            position[offsetPoint + 1] = (p[1] + p[2] + p[4]) / 3;
+            position[offsetPoint + 2] = (p[2] + p[5] + p[4]) / 3;
+            position[offsetPoint + 3] = (p[0] + p[3] + p[4]) / 3;
+            position[offsetPoint + 4] = p[4];
+            position[offsetPoint + 5] = (p[5] + p[8] + p[4]) / 3;
+            position[offsetPoint + 6] = (p[6] + p[3] + p[4]) / 3;
+            position[offsetPoint + 7] = (p[6] + p[7] + p[4]) / 3;
+            position[offsetPoint + 8] = (p[7] + p[8] + p[4]) / 3;
         }
     }
 
@@ -190,12 +175,24 @@ std::unique_ptr<Model> Model::fromData(
         int cnt = 0;
         function<void(int)> func = [&](int j) {
             int offsetPoint = j * 9;
-            for (int j = 0; j < 24; j++)
-                ret->indexT[i][cnt++] = order[i][j] + offsetPoint;
+            for (int j = 0; j < 24; j++) indexT[i][cnt++] = order[i][j] + offsetPoint;
         };
         indexFunc[i](func, sizeX - 1, sizeY - 1);
     }
+}
 
+unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time, int dim) {
+    return fromData(sq.getDataAt(time, dim), sq.getSizeData()[0], sq.getSizeData()[1],
+        sq.getExtreme());
+}
+
+std::unique_ptr<Model> Model::fromData(
+    const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme) {
+    int sizePoint = (sizeX - 1) * (sizeY - 1) * 9;
+    int sizeIndex = (sizeX - 1) * (sizeY - 1) * 24;
+
+    unique_ptr<Model> ret = unique_ptr<Model>(new Model(sizePoint, sizeIndex, 0));
+    ret->changeData(data, sizeX, sizeY, extreme);
     return ret;
 }
 

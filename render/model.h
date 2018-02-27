@@ -27,6 +27,10 @@ public:
     const std::vector<QVector3D> &getColorF() const;
     const std::vector<QVector3D> &getPosition() const;
     const std::vector<QColor const *> &getColorQ() const;
+    const Gradient &getGradient() const;
+
+    void changeData(
+        const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme);
 
     static std::unique_ptr<Model> fromQuantity(SimQuantity &sq, int dim = 0);
     static std::unique_ptr<Model> fromQuantity(SimQuantity &sq, float time, int dim = 0);

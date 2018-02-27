@@ -305,15 +305,6 @@ void PlotInternal::mousePressEvent(QMouseEvent *event) {
 
 void PlotInternal::mouseReleaseEvent(QMouseEvent *) { setMouseGrabEnabled(false); }
 
-void PlotInternal::wheelEvent(QWheelEvent *e) {
-    int d = e->delta();
-    scale -= d / 2000.0;
-    if (scale < 0.4) scale = 0.4;
-    engineGL->setScale(scale);
-    engineQt->setScale(scale);
-    requestUpdate();
-}
-
 void PlotInternal::initializeGL() { engineGL->initialize(); }
 
 void PlotInternal::resizeGL(int w, int h) { engineGL->resize(w, h); }

@@ -24,8 +24,8 @@ public:
     void setRotation(int rotX, int rotY);
     void setBackGround(const QColor &color);
     void setLabel(float pos);
-    void setScale(float scale);
     void setShader(bool en);
+    void setBar(bool en);
 
 protected:
     int rotX, rotY;
@@ -33,8 +33,8 @@ protected:
     QVector3D color;
     std::shared_ptr<Model> model;
     std::shared_ptr<Axis> axis;
-    float label, scale;
-    bool shader;
+    float label;
+    bool shader, bar;
 };
 
 class EngineGL : public Engine, protected QOpenGLFunctions {
