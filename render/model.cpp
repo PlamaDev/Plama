@@ -5,36 +5,6 @@
 
 using namespace std;
 
-Gradient::Gradient(vector<QPair<QColor, float>> data, int steps)
-    : cache(steps), step(1.0f / steps) {
-    QColor c1 = data[0].first;
-    QColor c2 = data[0].first;
-    float p1 = 0;
-    float p2 = 0;
-    int count = 0;
-    for (auto i : data) {
-        c1 = c2;
-        p1 = p2;
-        c2 = i.first;
-        p2 = i.second;
-        for (float pos = count * step; pos < p2; count++, pos = count * step) {
-            float diff1 = pos - p1;
-            float diff2 = p2 - pos;
-            float diffT = p2 - p1;
-            int r = (c1.red() * diff2 + c2.red() * diff1) / diffT;
-            int g = (c1.green() * diff2 + c2.green() * diff1) / diffT;
-            int b = (c1.blue() * diff2 + c2.blue() * diff1) / diffT;
-            cache[count] = QColor(r, g, b);
-        }
-    }
-}
-
-const QColor &Gradient::getColor(float pos) const {
-    int index = pos / step;
-    int size = cache.size();
-    return cache[index >= size ? size - 1 : index];
-}
-
 function<void(function<void(int)> &, int, int)> f0 = //
     [](function<void(int)> &f, int x, int y) {
         for (int i = 0; i < x; i++)
@@ -62,10 +32,6 @@ function<void(function<void(int)> &, int, int)> f3 = //
 vector<function<void(function<void(int)> &, int, int)>> Model::indexFunc{
     f0, f0, f1, f1, f3, f3, f2, f2};
 
-Gradient Model::gradientHeightmap({{Qt::blue, 0.0f}, {Qt::cyan, 0.2f}, {Qt::green, 0.4f},
-                                      {Qt::yellow, 0.6f}, {Qt::red, 1.0f}},
-    200);
-
 const vector<GLuint> &Model::getIndexT(int dir) const { return indexT[dir]; }
 const vector<GLuint> &Model::getIndexL(int dir) const { return indexL[dir]; }
 const vector<QVector3D> &Model::getPoint() const { return point; }
@@ -73,7 +39,6 @@ const vector<QVector3D> &Model::getNormal() const { return normal; }
 const vector<QVector3D> &Model::getColorF() const { return colorF; }
 const vector<QVector3D> &Model::getPosition() const { return position; }
 const vector<const QColor *> &Model::getColorQ() const { return colorQ; }
-const Gradient &Model::getGradient() const { return gradientHeightmap; }
 
 void Model::changeData(
     const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme) {
@@ -144,15 +109,15 @@ void Model::changeData(
 
             for (int i = 0; i < 9; i++) normal[offsetPoint + i].normalize();
 
-            colorQ[offsetPoint] = &(gradientHeightmap.getColor((d[0] + d[4]) / 2));
+            colorQ[offsetPoint] = &(Gradient::HEIGHT_MAP.getColorQ((d[0] + d[4]) / 2));
             colorQ[offsetPoint + 3] = colorQ[offsetPoint];
-            colorQ[offsetPoint + 1] = &gradientHeightmap.getColor((d[2] + d[4]) / 2);
+            colorQ[offsetPoint + 1] = &Gradient::HEIGHT_MAP.getColorQ((d[2] + d[4]) / 2);
             colorQ[offsetPoint + 2] = colorQ[offsetPoint + 1];
-            colorQ[offsetPoint + 5] = &gradientHeightmap.getColor((d[8] + d[4]) / 2);
+            colorQ[offsetPoint + 5] = &Gradient::HEIGHT_MAP.getColorQ((d[8] + d[4]) / 2);
             colorQ[offsetPoint + 8] = colorQ[offsetPoint + 5];
-            colorQ[offsetPoint + 7] = &gradientHeightmap.getColor((d[6] + d[4]) / 2);
+            colorQ[offsetPoint + 7] = &Gradient::HEIGHT_MAP.getColorQ((d[6] + d[4]) / 2);
             colorQ[offsetPoint + 6] = colorQ[offsetPoint + 7];
-            colorQ[offsetPoint + 4] = &gradientHeightmap.getColor(0);
+            colorQ[offsetPoint + 4] = &Gradient::HEIGHT_MAP.getColorQ(0);
 
             for (int i = offsetPoint; i < offsetPoint + 9; i++) {
                 const QColor *c = colorQ[i];

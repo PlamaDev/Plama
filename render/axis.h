@@ -2,7 +2,7 @@
 #define AXIS_H
 
 #include <QMatrix4x4>
-#include <QOpenGLFunctions>
+#include <QOpenGLContext>
 #include <QPair>
 #include <QVector3D>
 #include <QVector>
@@ -11,17 +11,17 @@
 class Axis {
 public:
     Axis(int sizeX, int sizeY, int sizeZ);
-    std::vector<QVector3D> &getPoint();
-    std::vector<QVector3D> &getColorF();
-    std::vector<const QColor *> &getColorQ();
-    std::vector<GLuint> &getIndex();
+    const std::vector<QVector3D> &getPoint() const;
+    const std::vector<QVector3D> &getColorF() const;
+    const std::vector<const QColor *> &getColorQ() const;
+    const std::vector<GLuint> &getIndex() const;
     std::vector<QPair<int, int>> getSlice(int rotX, int rotY);
     std::vector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
         bool zStrait, bool xyStrait, bool invert);
-    std::vector<QVector3D> getTester(int rotX, int rotY);
-    std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(
-        int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait);
-    std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(int rotX, int rotY);
+    const std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(int dir,
+        bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const;
+    const std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(
+        int rotX, int rotY) const;
     QMatrix4x4 getTransform(int rotX, int rotY);
     QMatrix4x4 getTransform(int dir, bool flipX);
 

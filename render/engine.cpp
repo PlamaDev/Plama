@@ -1,5 +1,5 @@
 #include "engine.h"
-#include "render/axis.h"
+#include "axis.h"
 #include "util.h"
 #include <QColor>
 #include <QFont>
@@ -17,8 +17,10 @@
 
 using namespace std;
 
-Engine::Engine(shared_ptr<Model> &model, shared_ptr<Axis> &axis)
-    : rotX(0), rotY(0), model(model), axis(axis), label(-1), shader(false) {}
+Engine::Engine(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> &size)
+    : rotX(0), rotY(0), model(model), axis(axis), bar(bar), size(size), label(-1),
+      enShader(false), enBar(false) {}
 
 void Engine::resize(int sizeX, int sizeY) {
     this->sizeX = sizeX;
@@ -40,12 +42,12 @@ void Engine::setBackGround(const QColor &color) {
 }
 
 void Engine::setLabel(float pos) { label = pos; }
-void Engine::setShader(bool en) { shader = en; }
-void Engine::setBar(bool en) { bar = en; }
+void Engine::setShader(bool en) { enShader = en; }
+void Engine::setBar(bool en) { enBar = en; }
 
-EngineGL::EngineGL(
-    shared_ptr<Model> &model, shared_ptr<Axis> &axis, shared_ptr<vector<QVector2D>> &size)
-    : Engine(model, axis), size(size) {}
+EngineGL::EngineGL(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> &size)
+    : Engine(model, axis, bar, size) {}
 
 void EngineGL::initialize() {
     initializeOpenGLFunctions();
@@ -130,39 +132,50 @@ void EngineGL::render(QPainter &p) {
     matTrans.rotate(rotX, 0, 0, 1);
 
     static QMatrix4x4 matShift(0.8, 0, 0, -0.2, 0, 0.8, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-    if (bar) matTrans = matShift * matTrans;
+    if (enBar) matTrans = matShift * matTrans;
     QMatrix4x4 matScreen(
         sizeX / 2.0, 0, 0, 0, 0, -sizeY / 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
     matScreen.translate(1, -1);
     QMatrix4x4 matText = matScreen * matTrans * matAxis;
+    QMatrix4x4 matBar = matScreen * bar->getTransform();
 
-    vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
+    const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
     QFont font = p.font();
     font.setPixelSize(min(sizeX, sizeY) / 35 + 2);
     p.setFont(font);
-    int sizeCavas = min(sizeX, sizeY);
+    int canvas = min(sizeX, sizeY);
     glDisable(GL_DEPTH_TEST);
     for (int i = 0; i < 3; i++) {
         if (num[i].second.size() == 0) continue;
-
-        float diff = ((*size)[i].y() - (*size)[i].x()) / (num[i].second.size() - 1);
+        const vector<QVector3D> &ax = num[i].second;
+        float diff = ((*size)[i].y() - (*size)[i].x()) / (ax.size() - 1);
         int f = (num[i].first ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
-        vector<QVector3D> &ax = num[i].second;
+
         for (size_t j = 0; j < ax.size(); j++) {
             QPoint n = (matText * ax[j]).toPoint();
             QRect r = num[i].first
-                ? QRect(
-                      n.x() - sizeCavas, n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5)
-                : QRect(n.x(), n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5);
+                ? QRect(n.x() - canvas, n.y() - canvas / 10, canvas, canvas / 5)
+                : QRect(n.x(), n.y() - canvas / 10, canvas, canvas / 5);
 
             p.drawText(r, f, format.arg((*size)[i].x() + diff * j, 0, 'g', 2));
         }
     }
 
+    if (enBar) {
+        const vector<QVector3D> &ns = bar->getNumber();
+        float diff = ((*size)[2].y() - (*size)[2].x()) / (ns.size() - 1);
+        f = Qt::AlignLeft | Qt::AlignVCenter;
+        for (size_t j = 0; j < ns.size(); j++) {
+            QPoint n = (matBar * ns[j]).toPoint();
+            QRect r = QRect(n.x(), n.y() - canvas / 10, canvas, canvas / 5);
+            p.drawText(r, f, format.arg((*size)[2].x() + diff * j, 0, 'g', 2));
+        }
+    }
+
     p.beginNativePainting();
     glEnable(GL_DEPTH_TEST);
-    if (shader) {
+    if (enShader) {
         programFlat->bind();
         programFlat->setUniformValue(argFlatMatNormal, matNormal);
         programFlat->setUniformValue(argFlatVecView, rotation * view);
@@ -224,7 +237,6 @@ void EngineGL::render(QPainter &p) {
         argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0, model->getPoint().data());
     glVertexAttribPointer(
         argPlainVecColor, 3, GL_FLOAT, GL_FALSE, 0, model->getColorF().data());
-
     glDrawElements(GL_LINES, model->getIndexL(0).size(), GL_UNSIGNED_INT,
         model->getIndexL(0).data());
 
@@ -238,19 +250,30 @@ void EngineGL::render(QPainter &p) {
     }
 
     programPlain->setUniformValue(argPlainMatModel, matAxis);
-
     glVertexAttribPointer(
         argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0, axis->getPoint().data());
     glVertexAttribPointer(
         argPlainVecColor, 3, GL_FLOAT, GL_FALSE, 0, axis->getColorF().data());
-
-    GLuint *pnt = (GLuint *)axis->getIndex().data();
-
+    const GLuint *pnt = axis->getIndex().data();
     for (auto i : axis->getSlice(rotX, rotY))
         glDrawElements(GL_LINES, i.second * 2, GL_UNSIGNED_INT, pnt + i.first);
 
-    glDisableVertexAttribArray(argPlainVecPnt);
-    glDisableVertexAttribArray(argPlainVecColor);
+    if (enBar) {
+        programPlain->setUniformValue(argPlainMatModel, bar->getTransform());
+        programPlain->setUniformValue(argPlainMatTrans, QMatrix4x4());
+        glVertexAttribPointer(
+            argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0, bar->getPoint().data());
+        glVertexAttribPointer(
+            argPlainVecColor, 3, GL_FLOAT, GL_FALSE, 0, bar->getColorF().data());
+        pnt = bar->getIndex().data();
+        QPair<int, int> pair = bar->getSliceL();
+        glDrawElements(GL_LINES, pair.second * 2, GL_UNSIGNED_INT, pnt + pair.first);
+        pair = bar->getSliceT();
+        glDrawElements(GL_TRIANGLES, pair.second * 3, GL_UNSIGNED_INT, pnt + pair.first);
+
+        glDisableVertexAttribArray(argPlainVecPnt);
+        glDisableVertexAttribArray(argPlainVecColor);
+    }
 
     glDisable(GL_DEPTH_TEST);
 
@@ -259,13 +282,13 @@ void EngineGL::render(QPainter &p) {
     p.endNativePainting();
 }
 
-EngineQt::EngineQt(
-    shared_ptr<Model> &model, shared_ptr<Axis> &axis, shared_ptr<vector<QVector2D>> size)
-    : Engine(model, axis), size(size) {}
-
 QVector3D reflect(const QVector3D &d, const QVector3D &n) {
     return d - 2 * QVector3D::dotProduct(d, n) * n;
 }
+
+EngineQt::EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> size)
+    : Engine(model, axis, bar, size) {}
 
 void EngineQt::render(QPainter &p) {
     p.setBrush(Qt::white);
@@ -317,7 +340,7 @@ void EngineQt::render(QPainter &p) {
         sizeX / 2.0, 0, 0, 0, 0, -sizeY / 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
     matScreen.translate(1, -1);
     static QMatrix4x4 matShift(0.8, 0, 0, -0.2, 0, 0.8, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-    if (bar) matTrans = matShift * matTrans;
+    if (enBar) matTrans = matShift * matTrans;
     QMatrix4x4 matFinA = matScreen * matTrans * matAxis;
     QMatrix4x4 matFinM = matScreen * matTrans * matModel;
     QVector3D vecLightWorld = rotation * view;
@@ -346,7 +369,7 @@ void EngineQt::render(QPainter &p) {
     QFont font = p.font();
     font.setPixelSize(min(sizeX, sizeY) / 35 + 2);
     p.setFont(font);
-    vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
+    const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
 
     for (int i = 0; i < 3; i++) {
@@ -354,7 +377,7 @@ void EngineQt::render(QPainter &p) {
 
         float diff = ((*size)[i].y() - (*size)[i].x()) / (num[i].second.size() - 1);
         int f = (num[i].first ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
-        vector<QVector3D> &ax = num[i].second;
+        const vector<QVector3D> &ax = num[i].second;
         for (size_t j = 0; j < ax.size(); j++) {
             QPointF n = (matFinA * ax[j]).toPointF();
             QRect r = num[i].first
@@ -407,7 +430,7 @@ void EngineQt::render(QPainter &p) {
         poly << pntWorld.toPointF();
         if (cnt++ == 2) {
             QColor c;
-            if (shader) {
+            if (enShader) {
                 QVector3D pos = matModel * vPositionM[i];
                 QVector3D normal = matNormal * vNormalM[i];
                 normal.normalize();

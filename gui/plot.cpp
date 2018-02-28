@@ -1,4 +1,5 @@
 #include "plot.h"
+#include "render/bar.h"
 #include "render/model.h"
 #include "util.h"
 #include <QApplication>
@@ -120,7 +121,10 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     QToolBar *bar = new QToolBar;
     QAction *aExport = new QAction(QIcon::fromTheme("document-export"), "Export");
     QAction *aShader = new QAction(QIcon::fromTheme("draw-cuboid"), "Enable shader");
+    QAction *aBar =
+        new QAction(QIcon::fromTheme("paint-gradient-linear"), "Enable color bar");
     aShader->setCheckable(true);
+    aBar->setCheckable(true);
     connect(aExport, &QAction::triggered, [&]() {
         QString selected;
         QStringList filters;
@@ -145,14 +149,17 @@ Plot::Plot(SimQuantity &quantity, int dim) {
         }
     });
     connect(aShader, &QAction::toggled, [=](bool b) { plot->setShader(b); });
+    connect(aBar, &QAction::toggled, [=](bool b) { plot->setBar(b); });
     bar->addAction(aExport);
     bar->addAction(aShader);
+    bar->addAction(aBar);
     l->addWidget(bar);
 
     plot = new PlotInternal(quantity.getSizeData().size() == 0
             ? Model::fromQuantity(quantity, dim)
             : Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
-        make_unique<Axis>(5, 5, 5), std::move(range));
+        make_unique<Axis>(5, 5, 5), make_unique<Bar>(Gradient::HEIGHT_MAP, 5),
+        std::move(range));
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
     setLayout(l);
@@ -241,12 +248,14 @@ void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
 }
 
 PlotInternal::PlotInternal(unique_ptr<Model> &&model, unique_ptr<Axis> &&axis,
-    unique_ptr<vector<QVector2D>> &&size) {
+    unique_ptr<Bar> &&bar, unique_ptr<vector<QVector2D>> &&size) {
     shared_ptr<Model> pm = move(model);
     shared_ptr<Axis> pa = move(axis);
     shared_ptr<vector<QVector2D>> ps = move(size);
-    engineGL = make_unique<EngineGL>(pm, pa, ps);
-    engineQt = make_unique<EngineQt>(pm, pa, ps);
+    shared_ptr<Bar> pb = move(bar);
+
+    engineGL = make_unique<EngineGL>(pm, pa, pb, ps);
+    engineQt = make_unique<EngineQt>(pm, pa, pb, ps);
     engineGL->setBackGround(Qt::white);
     engineQt->setBackGround(Qt::transparent);
 }
@@ -265,6 +274,12 @@ void PlotInternal::setLabel(float pos) {
 void PlotInternal::setShader(bool en) {
     engineGL->setShader(en);
     engineQt->setShader(en);
+    requestUpdate();
+}
+
+void PlotInternal::setBar(bool en) {
+    engineGL->setBar(en);
+    engineQt->setBar(en);
     requestUpdate();
 }
 

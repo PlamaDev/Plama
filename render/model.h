@@ -2,20 +2,12 @@
 #define MODEL_H
 
 #include "data/project.h"
-#include <QOpenGLFunctions>
+#include <QOpenGLContext>
 #include <QPair>
 #include <QVector2D>
 #include <QVector3D>
 
-class Gradient {
-public:
-    Gradient(std::vector<QPair<QColor, float>> data, int steps = 50);
-    const QColor &getColor(float pos) const;
-
-private:
-    std::vector<QColor> cache;
-    float step;
-};
+#include "render/gradient.h"
 
 class Model {
 public:
@@ -27,7 +19,6 @@ public:
     const std::vector<QVector3D> &getColorF() const;
     const std::vector<QVector3D> &getPosition() const;
     const std::vector<QColor const *> &getColorQ() const;
-    const Gradient &getGradient() const;
 
     void changeData(
         const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme);
@@ -42,7 +33,6 @@ private:
     static QPair<float, float> getExtreme(const float *data, int total);
     static std::vector<std::function<void(std::function<void(int)> &, int, int)>>
         indexFunc;
-    static Gradient gradientHeightmap;
 
     std::vector<QVector3D> point;
     std::vector<QVector3D> normal;

@@ -10,8 +10,8 @@ const float Axis::DIST = 0.05f;
 const float Axis::EXTRA = 0.05f;
 const QVector3D Axis::BLACK_F = QVector3D(0.4, 0.4, 0.4);
 const QVector3D Axis::GREY_F = QVector3D(0.8, 0.8, 0.8);
-const QColor Axis::BLACK_Q = Qt::black;
-const QColor Axis::GREY_Q = Qt::gray;
+const QColor Axis::BLACK_Q = QColor(102, 102, 102);
+const QColor Axis::GREY_Q = QColor(204, 204, 204);
 
 Axis::Axis(int sizeX, int sizeY, int sizeZ)
     : point(12 * (sizeX + sizeY + sizeZ + 1)), colorF(12 * (sizeX + sizeY + sizeZ + 1)),
@@ -221,10 +221,10 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
     }
 }
 
-vector<QVector3D> &Axis::getPoint() { return point; }
-vector<QVector3D> &Axis::getColorF() { return colorF; }
-vector<const QColor *> &Axis::getColorQ() { return colorQ; }
-vector<GLuint> &Axis::getIndex() { return index; }
+const vector<QVector3D> &Axis::getPoint() const { return point; }
+const vector<QVector3D> &Axis::getColorF() const { return colorF; }
+const vector<const QColor *> &Axis::getColorQ() const { return colorQ; }
+const vector<GLuint> &Axis::getIndex() const { return index; }
 
 vector<QPair<int, int>> Axis::getSlice(int rotX, int rotY) {
     int rx = (360 - rotX) % 90;
@@ -250,7 +250,7 @@ vector<QPair<int, int>> Axis::getSlice(
     return ret;
 }
 
-vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int rotX, int rotY) {
+const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int rotX, int rotY) const {
     int rx = (360 - rotX) % 90;
     int dir = (360 - rotX) / 45 % 8;
     return getNumber(
@@ -268,8 +268,8 @@ QMatrix4x4 Axis::getTransform(int dir, bool flipX) {
     return ret * tmp;
 }
 
-vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(
-    int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) {
+const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int dir, bool xEnable,
+    bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const {
     static vector<QPair<bool, vector<QVector3D>>> ret(3); // true for right align
     for (int i = 0; i < 3; i++) ret[i].second.clear();
     float diffX = 1.0f / sizeX;

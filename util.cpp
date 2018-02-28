@@ -1,6 +1,4 @@
 #include "util.h"
-#include <QPoint>
-#include <QRegExp>
 
 QPair<int, int> unify(int number, int radix) {
     typedef QPair<int, int> P;
@@ -9,4 +7,4 @@ QPair<int, int> unify(int number, int radix) {
     return e == 0 ? P(number / radix, 0) : P(number / radix - 1, radix + e);
 }
 
-
+QVector3D toV3D(const QColor &c) { return QVector3D(c.redF(), c.greenF(), c.blueF()); }

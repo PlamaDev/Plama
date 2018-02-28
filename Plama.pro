@@ -12,7 +12,9 @@ SOURCES += \
     render/axis.cpp \
     util.cpp \
     gui/plot.cpp \
-    data/project.cpp
+    data/project.cpp \
+    render/bar.cpp \
+    render/gradient.cpp
 
 HEADERS += \
     gui/windowmain.h \
@@ -21,7 +23,9 @@ HEADERS += \
     render/axis.h \
     util.h \
     gui/plot.h \
-    data/project.h
+    data/project.h \
+    render/bar.h \
+    render/gradient.h
 
 RESOURCES += \
     res/res.qrc
