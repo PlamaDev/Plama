@@ -22,8 +22,8 @@ public:
         bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const;
     const std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(
         int rotX, int rotY) const;
-    QMatrix4x4 getTransform(int rotX, int rotY);
-    QMatrix4x4 getTransform(int dir, bool flipX);
+    QMatrix4x4 getTransform(int rotX, int rotY) const;
+    QMatrix4x4 getTransform(int dir, bool flipX) const;
 
 private:
     std::vector<QVector3D> point;

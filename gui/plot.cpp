@@ -322,9 +322,12 @@ void PlotInternal::mouseReleaseEvent(QMouseEvent *) { setMouseGrabEnabled(false)
 
 void PlotInternal::initializeGL() { engineGL->initialize(); }
 
-void PlotInternal::resizeGL(int w, int h) { engineGL->resize(w, h); }
+void PlotInternal::resizeGL(int w, int h) {
+    engineGL->resize(w, h);
+    engineQt->resize(w, h);
+}
 
 void PlotInternal::paintGL() {
     QPainter p(this);
-    engineGL->render(p);
+    engineQt->render(p);
 }

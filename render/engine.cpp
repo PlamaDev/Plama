@@ -17,6 +17,141 @@
 
 using namespace std;
 
+QVector3D reflect(const QVector3D &d, const QVector3D &n) {
+    return d - 2 * QVector3D::dotProduct(d, n) * n;
+}
+
+void genMatrix(int rX, int rY, int sX, int sY, bool enBar, const Axis &axis,
+    const Bar &bar, QMatrix4x4 &matModel, QMatrix4x4 &matTrans, QMatrix4x4 &matNorm,
+    QMatrix4x4 &matScreen, QMatrix4x4 &matBar, QMatrix4x4 &matAxis, QVector3D &vecView) {
+    static QVector3D vecViewRaw(1.5, 0, 0);
+    static QMatrix4x4 matShift(0.8, 0, 0, -0.2, 0, 0.8, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    matAxis = axis.getTransform(rX, rY);
+
+    // view matrix
+    QMatrix4x4 matView;
+    matView.rotate(-rX, 0, 0, 1);
+    matView.rotate(-rY, 0, 1, 0);
+    vecView = matView * vecViewRaw;
+
+    // model matrix
+    matModel = QMatrix4x4();
+    matModel.translate(-0.5, -0.5f, -0.5f);
+    matNorm = QMatrix4x4();
+    matNorm = matModel.inverted();
+    matNorm = matNorm.transposed();
+
+    // scale test
+    QMatrix4x4 matTest;
+    matTest.ortho(1, 1, 1, 1, 0.1, 100);
+    matTest.lookAt(vecViewRaw, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
+    matTest.rotate(rY, 0, 1, 0);
+    matTest.rotate(rX, 0, 0, 1);
+    matTest = matTest * matAxis * matModel;
+
+    static vector<QVector3D> testers = {
+        {1.1, 1.1, -0.2}, {1.1, -0.1, -0.2}, {1.1, -0.2, 1}};
+    float size = 0;
+    {
+        float t = 0;
+        for (auto &i : testers) {
+            QVector3D v = matTest * i;
+            float f1 = abs(v.x());
+            float f2 = abs(v.y());
+            size = max(max(f1, f2), size);
+            t += f1;
+            t += f2;
+        }
+        float f = t / 6 / size;
+        size *= 1 + 0.2 * f * f;
+    }
+
+    // transform matrix
+    matTrans = QMatrix4x4();
+    matTrans.ortho(-size, size, -size, size, 0.1, 100);
+    matTrans.lookAt(vecViewRaw, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
+    matTrans.rotate(rY, 0, 1, 0);
+    matTrans.rotate(rX, 0, 0, 1);
+    if (enBar) matTrans = matShift * matTrans;
+
+    // others
+    matScreen = QMatrix4x4(sX / 2.0, 0, 0, 0, 0, -sY / 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+    matScreen.translate(1, -1);
+    matBar = bar.getTransform();
+}
+
+void drawTriangle(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
+    const vector<QVector3D> &clr, const GLuint *ind, int n) {
+    if (ind == nullptr) return;
+    QPolygonF pl;
+    for (int i = 0; i < n; i++) {
+        pl.clear();
+        QPointF pn[3];
+        for (int j = 0; j < 3; j++) pn[j] = (mat * pnt[*(ind + 3 * i + j)]).toPointF();
+        QVector3D c = clr[*(ind + 3 * i + 2)];
+        QColor cq = QColor(c.x() * 255, c.y() * 255, c.z() * 255, 255);
+        for (int i = 0; i < 3; i++) pl << pn[i];
+        p.setBrush(cq);
+        p.drawPolygon(pl);
+    }
+}
+
+void drawTriangle(QPainter &p, const QMatrix4x4 &matModel, const QMatrix4x4 &matTrans,
+    const QMatrix4x4 &matNormal, const vector<QVector3D> &pnt,
+    const vector<QVector3D> &clr, const vector<QVector3D> &pos,
+    const vector<QVector3D> &nor, const QVector3D &view, const GLuint *ind, int n) {
+    static float (*dot)(const QVector3D &, const QVector3D &) = QVector3D::dotProduct;
+    static QVector3D light(1, 1, 1);
+    if (ind == nullptr) return;
+    QPolygonF pl;
+    QMatrix4x4 matFin = matTrans * matModel;
+    for (int i = 0; i < n; i++) {
+        pl.clear();
+        QPointF pn[3];
+        for (int j = 0; j < 3; j++) pn[j] = (matFin * pnt[*(ind + 3 * i + j)]).toPointF();
+        QVector3D vecColor = clr[*(ind + 3 * i + 2)];
+        QVector3D vecPos = matModel * pos[*(ind + 3 * i + 2)];
+        QVector3D vecNor = matNormal * nor[*(ind + 3 * i + 2)];
+        vecNor.normalize();
+        QVector3D vecLight = vecPos - view;
+        vecLight.normalize();
+        QVector3D reflekt = reflect(vecLight, vecNor);
+        float spec = pow(max(dot(reflekt, -vecLight), 0.0f), 8);
+        float base = 0.55 + max(0.3f * dot(vecNor, -vecLight), 0.0f);
+        QVector3D color = base * vecColor + 0.3 * spec * light;
+        QColor cq = QColor(min(int(color.x() * 255), 255), min(int(color.y() * 255), 255),
+            min(int(color.z() * 255), 255));
+        for (int i = 0; i < 3; i++) pl << pn[i];
+        p.setBrush(cq);
+        p.drawPolygon(pl);
+    }
+}
+
+void drawLine(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
+    const vector<QVector3D> &clr, const GLuint *ind, int n, float width) {
+    if (ind == nullptr) return;
+    for (int i = 1;; i++) {
+        QPointF p1 = (mat * pnt[*(ind + 2 * i)]).toPointF();
+        QPointF p2 = (mat * pnt[*(ind + 2 * i + 1)]).toPointF();
+        QVector3D c = clr[*(ind + 2 * i + 1)];
+        QColor cq = QColor(c.x() * 255, c.y() * 255, c.z() * 255, 255);
+        p.setPen(QPen(cq, width));
+        p.drawLine(p1, p2);
+        if (i == 0) break;
+        if (i + 1 == n) i = -1;
+    }
+}
+
+void drawText(QPainter &painter, QString &&string, const QMatrix4x4 &matrix,
+    const QVector3D &anchor, bool left) {
+    int i = painter.font().pixelSize() * string.length() * 100;
+    int f = (left ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
+    QPointF n = (matrix * anchor).toPointF();
+    QRect r = left ? QRect(n.x() - i, n.y() - i / 10, i, i / 5)
+                   : QRect(n.x(), n.y() - i / 10, i, i / 5);
+    painter.drawText(r, f, string);
+}
+
 Engine::Engine(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
     std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> &size)
     : rotX(0), rotY(0), model(model), axis(axis), bar(bar), size(size), label(-1),
@@ -80,96 +215,47 @@ void EngineGL::initialize() {
     glClearColor(color.x(), color.y(), color.z(), 1.0f);
     glEnable(GL_BLEND);
     glEnable(GL_POLYGON_SMOOTH);
+    glDisable(GL_DEPTH_TEST);
     // glEnable(GL_CULL_FACE);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 }
 
 void EngineGL::render(QPainter &p) {
     p.setRenderHint(QPainter::Antialiasing, true);
-    // p.setRenderHint(QPainter::HighQualityAntialiasing);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    // view matrix
-    QVector3D view(1.5, 0, 0);
-    QMatrix4x4 rotation;
-    rotation.rotate(-rotX, 0, 0, 1);
-    rotation.rotate(-rotY, 0, 1, 0);
-    // model matrix
-    QMatrix4x4 matModel;
-    matModel.translate(-0.5, -0.5f, -0.5f);
-    QMatrix4x4 matNormal = matModel.inverted();
-    matNormal = matNormal.transposed();
-    QMatrix4x4 matAxis = axis->getTransform(rotX, rotY);
-    matAxis = matAxis * matModel;
-    // scale test
-    QMatrix4x4 matTest;
-    matTest.ortho(1, 1, 1, 1, 0.1, 100);
-    matTest.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
-    matTest.rotate(rotY, 0, 1, 0);
-    matTest.rotate(rotX, 0, 0, 1);
-    matTest = matTest * matAxis;
-    static vector<QVector3D> testers = {
-        {1.1, 1.1, -0.2}, {1.1, -0.1, -0.2}, {1.1, -0.2, 1}};
-    float m = 0;
-    float t = 0;
-    for (auto &i : testers) {
-        QVector3D v = matTest * i;
-        float f1 = abs(v.x());
-        float f2 = abs(v.y());
-        m = max(max(f1, f2), m);
-        t += f1;
-        t += f2;
-    }
-    float f = t / 6 / m;
-    m *= 1 + 0.2 * f * f;
-    // transform matrix
-    QMatrix4x4 matTrans;
-    matTrans.ortho(-m, m, -m, m, 0.1, 100);
-    matTrans.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
-    matTrans.rotate(rotY, 0, 1, 0);
-    matTrans.rotate(rotX, 0, 0, 1);
+    QMatrix4x4 matModel, matTrans, matNorm, matScreen, matBar, matAxis;
+    QVector3D vecView;
+    genMatrix(rotX, rotY, sizeX, sizeY, enBar, *axis, *bar, matModel, matTrans, matNorm,
+        matScreen, matBar, matAxis, vecView);
+    QMatrix4x4 matText = matScreen * matTrans * matAxis * matModel;
 
-    static QMatrix4x4 matShift(0.8, 0, 0, -0.2, 0, 0.8, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-    if (enBar) matTrans = matShift * matTrans;
-    QMatrix4x4 matScreen(
-        sizeX / 2.0, 0, 0, 0, 0, -sizeY / 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
-    matScreen.translate(1, -1);
-    QMatrix4x4 matText = matScreen * matTrans * matAxis;
-    QMatrix4x4 matBar = matScreen * bar->getTransform();
-
-    const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
-    QString format("%1");
+    // draw text
     QFont font = p.font();
     font.setPixelSize(min(sizeX, sizeY) / 35 + 2);
     p.setFont(font);
-    int canvas = min(sizeX, sizeY);
-    glDisable(GL_DEPTH_TEST);
+    const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
+    QString format("%1");
+
     for (int i = 0; i < 3; i++) {
-        if (num[i].second.size() == 0) continue;
-        const vector<QVector3D> &ax = num[i].second;
-        float diff = ((*size)[i].y() - (*size)[i].x()) / (ax.size() - 1);
-        int f = (num[i].first ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
-
-        for (size_t j = 0; j < ax.size(); j++) {
-            QPoint n = (matText * ax[j]).toPoint();
-            QRect r = num[i].first
-                ? QRect(n.x() - canvas, n.y() - canvas / 10, canvas, canvas / 5)
-                : QRect(n.x(), n.y() - canvas / 10, canvas, canvas / 5);
-
-            p.drawText(r, f, format.arg((*size)[i].x() + diff * j, 0, 'g', 2));
+        auto pnts = num[i].second;
+        if (pnts.size() == 0) continue;
+        float diff = ((*size)[i].y() - (*size)[i].x()) / (pnts.size() - 1);
+        for (size_t j = 0; j < pnts.size(); j++) {
+            drawText(p, format.arg((*size)[i].x() + diff * j, 0, 'g', 2), matText,
+                num[i].second[j], num[i].first);
         }
     }
 
     if (enBar) {
         const vector<QVector3D> &ns = bar->getNumber();
-        float diff = ((*size)[2].y() - (*size)[2].x()) / (ns.size() - 1);
-        f = Qt::AlignLeft | Qt::AlignVCenter;
+        float start = (*size)[2].x();
+        float diff = ((*size)[2].y() - start) / (ns.size() - 1);
         for (size_t j = 0; j < ns.size(); j++) {
-            QPoint n = (matBar * ns[j]).toPoint();
-            QRect r = QRect(n.x(), n.y() - canvas / 10, canvas, canvas / 5);
-            p.drawText(r, f, format.arg((*size)[2].x() + diff * j, 0, 'g', 2));
+            drawText(p, format.arg(start + diff * j, 0, 'g', 2), matScreen * matBar,
+                ns[j], false);
         }
     }
 
@@ -177,9 +263,9 @@ void EngineGL::render(QPainter &p) {
     glEnable(GL_DEPTH_TEST);
     if (enShader) {
         programFlat->bind();
-        programFlat->setUniformValue(argFlatMatNormal, matNormal);
-        programFlat->setUniformValue(argFlatVecView, rotation * view);
-        programFlat->setUniformValue(argFlatVecLight, rotation * view);
+        programFlat->setUniformValue(argFlatMatNormal, matNorm);
+        programFlat->setUniformValue(argFlatVecView, vecView);
+        programFlat->setUniformValue(argFlatVecLight, vecView);
         programFlat->setUniformValue(argFlatMatTrans, matTrans);
         programFlat->setUniformValue(argFlatMatModel, matModel);
 
@@ -249,7 +335,7 @@ void EngineGL::render(QPainter &p) {
         glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, i);
     }
 
-    programPlain->setUniformValue(argPlainMatModel, matAxis);
+    programPlain->setUniformValue(argPlainMatModel, matAxis * matModel);
     glVertexAttribPointer(
         argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0, axis->getPoint().data());
     glVertexAttribPointer(
@@ -276,14 +362,9 @@ void EngineGL::render(QPainter &p) {
     }
 
     glDisable(GL_DEPTH_TEST);
-
     programPlain->release();
 
     p.endNativePainting();
-}
-
-QVector3D reflect(const QVector3D &d, const QVector3D &n) {
-    return d - 2 * QVector3D::dotProduct(d, n) * n;
 }
 
 EngineQt::EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
@@ -291,101 +372,51 @@ EngineQt::EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
     : Engine(model, axis, bar, size) {}
 
 void EngineQt::render(QPainter &p) {
-    p.setBrush(Qt::white);
-    p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
-    int dir = (360 - rotX) / 45 % 8;
-    int sizeCavas = min(sizeX, sizeY);
-    float lineWidth = sizeCavas / 500.0;
-
-    // view matrix
-    QVector3D view(1.5, 0, 0);
-    QMatrix4x4 rotation;
-    rotation.rotate(-rotX, 0, 0, 1);
-    rotation.rotate(-rotY, 0, 1, 0);
-    // model matrix
-    QMatrix4x4 matModel;
-    matModel.translate(-0.5, -0.5f, -0.5f);
-    QMatrix4x4 matNormal = matModel.inverted();
-    matNormal = matNormal.transposed();
-    QMatrix4x4 matAxis = axis->getTransform(rotX, rotY);
-    matAxis = matAxis * matModel;
-    // scale test
-    QMatrix4x4 matTest;
-    matTest.ortho(1, 1, 1, 1, 0.1, 100);
-    matTest.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
-    matTest.rotate(rotY, 0, 1, 0);
-    matTest.rotate(rotX, 0, 0, 1);
-    matTest = matTest * matAxis;
-    static vector<QVector3D> testers = {
-        {1.1, 1.1, -0.2}, {1.1, -0.1, -0.2}, {1.1, -0.2, 1}};
-    float m = 0;
-    float t = 0;
-    for (auto &i : testers) {
-        QVector3D v = matTest * i;
-        float f1 = abs(v.x());
-        float f2 = abs(v.y());
-        m = max(max(f1, f2), m);
-        t += f1;
-        t += f2;
-    }
-    float f = t / 6 / m;
-    m *= 1 + 0.2 * f * f;
-    // transform matrix
-    QMatrix4x4 matTrans;
-    matTrans.ortho(-m, m, -m, m, 0.1, 100);
-    matTrans.lookAt(view, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
-    matTrans.rotate(rotY, 0, 1, 0);
-    matTrans.rotate(rotX, 0, 0, 1);
-    QMatrix4x4 matScreen(
-        sizeX / 2.0, 0, 0, 0, 0, -sizeY / 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
-    matScreen.translate(1, -1);
-    static QMatrix4x4 matShift(0.8, 0, 0, -0.2, 0, 0.8, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-    if (enBar) matTrans = matShift * matTrans;
-    QMatrix4x4 matFinA = matScreen * matTrans * matAxis;
+    QMatrix4x4 matModel, matTrans, matNorm, matScreen, matBar, matAxis;
+    QVector3D vecView;
+    genMatrix(rotX, rotY, sizeX, sizeY, enBar, *axis, *bar, matModel, matTrans, matNorm,
+        matScreen, matBar, matAxis, vecView);
+    QMatrix4x4 matFinA = matScreen * matTrans * matAxis * matModel;
     QMatrix4x4 matFinM = matScreen * matTrans * matModel;
-    QVector3D vecLightWorld = rotation * view;
-
-    // draw grid
+    int dir = (360 - rotX) / 45 % 8;
+    int canvas = min(sizeX, sizeY);
+    float width = canvas / 500.0;
+    QString format("%1");
     const vector<QVector3D> &vPointA = axis->getPoint();
-    const vector<const QColor *> &vColorA = axis->getColorQ();
+    const vector<QVector3D> &vColorA = axis->getColorF();
     const vector<GLuint> &vIndexA = axis->getIndex();
     vector<QPair<int, int>> vSliceA = axis->getSlice(rotX, rotY);
-    auto draw = [&](int index) {
-        const QColor *c = vColorA[vIndexA[index + 1]];
-        p.setPen(QPen(*c, lineWidth));
+    const vector<QVector3D> &vNormalM = model->getNormal();
+    const vector<QVector3D> &vPointM = model->getPoint();
+    const vector<QVector3D> &vColorMF = model->getColorF();
+    const vector<QVector3D> &vPositionM = model->getPosition();
+    const vector<GLuint> &vIndexMT = model->getIndexT(dir);
+    const vector<QVector3D> &vPointB = bar->getPoint();
+    const vector<QVector3D> &vColorB = bar->getColorF();
+    const vector<GLuint> &vIndexB = bar->getIndex();
+    const vector<QVector3D> &vNumberB = bar->getNumber();
 
-        QVector3D pntWorld = matFinA * vPointA[vIndexA[index]];
-        QPointF p1 = pntWorld.toPointF();
-        pntWorld = matFinA * vPointA[vIndexA[index + 1]];
-        QPointF p2 = pntWorld.toPointF();
-        p.drawLine(p1, p2);
-    };
+    p.setBrush(Qt::white);
+    p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
+
+    // draw grid
     for (auto i : vSliceA)
-        for (int j = 1; j < i.second; j++) draw(i.first + 2 * j);
-    for (auto i : vSliceA) draw(i.first);
+        drawLine(p, matFinA, vPointA, vColorA, vIndexA.data() + i.first, i.second, width);
 
     // draw text
-    p.setPen(QPen(Qt::black, lineWidth));
+    p.setPen(QPen(Qt::black, width));
     QFont font = p.font();
     font.setPixelSize(min(sizeX, sizeY) / 35 + 2);
     p.setFont(font);
     const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
-    QString format("%1");
 
     for (int i = 0; i < 3; i++) {
-        if (num[i].second.size() == 0) continue;
-
-        float diff = ((*size)[i].y() - (*size)[i].x()) / (num[i].second.size() - 1);
-        int f = (num[i].first ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
-        const vector<QVector3D> &ax = num[i].second;
-        for (size_t j = 0; j < ax.size(); j++) {
-            QPointF n = (matFinA * ax[j]).toPointF();
-            QRect r = num[i].first
-                ? QRect(
-                      n.x() - sizeCavas, n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5)
-                : QRect(n.x(), n.y() - sizeCavas / 10, sizeCavas, sizeCavas / 5);
-
-            p.drawText(r, f, format.arg((*size)[i].x() + diff * j, 0, 'g', 2));
+        auto pnts = num[i].second;
+        if (pnts.size() == 0) continue;
+        float diff = ((*size)[i].y() - (*size)[i].x()) / (pnts.size() - 1);
+        for (size_t j = 0; j < pnts.size(); j++) {
+            drawText(p, format.arg((*size)[i].x() + diff * j, 0, 'g', 2), matFinA,
+                num[i].second[j], num[i].first);
         }
     }
 
@@ -393,63 +424,36 @@ void EngineQt::render(QPainter &p) {
     if (label >= 0) {
         QPointF p1 = (matFinM * QVector3D(label, 0, -0.0001)).toPointF();
         QPointF p2 = (matFinM * QVector3D(label, 1, -0.0001)).toPointF();
-        p.setPen(QPen(Qt::red, lineWidth));
+        p.setPen(QPen(Qt::red, width));
         p.drawLine(p1, p2);
     }
 
-    // model data
-    const vector<QVector3D> &vNormalM = model->getNormal();
-    const vector<QVector3D> &vPointM = model->getPoint();
-    const vector<QVector3D> &vColorMF = model->getColorF();
-    const vector<const QColor *> &vColorMQ = model->getColorQ();
-    const vector<QVector3D> &vPositionM = model->getPosition();
-    const vector<GLuint> &vIndexMT = model->getIndexT(dir);
-
     // draw model lines
-    QPointF pnt;
-    int cnt = 0;
     const vector<GLuint> &vIndexML = model->getIndexL(dir);
-    for (auto i : vIndexML) {
-        if (cnt++ == 1) {
-            p.setPen(QPen(*vColorMQ[i], lineWidth));
-            QPointF tmp = (matFinM * vPointM[i]).toPointF();
-            p.drawLine(pnt, tmp);
-            cnt = 0;
-        } else
-            pnt = (matFinM * vPointM[i]).toPointF();
-    }
+    drawLine(p, matFinM, vPointM, vColorMF, vIndexML.data(), vIndexML.size() / 2, width);
 
     // draw model triangles
-    static float (*dot)(const QVector3D &, const QVector3D &) = QVector3D::dotProduct;
-    QVector3D vecLight(1, 1, 1);
-    QPolygonF poly;
-
     p.setPen(Qt::NoPen);
-    for (auto i : vIndexMT) {
-        QVector3D pntWorld = matFinM * vPointM[i];
-        poly << pntWorld.toPointF();
-        if (cnt++ == 2) {
-            QColor c;
-            if (enShader) {
-                QVector3D pos = matModel * vPositionM[i];
-                QVector3D normal = matNormal * vNormalM[i];
-                normal.normalize();
-                QVector3D lightIn = pos - vecLightWorld;
-                lightIn.normalize();
-                QVector3D reflekt = reflect(lightIn, normal);
-                float spec = pow(max(dot(reflekt, -lightIn), 0.0f), 8);
-                float base = 0.55 + max(0.3f * dot(normal, -lightIn), 0.0f);
-                QVector3D color = base * vColorMF[i] + 0.3 * spec * vecLight;
-                c = QColor(min(int(color.x() * 255), 255), min(int(color.y() * 255), 255),
-                    min(int(color.z() * 255), 255));
-            } else {
-                c = QColor(vColorMF[i].x() * 255, vColorMF[i].y() * 255,
-                    vColorMF[i].z() * 255, 255);
-            }
-            p.setBrush(c);
-            p.drawPolygon(poly);
-            poly.clear();
-            cnt = 0;
-        }
+    if (enShader)
+        drawTriangle(p, matModel, matScreen * matTrans, matNorm, vPointM, vColorMF,
+            vPositionM, vNormalM, vecView, vIndexMT.data(), vIndexMT.size() / 3);
+    else
+        drawTriangle(p, matScreen * matTrans * matModel, vPointM, vColorMF,
+            vIndexMT.data(), vIndexMT.size() / 3);
+
+    // draw bar
+    if (!enBar) return;
+    QPair<int, int> slice = bar->getSliceT();
+    drawTriangle(p, matScreen * matBar, vPointB, vColorB, vIndexB.data() + slice.first,
+        slice.second);
+    slice = bar->getSliceL();
+    drawLine(p, matScreen * matBar, vPointB, vColorB, vIndexB.data() + slice.first,
+        slice.second, width);
+
+    p.setPen(QPen(Qt::black, width));
+    float diff = ((*size)[2].y() - (*size)[2].x()) / (vNumberB.size() - 1);
+    for (size_t j = 0; j < vNumberB.size(); j++) {
+        drawText(p, format.arg((*size)[2].x() + diff * j, 0, 'g', 2), matScreen * matBar,
+            vNumberB[j], false);
     }
 }

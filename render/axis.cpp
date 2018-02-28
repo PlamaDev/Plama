@@ -257,11 +257,11 @@ const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int rotX, int rotY
         dir, rx > 10 || rotY > 20, rx < 80 || rotY > 20, rotY<70, rx> 45, rotY > 20);
 }
 
-QMatrix4x4 Axis::getTransform(int rotX, int rotY) {
+QMatrix4x4 Axis::getTransform(int rotX, int rotY) const {
     return getTransform((360 - rotX) / 45 % 8, rotY >= 70);
 }
 
-QMatrix4x4 Axis::getTransform(int dir, bool flipX) {
+QMatrix4x4 Axis::getTransform(int dir, bool flipX) const {
     QMatrix4x4 ret, tmp;
     ret.rotate(90 * (dir / 2), 0, 0, 1);
     if (flipX) tmp.data()[5] = -1;
