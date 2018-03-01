@@ -13,8 +13,7 @@ class Bar {
 public:
     Bar(const Gradient &gradient, int steps);
     const std::vector<QVector3D> &getPoint() const;
-    const std::vector<QVector3D> &getColorF() const;
-    const std::vector<const QColor *> &getColorQ() const;
+    const std::vector<QVector3D> &getColor() const;
     const std::vector<GLuint> &getIndex() const;
     const std::vector<QVector3D> &getNumber() const;
     QPair<int, int> getSliceL() const;
@@ -24,13 +23,11 @@ public:
 private:
     std::vector<QVector3D> point;
     std::vector<GLuint> index;
-    std::vector<QVector3D> colorF;
-    std::vector<const QColor *> colorQ;
+    std::vector<QVector3D> color;
     std::vector<QVector3D> number;
     int steps;
     static const float DIFF;
-    static const QColor BLACK_Q;
-    static const QVector3D BLACK_F;
+    static const QVector3D BLACK;
 };
 
 #endif // BAR_H

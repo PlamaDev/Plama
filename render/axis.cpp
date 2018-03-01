@@ -6,16 +6,13 @@
 
 using namespace std;
 
-const float Axis::DIST = 0.05f;
-const float Axis::EXTRA = 0.05f;
-const QVector3D Axis::BLACK_F = QVector3D(0.4, 0.4, 0.4);
-const QVector3D Axis::GREY_F = QVector3D(0.8, 0.8, 0.8);
-const QColor Axis::BLACK_Q = QColor(102, 102, 102);
-const QColor Axis::GREY_Q = QColor(204, 204, 204);
+const float Axis::DIST = 0.07f;
+const float Axis::EXTRA = 0.04f;
+const QVector3D Axis::BLACK = QVector3D(0.4, 0.4, 0.4);
+const QVector3D Axis::GREY = QVector3D(0.8, 0.8, 0.8);
 
 Axis::Axis(int sizeX, int sizeY, int sizeZ)
-    : point(12 * (sizeX + sizeY + sizeZ + 1)), colorF(12 * (sizeX + sizeY + sizeZ + 1)),
-      colorQ(12 * (sizeX + sizeY + sizeZ + 1)),
+    : point(12 * (sizeX + sizeY + sizeZ + 1)), color(12 * (sizeX + sizeY + sizeZ + 1)),
       index((sizeX + sizeY + sizeY + 3) * 16 + 12), sizeX(sizeX), sizeY(sizeY),
       sizeZ(sizeZ), offset(2 * OFFSET) {
 
@@ -31,111 +28,91 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
         int xyStart = countPnt;
         for (int i = 0; i < sizeX; i++) {
             point[countPnt] = QVector3D(diffX * i, 0, -DIST);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         for (int i = 0; i < sizeY; i++) {
             point[countPnt] = QVector3D(1, diffY * i, -DIST);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         tmp = countPnt;
         for (int i = 0; i < sizeX; i++) {
             point[countPnt] = QVector3D(1 - diffX * i, 1, -DIST);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         for (int i = 0; i < sizeY; i++) {
             point[countPnt] = QVector3D(0, 1 - diffY * i, -DIST);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
-        colorF[tmp] = BLACK_F;
-        colorQ[tmp] = &BLACK_Q;
+        color[tmp] = BLACK;
 
         int markXStrt = countPnt;
         for (int i = 0; i < sizeX + 1; i++) {
             point[countPnt] = QVector3D(diffX * i, 1 + EXTRA, -DIST);
-            colorF[countPnt] = BLACK_F;
-            colorQ[countPnt++] = &BLACK_Q;
+            color[countPnt++] = BLACK;
         }
         int markXRight = countPnt;
         for (int i = 0; i < sizeX + 1; i++) {
             point[countPnt] = QVector3D(diffX * i, 1, -DIST - EXTRA);
-            colorF[countPnt] = BLACK_F;
-            colorQ[countPnt++] = &BLACK_Q;
+            color[countPnt++] = BLACK;
         }
         int markYStrt = countPnt;
         for (int i = 0; i < sizeY + 1; i++) {
             point[countPnt] = QVector3D(1 + EXTRA, diffY * i, -DIST);
-            colorF[countPnt] = BLACK_F;
-            colorQ[countPnt++] = &BLACK_Q;
+            color[countPnt++] = BLACK;
         }
         int markYRight = countPnt;
         for (int i = 0; i < sizeY + 1; i++) {
             point[countPnt] = QVector3D(1, diffY * i, -DIST - EXTRA);
-            colorF[countPnt] = BLACK_F;
-            colorQ[countPnt++] = &BLACK_Q;
+            color[countPnt++] = BLACK;
         }
 
         int xzStart = countPnt;
         for (int i = 0; i < sizeX; i++) {
             point[countPnt] = QVector3D(diffX * i, -DIST, 0);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         for (int i = 0; i < sizeZ; i++) {
             point[countPnt] = QVector3D(1, -DIST, diffZ * i);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         tmp = countPnt;
         for (int i = 0; i < sizeX; i++) {
             point[countPnt] = QVector3D(1 - diffX * i, -DIST, 1);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         for (int i = 0; i < sizeZ; i++) {
             point[countPnt] = QVector3D(0, -DIST, 1 - diffZ * i);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
-        colorF[tmp] = BLACK_F;
-        colorQ[tmp] = &BLACK_Q;
+        color[tmp] = BLACK;
 
         int markZStrt = countPnt;
         for (int i = 0; i < sizeZ + 1; i++) {
             point[countPnt] = QVector3D(1 + EXTRA, -DIST, diffZ * i);
-            colorF[countPnt] = BLACK_F;
-            colorQ[countPnt++] = &BLACK_Q;
+            color[countPnt++] = BLACK;
         }
         int markZRight = countPnt;
         for (int i = 0; i < sizeZ + 1; i++) {
             point[countPnt] = QVector3D(1, -DIST - EXTRA, diffZ * i);
-            colorF[countPnt] = BLACK_F;
-            colorQ[countPnt++] = &BLACK_Q;
+            color[countPnt++] = BLACK;
         }
 
         int yzStart = countPnt;
         for (int i = 0; i < sizeY; i++) {
             point[countPnt] = QVector3D(-DIST, diffY * i, 0);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         for (int i = 0; i < sizeZ; i++) {
             point[countPnt] = QVector3D(-DIST, 1, diffZ * i);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         for (int i = 0; i < sizeY; i++) {
             point[countPnt] = QVector3D(-DIST, 1 - diffY * i, 1);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
         for (int i = 0; i < sizeZ; i++) {
             point[countPnt] = QVector3D(-DIST, 0, 1 - diffZ * i);
-            colorF[countPnt] = GREY_F;
-            colorQ[countPnt++] = &GREY_Q;
+            color[countPnt++] = GREY;
         }
 
         offset[XY_X_B + j * OFFSET] = countIdx;
@@ -222,8 +199,7 @@ Axis::Axis(int sizeX, int sizeY, int sizeZ)
 }
 
 const vector<QVector3D> &Axis::getPoint() const { return point; }
-const vector<QVector3D> &Axis::getColorF() const { return colorF; }
-const vector<const QColor *> &Axis::getColorQ() const { return colorQ; }
+const vector<QVector3D> &Axis::getColor() const { return color; }
 const vector<GLuint> &Axis::getIndex() const { return index; }
 
 vector<QPair<int, int>> Axis::getSlice(int rotX, int rotY) {

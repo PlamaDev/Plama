@@ -16,9 +16,8 @@ public:
     const std::vector<GLuint> &getIndexL(int dir) const;
     const std::vector<QVector3D> &getPoint() const;
     const std::vector<QVector3D> &getNormal() const;
-    const std::vector<QVector3D> &getColorF() const;
+    const std::vector<QVector3D> &getColor() const;
     const std::vector<QVector3D> &getPosition() const;
-    const std::vector<QColor const *> &getColorQ() const;
 
     void changeData(
         const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme);
@@ -36,8 +35,7 @@ private:
 
     std::vector<QVector3D> point;
     std::vector<QVector3D> normal;
-    std::vector<QVector3D> colorF;
-    std::vector<QColor const *> colorQ;
+    std::vector<QVector3D> color;
     std::vector<QVector3D> position;
     std::vector<std::vector<GLuint>> indexT;
     std::vector<std::vector<GLuint>> indexL;

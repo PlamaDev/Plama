@@ -12,8 +12,7 @@ class Axis {
 public:
     Axis(int sizeX, int sizeY, int sizeZ);
     const std::vector<QVector3D> &getPoint() const;
-    const std::vector<QVector3D> &getColorF() const;
-    const std::vector<const QColor *> &getColorQ() const;
+    const std::vector<QVector3D> &getColor() const;
     const std::vector<GLuint> &getIndex() const;
     std::vector<QPair<int, int>> getSlice(int rotX, int rotY);
     std::vector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
@@ -27,15 +26,13 @@ public:
 
 private:
     std::vector<QVector3D> point;
-    std::vector<QVector3D> colorF;
-    std::vector<const QColor *> colorQ;
+    std::vector<QVector3D> color;
     std::vector<GLuint> index;
     std::vector<std::vector<QVector3D>> number;
     int sizeX, sizeY, sizeZ;
     std::vector<int> offset;
     static const float DIST, EXTRA;
-    static const QVector3D BLACK_F, GREY_F;
-    static const QColor BLACK_Q, GREY_Q;
+    static const QVector3D BLACK, GREY;
     static const int XY_X_B = 0;
     static const int XY_X_G = 1;
     static const int XY_Y_B = 2;

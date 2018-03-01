@@ -19,10 +19,11 @@ class PlotInternal : public QOpenGLWindow {
 public:
     PlotInternal(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
         std::unique_ptr<Bar> &&bar, std::unique_ptr<std::vector<QVector2D>> &&size);
-    void setRotation(int x, int y);
-    void setLabel(float pos);
-    void setShader(bool en);
-    void setBar(bool en);
+    void setRotation(int x, int y, bool update = true);
+    void setLabel(float pos, bool update = true);
+    void setShader(bool en, bool update = true);
+    void setEnBar(bool en, bool update = true);
+    void setEnLabel(bool en, bool update = true);
     void setModel(std::unique_ptr<Model> model, bool update = true);
     void renderTo(QPaintDevice &d);
 
@@ -45,9 +46,9 @@ protected:
 class Plot : public QWidget {
 public:
     Plot(SimQuantity &quantity, int dim);
-    void setRotation(int x, int y);
-    void setTime(float t);
-    void setPartition(float p);
+    void setRotation(int x, int y, bool update = true);
+    void setTime(float t, bool update = true);
+    void setPartition(float p, bool update = true);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -55,6 +56,7 @@ private:
     PlotInternal *plot;
     SimQuantity *quantity;
     const std::vector<float> *data;
+    float time;
 
     void renderVideo(QString dir, int sizeX, int sizeY, int len, int fps);
 };

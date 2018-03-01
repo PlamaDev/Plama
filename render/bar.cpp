@@ -2,35 +2,31 @@
 #include "util.h"
 
 const float Bar::DIFF = -0.00001;
-const QVector3D Bar::BLACK_F = QVector3D(0.4, 0.4, 0.4);
-const QColor Bar::BLACK_Q = QColor(102, 102, 102);
+const QVector3D Bar::BLACK = QVector3D(0.4, 0.4, 0.4);
 
 Bar::Bar(const Gradient &gradient, int steps)
-    : point(104 + 2 * steps), index(310 + 2 * steps), colorF(104 + 2 * steps),
-      colorQ(104 + 2 * steps), number(steps + 1), steps(steps) {
+    : point(104 + 2 * steps), index(310 + 2 * steps), color(104 + 2 * steps),
+      number(steps + 1), steps(steps) {
     int count = 0;
     float step = 1.0 / 50;
     for (int j = 0; j < 2; j++) {
         for (int i = 0; i < 51; i++) {
             point[count] = QVector3D(j, i * step, 0);
-            colorQ[count] = &gradient.getColorQ(step / 2 + i * step);
-            colorF[count] = toV3D(*colorQ[count]);
+            color[count] = gradient.getColor(step / 2 + i * step);
             count++;
         }
     }
     for (int j = 0; j < 2; j++) {
         for (int i = 0; i < 2; i++) {
             point[count] = QVector3D(j, i, DIFF);
-            colorQ[count] = &BLACK_Q;
-            colorF[count++] = BLACK_F;
+            color[count++] = BLACK;
         }
     }
     step = 1.0 / steps;
     for (int i = 1; i < steps; i++) {
         for (int j = 0; j < 2; j++) {
             point[count] = QVector3D(0.8 + 0.2 * j, i * step, DIFF);
-            colorQ[count] = &BLACK_Q;
-            colorF[count++] = BLACK_F;
+            color[count++] = BLACK;
         }
     }
     count = 0;
@@ -61,8 +57,7 @@ Bar::Bar(const Gradient &gradient, int steps)
 }
 
 const std::vector<QVector3D> &Bar::getPoint() const { return point; }
-const std::vector<QVector3D> &Bar::getColorF() const { return colorF; }
-const std::vector<const QColor *> &Bar::getColorQ() const { return colorQ; }
+const std::vector<QVector3D> &Bar::getColor() const { return color; }
 const std::vector<GLuint> &Bar::getIndex() const { return index; }
 const std::vector<QVector3D> &Bar::getNumber() const { return number; }
 QPair<int, int> Bar::getSliceL() const { return QPair<int, int>(300, steps + 3); }

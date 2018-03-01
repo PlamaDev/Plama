@@ -26,6 +26,25 @@
 
 using namespace std;
 
+void Plot::setTime(float t, bool update) {
+    if (quantity->getSizeData().size() == 0) {
+        const vector<float> &times = quantity->getTimes();
+        float t1 = times[0];
+        float t2 = times[times.size() - 1];
+        float td = t2 - t1;
+        plot->setLabel((t - t1) / td, update);
+    } else if (quantity->getSizeData().size() == 2) {
+        const vector<float> &d = quantity->getDataAt(t, 0);
+        if (&d != data) {
+            plot->setModel(Model::fromData(d, quantity->getSizeData()[0],
+                               quantity->getSizeData()[1], quantity->getExtreme()),
+                update);
+            data = &d;
+        }
+    }
+    time = t;
+}
+
 int mouseFuncForward(int x) {
     const int width = 20;
     const float slope = 0.5;
@@ -75,16 +94,28 @@ vector<QVector2D> genRange(SimQuantity &quantity) {
     }
 }
 
-Plot::Plot(SimQuantity &quantity, int dim) {
+Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]) {
     static vector<Trio<QString, vector<QString>, function<void(QString, Plot &)>>> types =
         {
             {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
                 [](QString s, Plot &p) {
-                    QImage image(4000, 4000, QImage::Format_ARGB32);
+                    QImage image(3000, 3000, QImage::Format_ARGB32);
+                    p.plot->setEnLabel(false, false);
                     p.plot->renderTo(image);
+                    p.plot->setEnLabel(true, false);
                     QImage scaled = image.scaled(
-                        2000, 2000, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                        1500, 1500, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
                     scaled.save(s, "JPG", 100);
+                }},
+            {"PNG image (*.png)", {"png"},
+                [](QString s, Plot &p) {
+                    QImage image(3000, 3000, QImage::Format_ARGB32);
+                    p.plot->setEnLabel(false, false);
+                    p.plot->renderTo(image);
+                    p.plot->setEnLabel(true, false);
+                    QImage scaled = image.scaled(
+                        1500, 1500, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                    scaled.save(s, "PNG", 100);
                 }},
             {"SVG image (*.svg)", {"svg"},
                 [](QString s, Plot &p) {
@@ -92,7 +123,9 @@ Plot::Plot(SimQuantity &quantity, int dim) {
                     generator.setFileName(s);
                     generator.setSize(QSize(800, 800));
                     generator.setViewBox(QRect(0, 0, 800, 800));
+                    p.plot->setEnLabel(false, false);
                     p.plot->renderTo(generator);
+                    p.plot->setEnLabel(true, false);
                 }},
             {"PDF image (*.pdf)", {"pdf"},
                 [](QString s, Plot &p) {
@@ -100,7 +133,9 @@ Plot::Plot(SimQuantity &quantity, int dim) {
                     QSizeF size(100, 100);
                     writer.setPageSizeMM(size);
                     writer.setResolution(300);
+                    p.plot->setEnLabel(false, false);
                     p.plot->renderTo(writer);
+                    p.plot->setEnLabel(true, false);
                 }},
             {"AVI video (*.avi)", {"avi"},
                 [](QString s, Plot &p) { p.renderVideo(s, 800, 800, 10, 20); }},
@@ -149,7 +184,7 @@ Plot::Plot(SimQuantity &quantity, int dim) {
         }
     });
     connect(aShader, &QAction::toggled, [=](bool b) { plot->setShader(b); });
-    connect(aBar, &QAction::toggled, [=](bool b) { plot->setBar(b); });
+    connect(aBar, &QAction::toggled, [=](bool b) { plot->setEnBar(b); });
     bar->addAction(aExport);
     bar->addAction(aShader);
     bar->addAction(aBar);
@@ -167,31 +202,14 @@ Plot::Plot(SimQuantity &quantity, int dim) {
     data = &quantity.getDataAt(quantity.getTimes()[0], dim);
 }
 
-void Plot::setRotation(int x, int y) { plot->setRotation(x, y); }
+void Plot::setRotation(int x, int y, bool update) { plot->setRotation(x, y, update); }
 
-void Plot::setTime(float t) {
-    if (quantity->getSizeData().size() == 0) {
-        const vector<float> &times = quantity->getTimes();
-        float t1 = times[0];
-        float t2 = times[times.size() - 1];
-        float td = t2 - t1;
-        plot->setLabel((t - t1) / td);
-    } else if (quantity->getSizeData().size() == 2) {
-        const vector<float> &d = quantity->getDataAt(t, 0);
-        if (&d != data) {
-            plot->setModel(Model::fromData(d, quantity->getSizeData()[0],
-                quantity->getSizeData()[1], quantity->getExtreme()));
-            data = &d;
-        }
-    }
-}
-
-void Plot::setPartition(float p) {
+void Plot::setPartition(float p, bool update) {
     const vector<float> &times = quantity->getTimes();
     float t1 = times[0];
     float t2 = times[times.size() - 1];
     float td = t2 - t1;
-    setTime(t1 + td * p);
+    setTime(t1 + td * p, update);
 }
 
 QSize Plot::sizeHint() const { return QSize(500, 500); }
@@ -207,32 +225,23 @@ void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
 
     QTemporaryDir *tmp = new QTemporaryDir();
     int total = len * fps;
-    float lenData = quantity->getTimes()[quantity->getTimes().size() - 1];
-    float lenStep = lenData / total;
-    const vector<float> *dataTmp = nullptr;
+    float lenStep = 1.0 / total;
     int sizeName = QString::number(total).length();
-    QString format = "%1.bmp";
+    QString format = "%1.jpg";
     QString f1, f2;
     f2 = format.arg(int(0), sizeName, 10, QLatin1Char('0'));
+    float t = time;
     for (int i = 0; i < total; i++) {
         f1 = f2;
         f2 = format.arg(int(i), sizeName, 10, QLatin1Char('0'));
-
-        const vector<float> *dataNew = &quantity->getDataAt(i * lenStep, 0);
-        if (dataNew == dataTmp)
-            QFile::copy(tmp->filePath(f1), tmp->filePath(f2));
-        else {
-            QImage image(sizeX * 2, sizeY * 2, QImage::Format_ARGB32);
-            QString filePath = tmp->filePath(f2);
-            plot->setModel(Model::fromData(*dataNew, quantity->getSizeData()[0],
-                               quantity->getSizeData()[1], quantity->getExtreme()),
-                false);
-            plot->renderTo(image);
-            image.save(filePath, Q_NULLPTR, 100);
-            dataTmp = dataNew;
-        }
+        setPartition(i * lenStep, false);
+        QImage image(sizeX * 2, sizeY * 2, QImage::Format_ARGB32);
+        QString filePath = tmp->filePath(f2);
+        plot->renderTo(image);
+        image.save(filePath, Q_NULLPTR, 100);
         QApplication::processEvents();
     }
+    setTime(t, false);
 
     QProcess *process = new QProcess(this);
     process->setWorkingDirectory(tmp->path());
@@ -242,7 +251,7 @@ void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
         progress->close();
     });
     QString cmd = "ffmpeg -y -r 10 -i %0" + QString::number(sizeName) +
-        "d.bmp -c:v libx264 -crf 12 -s " + QString::number(sizeX) + "x" +
+        "d.jpg -c:v libx264 -crf 12 -s " + QString::number(sizeX) + "x" +
         QString::number(sizeY) + " " + dir;
     process->start(cmd);
 }
@@ -260,27 +269,34 @@ PlotInternal::PlotInternal(unique_ptr<Model> &&model, unique_ptr<Axis> &&axis,
     engineQt->setBackGround(Qt::transparent);
 }
 
-void PlotInternal::setRotation(int x, int y) {
+void PlotInternal::setRotation(int x, int y, bool update) {
     engineGL->setRotation(x, y);
     engineQt->setRotation(x, y);
+    if (update) requestUpdate();
 }
 
-void PlotInternal::setLabel(float pos) {
+void PlotInternal::setLabel(float pos, bool update) {
     engineGL->setLabel(pos);
     engineQt->setLabel(pos);
-    requestUpdate();
+    if (update) requestUpdate();
 }
 
-void PlotInternal::setShader(bool en) {
+void PlotInternal::setShader(bool en, bool update) {
     engineGL->setShader(en);
     engineQt->setShader(en);
-    requestUpdate();
+    if (update) requestUpdate();
 }
 
-void PlotInternal::setBar(bool en) {
-    engineGL->setBar(en);
-    engineQt->setBar(en);
-    requestUpdate();
+void PlotInternal::setEnBar(bool en, bool update) {
+    engineGL->setEnBar(en);
+    engineQt->setEnBar(en);
+    if (update) requestUpdate();
+}
+
+void PlotInternal::setEnLabel(bool en, bool update) {
+    engineGL->setEnLabel(en);
+    engineQt->setEnLabel(en);
+    if (update) requestUpdate();
 }
 
 void PlotInternal::setModel(unique_ptr<Model> model, bool update) {
@@ -309,7 +325,6 @@ void PlotInternal::mouseMoveEvent(QMouseEvent *event) {
     else if (ry < 0)
         ry = 0;
     setRotation(unify(mouseFuncForwardLoop(mx), 360).second, ry);
-    requestUpdate();
 }
 
 void PlotInternal::mousePressEvent(QMouseEvent *event) {
@@ -329,5 +344,5 @@ void PlotInternal::resizeGL(int w, int h) {
 
 void PlotInternal::paintGL() {
     QPainter p(this);
-    engineQt->render(p);
+    engineGL->render(p);
 }

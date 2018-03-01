@@ -27,7 +27,8 @@ public:
     void setBackGround(const QColor &color);
     void setLabel(float pos);
     void setShader(bool en);
-    void setBar(bool en);
+    void setEnBar(bool en);
+    void setEnLabel(bool en);
 
 protected:
     int rotX, rotY;
@@ -38,7 +39,7 @@ protected:
     std::shared_ptr<Bar> bar;
     std::shared_ptr<std::vector<QVector2D>> size;
     float label;
-    bool enShader, enBar;
+    bool enShader, enBar, enLabel;
 };
 
 class EngineGL : public Engine, protected QOpenGLFunctions {

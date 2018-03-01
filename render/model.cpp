@@ -36,9 +36,8 @@ const vector<GLuint> &Model::getIndexT(int dir) const { return indexT[dir]; }
 const vector<GLuint> &Model::getIndexL(int dir) const { return indexL[dir]; }
 const vector<QVector3D> &Model::getPoint() const { return point; }
 const vector<QVector3D> &Model::getNormal() const { return normal; }
-const vector<QVector3D> &Model::getColorF() const { return colorF; }
+const vector<QVector3D> &Model::getColor() const { return color; }
 const vector<QVector3D> &Model::getPosition() const { return position; }
-const vector<const QColor *> &Model::getColorQ() const { return colorQ; }
 
 void Model::changeData(
     const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme) {
@@ -109,20 +108,15 @@ void Model::changeData(
 
             for (int i = 0; i < 9; i++) normal[offsetPoint + i].normalize();
 
-            colorQ[offsetPoint] = &(Gradient::HEIGHT_MAP.getColorQ((d[0] + d[4]) / 2));
-            colorQ[offsetPoint + 3] = colorQ[offsetPoint];
-            colorQ[offsetPoint + 1] = &Gradient::HEIGHT_MAP.getColorQ((d[2] + d[4]) / 2);
-            colorQ[offsetPoint + 2] = colorQ[offsetPoint + 1];
-            colorQ[offsetPoint + 5] = &Gradient::HEIGHT_MAP.getColorQ((d[8] + d[4]) / 2);
-            colorQ[offsetPoint + 8] = colorQ[offsetPoint + 5];
-            colorQ[offsetPoint + 7] = &Gradient::HEIGHT_MAP.getColorQ((d[6] + d[4]) / 2);
-            colorQ[offsetPoint + 6] = colorQ[offsetPoint + 7];
-            colorQ[offsetPoint + 4] = &Gradient::HEIGHT_MAP.getColorQ(0);
-
-            for (int i = offsetPoint; i < offsetPoint + 9; i++) {
-                const QColor *c = colorQ[i];
-                colorF[i] = QVector3D(c->redF(), c->greenF(), c->blueF());
-            }
+            color[offsetPoint] = Gradient::HEIGHT_MAP.getColor((d[0] + d[4]) / 2);
+            color[offsetPoint + 3] = color[offsetPoint];
+            color[offsetPoint + 1] = Gradient::HEIGHT_MAP.getColor((d[2] + d[4]) / 2);
+            color[offsetPoint + 2] = color[offsetPoint + 1];
+            color[offsetPoint + 5] = Gradient::HEIGHT_MAP.getColor((d[8] + d[4]) / 2);
+            color[offsetPoint + 8] = color[offsetPoint + 5];
+            color[offsetPoint + 7] = Gradient::HEIGHT_MAP.getColor((d[6] + d[4]) / 2);
+            color[offsetPoint + 6] = color[offsetPoint + 7];
+            color[offsetPoint + 4] = Gradient::HEIGHT_MAP.getColor(0);
 
             position[offsetPoint] = (p[0] + p[1] + p[4]) / 3;
             position[offsetPoint + 1] = (p[1] + p[2] + p[4]) / 3;
@@ -162,7 +156,6 @@ std::unique_ptr<Model> Model::fromData(
 }
 
 unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
-    static QColor c = Qt::blue;
 
     vector<float> y(sq.getData().size());
     for (size_t i = 0; i < sq.getData().size(); i++)
@@ -193,8 +186,7 @@ unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
     for (size_t i = 0; i < x.size(); i++) {
         ret->point[i] = QVector3D((x[i] - xMin) / xDiff, (y[i] - yMin) / yDiff, 0);
         ret->normal[i] = QVector3D(0, 0, 1);
-        ret->colorQ[i] = &c;
-        ret->colorF[i] = QVector3D(0, 0, 1);
+        ret->color[i] = QVector3D(0, 0, 1);
         ret->position[i] = ret->point[i];
     }
 
@@ -209,7 +201,7 @@ unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
 }
 
 Model::Model(int sPoint, int sIndexT, int sIndexL)
-    : point(sPoint), normal(sPoint), colorF(sPoint), colorQ(sPoint), position(sPoint),
+    : point(sPoint), normal(sPoint), color(sPoint), position(sPoint),
       indexT(8, vector<GLuint>(sIndexT)), indexL(8, vector<GLuint>(sIndexL)) {}
 
 QPair<float, float> Model::getExtreme(const float *data, int total) {
