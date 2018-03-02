@@ -1,4 +1,3 @@
-#include <QColor>
 #include <QDebug>
 #include <QPair>
 #include <render/model.h>
@@ -32,6 +31,7 @@ function<void(function<void(int)> &, int, int)> f3 = //
 vector<function<void(function<void(int)> &, int, int)>> Model::indexFunc{
     f0, f0, f1, f1, f3, f3, f2, f2};
 
+Model::Model() : indexT(8, vector<GLuint>()), indexL(8, vector<GLuint>()) {}
 const vector<GLuint> &Model::getIndexT(int dir) const { return indexT[dir]; }
 const vector<GLuint> &Model::getIndexL(int dir) const { return indexL[dir]; }
 const vector<QVector3D> &Model::getPoint() const { return point; }
@@ -39,8 +39,75 @@ const vector<QVector3D> &Model::getNormal() const { return normal; }
 const vector<QVector3D> &Model::getColor() const { return color; }
 const vector<QVector3D> &Model::getPosition() const { return position; }
 
-void Model::changeData(
-    const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme) {
+bool Model::setQuantity(SimQuantity &sq, float time) {
+    QVector2D extreme = sq.getExtreme();
+    const std::vector<int> &size = sq.getSizeData();
+    auto dataAt = [&](int dim = 0) -> DATA { return sq.getDataAt(time, dim); };
+
+    switch (size.size()) {
+    case 0: genLine(sq.getTimes(), sq.getData(), extreme); return true;
+    case 2:
+        switch (sq.getDim()) {
+        case 1: genHeight(dataAt(), size[0], size[1], extreme); return false;
+        case 2: genVector(dataAt(0), dataAt(1), size[0], size[1]); return false;
+        }
+        break;
+    }
+}
+
+void Model::genLine(
+    Model::DATA x, const std::vector<std::vector<float>> &y, QVector2D extreme) {
+    if (checkSame(LINE, {&x, &y})) return;
+    std::vector<float> newY(y.size());
+    for (size_t i = 0; i < y.size(); i++) newY[i] = y[i][0];
+    genLineImpl(x, newY, extreme);
+}
+
+void Model::genLine(DATA x, DATA y, QVector2D extreme) {
+    if (checkSame(LINE, {&x, &y})) return; // TODO
+    genLineImpl(x, y, extreme);
+}
+
+void Model::genLineImpl(Model::DATA x, Model::DATA y, QVector2D extreme) {
+    checkSize(x.size(), 0, (x.size() - 1) * 2);
+    float xMin = x[0];
+    float xMax = x[x.size() - 1];
+    float xDiff = xMax - xMin;
+    float yMin = extreme.x();
+    float yMax = extreme.y();
+    float yDiff = yMax - yMin;
+
+    if (yDiff == 0) {
+        if (yMin == 0) {
+            yMin = -1;
+            yMax = 1;
+            yDiff = 2;
+        } else {
+            yMin *= 0.9;
+            yMax *= 1.1;
+            yDiff = yMax - yMin;
+        }
+    }
+
+    for (size_t i = 0; i < x.size(); i++) {
+        point[i] = QVector3D((x[i] - xMin) / xDiff, (y[i] - yMin) / yDiff, 0);
+        normal[i] = QVector3D(0, 0, 1);
+        color[i] = QVector3D(0, 0, 1);
+        position[i] = point[i];
+    }
+
+    for (int j = 0; j < 8; j++) {
+        for (size_t i = 0; i < x.size() - 1; i++) {
+            indexL[j][2 * i] = i;
+            indexL[j][2 * i + 1] = i + 1;
+        }
+    }
+}
+
+void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
+    if (checkSame(HEIGHT, {&data})) return;
+    checkSize((sizeX - 1) * (sizeY - 1) * 9, (sizeX - 1) * (sizeY - 1) * 24, 0);
+
     static vector<vector<GLuint>> order{
         {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
         {1, 4, 0, 0, 4, 3, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 8, 4, 5, 7, 4, 8},
@@ -140,69 +207,34 @@ void Model::changeData(
     }
 }
 
-unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, float time, int dim) {
-    return fromData(sq.getDataAt(time, dim), sq.getSizeData()[0], sq.getSizeData()[1],
-        sq.getExtreme());
-}
+void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY) {}
 
-std::unique_ptr<Model> Model::fromData(
-    const std::vector<float> &data, int sizeX, int sizeY, QVector2D extreme) {
-    int sizePoint = (sizeX - 1) * (sizeY - 1) * 9;
-    int sizeIndex = (sizeX - 1) * (sizeY - 1) * 24;
+bool Model::checkSame(Model::enumType type, std::vector<const void *> &&data) {
+    bool ret = true;
+    if (type != this->type)
+        ret = false;
+    else if (data.size() != this->data.size())
+        ret = false;
+    else
+        for (size_t i = 0; i < data.size(); i++)
+            if (data[i] != this->data[i]) ret = false;
 
-    unique_ptr<Model> ret = unique_ptr<Model>(new Model(sizePoint, sizeIndex, 0));
-    ret->changeData(data, sizeX, sizeY, extreme);
+    if (!ret) {
+        this->type = type;
+        this->data = std::move(data);
+    }
     return ret;
 }
 
-unique_ptr<Model> Model::fromQuantity(SimQuantity &sq, int dim) {
+void Model::checkSize(int point, int indexT, int indexL) {
+    this->point.resize(point);
+    color.resize(point);
+    position.resize(point);
+    normal.resize(point);
 
-    vector<float> y(sq.getData().size());
-    for (size_t i = 0; i < sq.getData().size(); i++)
-        y[i] = sq.getData()[sq.getDim() * i + dim][0];
-    const vector<float> &x = sq.getTimes();
-
-    unique_ptr<Model> ret = unique_ptr<Model>(new Model(x.size(), 0, (x.size() - 1) * 2));
-
-    float xMin = x[0];
-    float xMax = x[x.size() - 1];
-    float xDiff = xMax - xMin;
-    float yMin = sq.getMin();
-    float yMax = sq.getMax();
-    float yDiff = yMax - yMin;
-
-    if (yDiff == 0) {
-        if (yMin == 0) {
-            yMin = -1;
-            yMax = 1;
-            yDiff = 2;
-        } else {
-            yMin *= 0.9;
-            yMax *= 1.1;
-            yDiff = yMax - yMin;
-        }
-    }
-
-    for (size_t i = 0; i < x.size(); i++) {
-        ret->point[i] = QVector3D((x[i] - xMin) / xDiff, (y[i] - yMin) / yDiff, 0);
-        ret->normal[i] = QVector3D(0, 0, 1);
-        ret->color[i] = QVector3D(0, 0, 1);
-        ret->position[i] = ret->point[i];
-    }
-
-    for (int j = 0; j < 8; j++) {
-        for (size_t i = 0; i < x.size() - 1; i++) {
-            ret->indexL[j][2 * i] = i;
-            ret->indexL[j][2 * i + 1] = i + 1;
-        }
-    }
-
-    return ret;
+    for (auto &i : this->indexT) i.resize(indexT);
+    for (auto &i : this->indexL) i.resize(indexL);
 }
-
-Model::Model(int sPoint, int sIndexT, int sIndexL)
-    : point(sPoint), normal(sPoint), color(sPoint), position(sPoint),
-      indexT(8, vector<GLuint>(sIndexT)), indexL(8, vector<GLuint>(sIndexL)) {}
 
 QPair<float, float> Model::getExtreme(const float *data, int total) {
     float max = *data;

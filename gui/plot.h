@@ -17,17 +17,18 @@
 
 class PlotInternal : public QOpenGLWindow {
 public:
-    PlotInternal(std::unique_ptr<Model> &&model, std::unique_ptr<Axis> &&axis,
-        std::unique_ptr<Bar> &&bar, std::unique_ptr<std::vector<QVector2D>> &&size);
+    PlotInternal(std::unique_ptr<Axis> &&axis, std::unique_ptr<Bar> &&bar,
+        std::unique_ptr<std::vector<QVector2D>> &&size);
     void setRotation(int x, int y, bool update = true);
     void setLabel(float pos, bool update = true);
     void setShader(bool en, bool update = true);
     void setEnBar(bool en, bool update = true);
     void setEnLabel(bool en, bool update = true);
-    void setModel(std::unique_ptr<Model> model, bool update = true);
+    bool setQuantity(SimQuantity &sq, float time, bool update = true);
     void renderTo(QPaintDevice &d);
 
 private:
+    std::shared_ptr<Model> model;
     std::unique_ptr<EngineGL> engineGL;
     std::unique_ptr<EngineQt> engineQt;
     QPoint mouse;

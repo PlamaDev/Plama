@@ -26,25 +26,6 @@
 
 using namespace std;
 
-void Plot::setTime(float t, bool update) {
-    if (quantity->getSizeData().size() == 0) {
-        const vector<float> &times = quantity->getTimes();
-        float t1 = times[0];
-        float t2 = times[times.size() - 1];
-        float td = t2 - t1;
-        plot->setLabel((t - t1) / td, update);
-    } else if (quantity->getSizeData().size() == 2) {
-        const vector<float> &d = quantity->getDataAt(t, 0);
-        if (&d != data) {
-            plot->setModel(Model::fromData(d, quantity->getSizeData()[0],
-                               quantity->getSizeData()[1], quantity->getExtreme()),
-                update);
-            data = &d;
-        }
-    }
-    time = t;
-}
-
 int mouseFuncForward(int x) {
     const int width = 20;
     const float slope = 0.5;
@@ -83,15 +64,13 @@ int mouseFuncInverseLoop(int x) {
     return p.first * (2 * width + (int)(90 / slope)) + mouseFuncInverse(p.second);
 }
 
-vector<QVector2D> genRange(SimQuantity &quantity) {
-    if (quantity.getSizeModel().size() == 0) {
-        return {
-            {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
-            quantity.getExtreme(), {0, 1}};
-    } else {
-        return {quantity.getSizeModel()[0], quantity.getSizeModel()[1],
-            quantity.getExtreme()};
-    }
+void Plot::setTime(float t, bool update) {
+    const vector<float> &times = quantity->getTimes();
+    float t1 = times[0];
+    float t2 = times[times.size() - 1];
+    if (plot->setQuantity(*quantity, t, update))
+        plot->setLabel((t - t1) / (t2 - t1), update);
+    time = t;
 }
 
 Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]) {
@@ -190,11 +169,9 @@ Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]) {
     bar->addAction(aBar);
     l->addWidget(bar);
 
-    plot = new PlotInternal(quantity.getSizeData().size() == 0
-            ? Model::fromQuantity(quantity, dim)
-            : Model::fromQuantity(quantity, quantity.getTimes()[0], dim),
-        make_unique<Axis>(5, 5, 5), make_unique<Bar>(Gradient::HEIGHT_MAP, 5),
-        std::move(range));
+    plot = new PlotInternal(make_unique<Axis>(5, 5, 5),
+        make_unique<Bar>(Gradient::HEIGHT_MAP, 5), std::move(range));
+    plot->setQuantity(quantity, quantity.getTimes()[0]);
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
     setLayout(l);
@@ -256,15 +233,15 @@ void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
     process->start(cmd);
 }
 
-PlotInternal::PlotInternal(unique_ptr<Model> &&model, unique_ptr<Axis> &&axis,
-    unique_ptr<Bar> &&bar, unique_ptr<vector<QVector2D>> &&size) {
-    shared_ptr<Model> pm = move(model);
+PlotInternal::PlotInternal(
+    unique_ptr<Axis> &&axis, unique_ptr<Bar> &&bar, unique_ptr<vector<QVector2D>> &&size)
+    : model(new Model()) {
     shared_ptr<Axis> pa = move(axis);
     shared_ptr<vector<QVector2D>> ps = move(size);
     shared_ptr<Bar> pb = move(bar);
 
-    engineGL = make_unique<EngineGL>(pm, pa, pb, ps);
-    engineQt = make_unique<EngineQt>(pm, pa, pb, ps);
+    engineGL = make_unique<EngineGL>(model, pa, pb, ps);
+    engineQt = make_unique<EngineQt>(model, pa, pb, ps);
     engineGL->setBackGround(Qt::white);
     engineQt->setBackGround(Qt::transparent);
 }
@@ -299,11 +276,10 @@ void PlotInternal::setEnLabel(bool en, bool update) {
     if (update) requestUpdate();
 }
 
-void PlotInternal::setModel(unique_ptr<Model> model, bool update) {
-    shared_ptr<Model> pm = move(model);
-    engineGL->setModel(pm);
-    engineQt->setModel(pm);
+bool PlotInternal::setQuantity(SimQuantity &sq, float time, bool update) {
+    bool ret = model->setQuantity(sq, time);
     if (update) requestUpdate();
+    return ret;
 }
 
 void PlotInternal::renderTo(QPaintDevice &d) {
