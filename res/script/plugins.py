@@ -1,5 +1,6 @@
 import os as _os
 import re as _re
+import traceback as _tb
 
 plugins = {}
 
@@ -97,6 +98,7 @@ def load(name, files):
             data = plugin.load(files)
             return [_chk_node(j, '/{:d}'.format(i)) for i, j in enumerate(data)], None
         except Exception as e:
+            _tb.print_exc()
             return None, str(e)
 
 
@@ -123,7 +125,7 @@ class LoaderDummy:
             'name': 'Reaction A + B <=> C',
             'children': [],
             'quantities': [{
-                'name': 'example-2D',
+                'name': 'example-2D1D',
                 'times': [1, 2, 3],
                 'dimData': 1,
                 'sizeData': [3, 2],
@@ -134,13 +136,23 @@ class LoaderDummy:
                     [0, 2, 0, 0, 0, 0]
                 ]
             }, {
-                'name': 'example-0D',
+                'name': 'example-0D1D',
                 'times': [1, 2, 3],
                 'dimData': 1,
                 'sizeData': [],
                 'sizeModel': [],
                 'data': lambda: [
                     [0], [3], [2]
+                ]
+            }, {
+                'name': 'example-2D2D',
+                'times': [1],
+                'dimData': 2,
+                'sizeData': [3, 2],
+                'sizeModel': [[2, 3], [4, 5]],
+                'data': lambda: [
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0]
                 ]
             }, {
                 'name': 'example-err',
@@ -218,7 +230,7 @@ class LoaderMd2d:
                 'quantities': qtt
             }
 
-        def gen_ov(file):
+        def gen_ov():
             def item(name):
                 return {
                     'name': name,
@@ -229,7 +241,7 @@ class LoaderMd2d:
                     'data': lambda: cache[name]
                 }
 
-            with open(file) as f:
+            with open(find_name0('history.out')) as f:
                 s = f.readline()
                 names = LoaderMd2d.pat_split.split(s)[:-1]
                 data = [[] for i in names]
@@ -245,6 +257,7 @@ class LoaderMd2d:
 
         particles, reactions = LoaderMd2d.read_info(files)
         size_model = [[0, 1], [0, 1]]
+        fields = ['E', 'E_N', 'epsilon', 'Er', 'Ereff', 'J', 'Sigma', 'V']
         times = gen_time()
         cache = {}
 
@@ -262,7 +275,12 @@ class LoaderMd2d:
             'abbr': 'Ov',
             'name': 'Overview',
             'children': [],
-            'quantities': gen_ov(find_name0('history.out'))
+            'quantities': gen_ov()
+        }, {
+            'abbr': 'Fld',
+            'name': 'Field',
+            'children': [],
+            'quantities': [gen_qtt(i, find_name0(i + '.txt')) for i in fields]
         }]
 
     @staticmethod
@@ -366,9 +384,9 @@ class LoaderMd2d:
                         buf = []
         return data
 
+
 # if __name__ == "__main__":
 #     init([])
 #     d = '/run/media/towdium/Files/Work/FYP/software/data'
 #     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-#     d, r = load('Dummy', files_)
-#     a, r = d[0]['quantities'][1]['data']()  #pylint: disable=E1126
+#     d, r = load('MD2D', files_)

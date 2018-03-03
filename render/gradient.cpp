@@ -1,4 +1,6 @@
 #include "gradient.h"
+#include "util.h"
+#include <cmath>
 
 using namespace std;
 
@@ -10,25 +12,18 @@ Gradient Gradient::HEIGHT_MAP(
 
 Gradient::Gradient(vector<QPair<QColor, float>> data, int steps)
     : cache(steps), step(1.0f / steps) {
-    QColor c1 = data[0].first;
-    QColor c2 = data[0].first;
+    QVector3D c1 = toV3D(data[0].first);
+    QVector3D c2 = c1;
     float p1 = 0;
     float p2 = 0;
-    int count = 0;
+    int cnt = 0;
     for (auto i : data) {
         c1 = c2;
         p1 = p2;
-        c2 = i.first;
+        c2 = toV3D(i.first);
         p2 = i.second;
-        for (float pos = count * step; pos < p2; count++, pos = count * step) {
-            float diff1 = pos - p1;
-            float diff2 = p2 - pos;
-            float diffT = p2 - p1;
-            int r = (c1.red() * diff2 + c2.red() * diff1) / diffT;
-            int g = (c1.green() * diff2 + c2.green() * diff1) / diffT;
-            int b = (c1.blue() * diff2 + c2.blue() * diff1) / diffT;
-            cache[count] = QVector3D(r / 255.0, g / 255.0, b / 255.0);
-        }
+        for (float pos = cnt * step; pos < p2; cnt++, pos = cnt * step)
+            cache[cnt] = (c1 * (p2 - pos) + c2 * (pos - p1)) / (p2 - p1);
     }
 }
 
