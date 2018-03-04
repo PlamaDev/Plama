@@ -108,10 +108,7 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
         QAction *a = new QAction(i, this);
         mFOpen->addAction(a);
         connect(a, &QAction::triggered, [=]() {
-            unique_ptr<Project> tmp = m.load(i,
-                QFileDialog::getOpenFileNames(
-                    this, "Select Data Files", "", "Any Files(*.*)"));
-
+            unique_ptr<Project> tmp = m.load(i);
             if (tmp->getError().isEmpty()) {
                 data = std::move(tmp);
                 tree->clear();

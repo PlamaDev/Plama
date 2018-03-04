@@ -1,5 +1,6 @@
 #include "project.h"
 #include <Python.h>
+#include <QFileDialog>
 #include <QScopedPointer>
 #include <QSharedPointer>
 #include <QStandardPaths>
@@ -30,7 +31,7 @@ ProjectLoader::ProjectLoader() : main(PyImport_AddModule("__main__")), list() {
     PyObject *rec;
     PyObject *globals = PyModule_GetDict(main);
     rec = PyRun_String(cmd, Py_file_input, globals, globals);
-    Py_DECREF(rec);
+    Py_DecRef(rec);
     PyObject *init = PyObject_GetAttrString(main, "init");
     PyObject *plugins = PyObject_CallObject(init, args);
     Py_DECREF(args);
@@ -48,21 +49,65 @@ ProjectLoader::ProjectLoader() : main(PyImport_AddModule("__main__")), list() {
 
 const QStringList &ProjectLoader::plugins() const { return list; }
 
-unique_ptr<Project> ProjectLoader::load(QString name, QStringList files) const {
-    PyObject *pfiles = PyList_New(0);
-
-    for (QString file : files)
-        PyList_Append(pfiles, PyUnicode_FromString(file.toLocal8Bit().data()));
-    PyObject *load = PyObject_GetAttrString(main, "load");
-    PyObject *args = Py_BuildValue("(s, O)", name.toLocal8Bit().data(), pfiles);
-    PyObject *data = PyObject_CallObject(load, args);
-
-    Py_DECREF(pfiles);
-    Py_DECREF(load);
+std::unique_ptr<Project> ProjectLoader::load(QString name) const {
+    PyObject *fArgs = PyObject_GetAttrString(main, "args");
+    PyObject *fLoad = PyObject_GetAttrString(main, "load");
+    PyObject *args = Py_BuildValue("(s)", name.toLocal8Bit().data());
+    PyObject *types = PyObject_CallObject(fArgs, args);
     Py_DECREF(args);
-
+    int len = PyObject_Length(types);
+    vector<QPair<QString, int>> typesConverted(len);
+    for (int i = 0; i < len; i++) {
+        PyObject *arg = PyList_GetItem(types, i);
+        QString argName = QString(PyUnicode_AsUTF8(PyTuple_GetItem(arg, 0)));
+        int argType = PyLong_AsLong(PyTuple_GetItem(arg, 1));
+        typesConverted[i] = {argName, argType};
+    }
+    PyObject *pluginArgs = buildArgs(typesConverted);
+    args = Py_BuildValue("(s, O)", name.toLocal8Bit().data(), pluginArgs);
+    PyObject *data = PyObject_CallObject(fLoad, args);
+    // Py_DECREF(pluginArgs);
+    Py_DECREF(args);
+    Py_DECREF(types);
     return make_unique<Project>(data);
 }
+
+PyObject *ProjectLoader::buildArgs(const std::vector<QPair<QString, int>> &types) {
+    PyObject *builder = PyList_New(0);
+    for (auto &i : types) {
+        switch (i.second) {
+        case STRING_LIST:
+            PyList_Append(builder,
+                buildStringList(QFileDialog::getOpenFileNames(nullptr, i.first)));
+            break;
+        default: Q_ASSERT(true);
+        }
+    }
+    return builder;
+}
+
+PyObject *ProjectLoader::buildStringList(const QStringList &value) {
+    PyObject *ret = PyList_New(0);
+    for (const auto &i : value)
+        PyList_Append(ret, PyUnicode_FromString(i.toLocal8Bit().data()));
+    return ret;
+}
+
+// unique_ptr<Project> ProjectLoader::load(QString name, QStringList files) const {
+//    PyObject *pfiles = PyList_New(0);
+
+//    for (QString file : files)
+//        PyList_Append(pfiles, PyUnicode_FromString(file.toLocal8Bit().data()));
+//    PyObject *load = PyObject_GetAttrString(main, "load");
+//    PyObject *args = Py_BuildValue("(s, O)", name.toLocal8Bit().data(), pfiles);
+//    PyObject *data = PyObject_CallObject(load, args);
+
+//    Py_DECREF(pfiles);
+//    Py_DECREF(load);
+//    Py_DECREF(args);
+
+//    return make_unique<Project>(data);
+//}
 
 Project::Project(PyObject *data)
     : nodes(), data(data, [](PyObject *o) { Py_DECREF(o); }) {

@@ -108,7 +108,7 @@ void Model::genLineImpl(Model::DATA x, Model::DATA y, QVector2D extreme) {
 }
 
 void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
-    if (checkSame(HEIGHT, {&data})) return;
+    // if (checkSame(HEIGHT, {&data})) return;
     checkSize((sizeX - 1) * (sizeY - 1) * 9, (sizeX - 1) * (sizeY - 1) * 24, 0);
 
     static vector<vector<GLuint>> order{
@@ -176,8 +176,6 @@ void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
             normal[offsetPoint + 7] = QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
             normal[offsetPoint + 8] = QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
 
-            for (int i = 0; i < 9; i++) normal[offsetPoint + i].normalize();
-
             color[offsetPoint] = Gradient::HEIGHT_MAP.getColor((d[0] + d[4]) / 2);
             color[offsetPoint + 3] = color[offsetPoint];
             color[offsetPoint + 1] = Gradient::HEIGHT_MAP.getColor((d[2] + d[4]) / 2);
@@ -214,7 +212,7 @@ void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY
     static vector<QVector2D> polar;
     static float angle1 = PI * 13 / 12;
     static float angle2 = PI * 11 / 12;
-    if (checkSame(VECTOR, {&dataX, &dataY})) return;
+    // if (checkSame(VECTOR, {&dataX, &dataY})) return;
     checkSize(sizeX * sizeY * 5, sizeX * sizeY * 3, sizeX * sizeY * 2);
     polar.resize(dataX.size());
     float max, min;
@@ -233,8 +231,8 @@ void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY
     }
     float mul = max == 0 ? 0 : 1 / max / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
     float ratio = 1 / max / mul;
-    float sizeL = 0.8 / (sizeX > sizeY ? sizeX : sizeY);
-    float sizeA = sizeL / 2 * sqrt(3);
+    float sizeL = 0.8 / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
+    float sizeA = sizeL * cos(PI / 12);
     float diffX = 1.0 / (sizeX + 1);
     float diffY = 1.0 / (sizeY + 1);
     for (auto &i : polar) i.setX(i.x() * mul);

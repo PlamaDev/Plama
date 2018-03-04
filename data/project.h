@@ -7,6 +7,7 @@
 #include <QList>
 #include <QMap>
 #include <QObject>
+#include <QPair>
 #include <QTextStream>
 #include <QVector2D>
 #include <memory>
@@ -78,11 +79,14 @@ class ProjectLoader {
 public:
     ProjectLoader();
     const QStringList &plugins() const;
-    std::unique_ptr<Project> load(QString name, QStringList files) const;
+    std::unique_ptr<Project> load(QString name) const;
 
 private:
+    const static int STRING_LIST = 1;
     PyObject *main;
     QStringList list;
+    static PyObject *buildArgs(const std::vector<QPair<QString, int>> &types);
+    static PyObject *buildStringList(const QStringList &value);
 };
 
 #endif // PROJECT_H

@@ -2,106 +2,114 @@ import os as _os
 import re as _re
 import traceback as _tb
 import itertools as _it
+import typing as _tp
 
-plugins = {}
 
+class Manager:
+    types = {_tp.List[str]: 1}
 
-def init(configs):
-    def scripts(configs_):
-        for config in configs_:
-            if _os.path.exists(config):
-                for file in _os.listdir(config):
-                    path = _os.path.join(config, file)
-                    if file.endswith('.py') and _os.path.isfile(path):
-                        yield path
+    def __init__(self):
+        self.plugins = {}
 
-    plugins['Dummy'] = LoaderDummy()
-    plugins['MD2D'] = LoaderMd2d()
-    plugins['Error'] = LoaderError()
-    for script in scripts(configs):
-        variables = {}
-        with open(script) as s:
-            # noinspection PyBroadException
-            try:
-                exec(s.read(), variables)
-                plugin = variables['plugin']
-                if 'name' and 'load' in dir(plugin):
-                    plugins[plugin.name()] = plugin
-                else:
+    def init(self, configs):
+        def scripts_():
+            for config in configs:
+                if _os.path.exists(config):
+                    for file in _os.listdir(config):
+                        path = _os.path.join(config, file)
+                        if file.endswith('.py') and _os.path.isfile(path):
+                            yield path
+
+        for i in [LoaderDummy(), LoaderMd2d(), LoaderError()]:
+            self.plugins[i.name()] = (i.load, [(str(i), Manager.types[j]) for i, j in i.args()])
+
+        for script in scripts_():
+            variables = {}
+            with open(script) as s:
+                # noinspection PyBroadException
+                try:
+                    exec(s.read(), variables)
+                    plugin = variables['plugin']
+                    if 'name' and 'load' and 'args' in dir(plugin):
+                        self.plugins[plugin.name()] = (
+                            plugin.load, [(str(i), Manager.types[j]) for i, j in plugin.args()])
+                    else:
+                        print('Failed to load file "' +
+                              script + '": attribute not met')
+                except Exception:
                     print('Failed to load file "' +
-                          script + '": attribute not met')
-            except Exception:
-                print('Failed to load file "' +
-                      script + '": exception caught.')
+                          script + '": exception caught.')
 
-    ret = [i for i in plugins.keys()]
-    return ret
+        ret = [i for i in self.plugins.keys()]
+        return ret
 
+    def args(self, name):
+        return self.plugins[name][1]
 
-def _chk_qtt(qtt, path):
-    def f1(i):
-        if len(i) != 2:
-            s = 'Quantity {}/{} has incorrectly formatted ' + \
-            'model size, find {:d} expecting {:d}.'
-            raise ValueError(s.format(path, ret['name'], len(i), 2))
-        else:
-            return [float(j) for j in i]
-
-    def f2(i):
-        ret_ = []
+    def load(self, name, args):
+        func = self.plugins.get(name)[0]
         try:
-            i = i()
-            if len(i) != len(ret['times']) * ret['dimData']:
-                s = 'Data of quantity {}/{} has incorrect \
-                section amount, find {:d} expecting {:d}.'
-                raise ValueError(s.format(path, ret['name'], len(
-                    i), len(ret['times']) * ret['dimData']))
-            size = 1
-            for j in ret['sizeData']:
-                size *= j
-            for n, j in enumerate(i):
-                if len(j) != size:
-                    s = 'Data section {:d} of quantity {}/{} \
-                    has incorrect size, find {:d} expecting {:d}.'
-                    raise ValueError(
-                        s.format(n, path, ret['name'], len(j), size))
-                ret_.append([float(k) for k in j])
-            return ret_, None
+            data = func(*args)
+            ret = [Manager.check_node(j, '/{:d}'.format(i))
+                   for i, j in enumerate(data)]
+            return ret, None
         except Exception as e:
             _tb.print_exc()
             return None, str(e)
 
-    ret = {}
-    ret['name'] = str(qtt['name'])
-    ret['times'] = [float(i) for i in qtt['times']]
-    ret['dimData'] = int(qtt['dimData'])
-    ret['sizeData'] = [int(i) for i in qtt['sizeData']]
-    ret['sizeModel'] = [f1(i) for i in qtt['sizeModel']]
-    ret['data'] = lambda: f2(qtt['data'])
-    return ret
+    @staticmethod
+    def check_quantity(qtt, path):
+        def _chk_size(_size):
+            if len(_size) != 2:
+                s = 'Quantity {}/{} has incorrectly formatted ' + \
+                    'model size, found {:d}, expecting {:d}.'
+                raise ValueError(s.format(path, ret['name'], len(_size), 2))
+            else:
+                return [float(i) for i in _size]
 
+        def _chk_data(_data):
+            ret_ = []
+            try:
+                _data = _data()
+                if len(_data) != len(ret['times']) * ret['dimData']:
+                    s = 'Data of quantity {}/{} has incorrect \
+                    section amount, find {:d} expecting {:d}.'
+                    raise ValueError(s.format(path, ret['name'], len(
+                        _data), len(ret['times']) * ret['dimData']))
+                size = 1
+                for j in ret['sizeData']:
+                    size *= j
+                for n, j in enumerate(_data):
+                    if len(j) != size:
+                        s = 'Data section {:d} of quantity {}/{} \
+                        has incorrect size, find {:d} expecting {:d}.'
+                        raise ValueError(
+                            s.format(n, path, ret['name'], len(j), size))
+                    ret_.append([float(k) for k in j])
+                return ret_, None
+            except Exception as e:
+                _tb.print_exc()
+                return None, str(e)
 
-def _chk_node(node, path):
-    ret = {}
-    ret['abbr'] = str(node['abbr'])
-    ret['name'] = str(node['name'])
-    p = '{}/{}'.format(path, ret['name'])
-    ret['children'] = [_chk_node(n, p) for n in node['children']]
-    ret['quantities'] = [_chk_qtt(q, p) for q in node['quantities']]
-    return ret
+        ret = {}
+        ret['name'] = str(qtt['name'])
+        ret['times'] = [float(i) for i in qtt['times']]
+        ret['dimData'] = int(qtt['dimData'])
+        ret['sizeData'] = [int(i) for i in qtt['sizeData']]
+        ret['sizeModel'] = [_chk_size(i) for i in qtt['sizeModel']]
+        ret['data'] = lambda: _chk_data(qtt['data'])
+        return ret
 
-
-def load(name, files):
-    plugin = plugins.get(name)
-    if plugin is None:
-        return "Plugin not found.", None
-    else:
-        try:
-            data = plugin.load(files)
-            return [_chk_node(j, '/{:d}'.format(i)) for i, j in enumerate(data)], None
-        except Exception as e:
-            _tb.print_exc()
-            return None, str(e)
+    @staticmethod
+    def check_node(node, path):
+        ret = {}
+        ret['abbr'] = str(node['abbr'])
+        ret['name'] = str(node['name'])
+        p = '{}/{}'.format(path, ret['name'])
+        ret['children'] = [Manager.check_node(n, p) for n in node['children']]
+        ret['quantities'] = [Manager.check_quantity(
+            q, p) for q in node['quantities']]
+        return ret
 
 
 class LoaderError:
@@ -113,6 +121,10 @@ class LoaderError:
     def load(files):
         raise NotImplementedError('This is a exception test')
 
+    @staticmethod
+    def args():
+        return []
+
 
 class LoaderDummy:
     @staticmethod
@@ -121,7 +133,7 @@ class LoaderDummy:
 
     # noinspection PyUnusedLocal
     @staticmethod
-    def load(files):
+    def load():
         return [{
             'abbr': 'Rea-1',
             'name': 'Reaction A + B <=> C',
@@ -166,6 +178,10 @@ class LoaderDummy:
             }]
         }]
 
+    @staticmethod
+    def args():
+        return []
+
 
 class LoaderMd2d:
     pat_split = _re.compile(r' +')
@@ -180,10 +196,10 @@ class LoaderMd2d:
         return "MD2D"
 
     @staticmethod
-    def load(files):
+    def load(output, input):
 
         def find_name0(name):
-            for file in files:
+            for file in output:
                 if file.endswith(name):
                     return file
             raise FileNotFoundError('No file found for name: ' + name)
@@ -257,7 +273,7 @@ class LoaderMd2d:
             t = [i[0] for i in cache['t']]
             return [item(n) for n in names if n != 't']
 
-        particles, reactions = LoaderMd2d.read_info(files)
+        particles, reactions = LoaderMd2d.read_info(output)
         size_model = [[0, 1], [0, 1]]
         fields = ['E', 'E_N', 'epsilon', 'Er', 'Ereff', 'J', 'Sigma', 'V']
         times = gen_time()
@@ -284,6 +300,10 @@ class LoaderMd2d:
             'children': [],
             'quantities': [gen_qtt(i, find_name0(i + '.txt')) for i in fields]
         }]
+
+    @staticmethod
+    def args():
+        return [('Output files', _tp.List[str]), ('Simulation file', _tp.List[str])]
 
     @staticmethod
     def read_info(files):
@@ -367,7 +387,7 @@ class LoaderMd2d:
             slices = LoaderMd2d.pat_split.split(s_[:-1])
             slices = slices[1:]
             return [float(i) for i in slices]
-        
+
         def average(d, is_y):
             ret = []
             for iy, ix in _it.product(range(y), range(x)):
@@ -395,16 +415,32 @@ class LoaderMd2d:
                     if LoaderMd2d.pat_data.match(s):
                         active = True
                         buf += convert(s)
-        
+
         if dim == 2:
             data = [average(j, i % 2) for i, j in enumerate(data)]
 
         return data
 
 
+manager = Manager()
+
+
+def init(configs):
+    return manager.init(configs)
+
+
+def args(name):
+    return manager.args(name)
+
+
+def load(name, args):
+    return manager.load(name, args)
+
+
 # if __name__ == "__main__":
 #     init([])
 #     d = '/run/media/towdium/Files/Work/FYP/software/data'
 #     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-#     d, r = load('MD2D', files_)
+#     a = args('MD2D')
+#     d, r = load('MD2D', [files_, ''])
 #     d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126
