@@ -1,6 +1,7 @@
 import os as _os
 import re as _re
 import traceback as _tb
+import itertools as _it
 
 plugins = {}
 
@@ -40,16 +41,16 @@ def init(configs):
 def _chk_qtt(qtt, path):
     def f1(i):
         if len(i) != 2:
-            s = 'Quantity {}/{} has incorrectly formatted \
-            model size, find {:d} expecting {:d}.'
+            s = 'Quantity {}/{} has incorrectly formatted ' + \
+            'model size, find {:d} expecting {:d}.'
             raise ValueError(s.format(path, ret['name'], len(i), 2))
         else:
             return [float(j) for j in i]
 
     def f2(i):
         ret_ = []
-
         try:
+            i = i()
             if len(i) != len(ret['times']) * ret['dimData']:
                 s = 'Data of quantity {}/{} has incorrect \
                 section amount, find {:d} expecting {:d}.'
@@ -67,6 +68,7 @@ def _chk_qtt(qtt, path):
                 ret_.append([float(k) for k in j])
             return ret_, None
         except Exception as e:
+            _tb.print_exc()
             return None, str(e)
 
     ret = {}
@@ -75,7 +77,7 @@ def _chk_qtt(qtt, path):
     ret['dimData'] = int(qtt['dimData'])
     ret['sizeData'] = [int(i) for i in qtt['sizeData']]
     ret['sizeModel'] = [f1(i) for i in qtt['sizeModel']]
-    ret['data'] = lambda: f2(qtt['data']())
+    ret['data'] = lambda: f2(qtt['data'])
     return ret
 
 
@@ -347,7 +349,7 @@ class LoaderMd2d:
                     else:
                         break
 
-        return 2 if two_d else 1, size_x, size_y
+        return (2, size_x, size_y - 1) if two_d else (1, size_x, size_y)
 
     @staticmethod
     def read_time(file):
@@ -365,23 +367,38 @@ class LoaderMd2d:
             slices = LoaderMd2d.pat_split.split(s_[:-1])
             slices = slices[1:]
             return [float(i) for i in slices]
+        
+        def average(d, is_y):
+            ret = []
+            for iy, ix in _it.product(range(y), range(x)):
+                idx = iy * (x + 1 if is_y else x) + ix
+                if idx >= len(d) or idx + (1 if is_y else x) >= len(d):
+                    print('get')
+                ret.append((d[idx] + d[idx + (1 if is_y else x)]) / 2)
+            return ret
+
+        dim, x, y = LoaderMd2d.read_dim(file)
 
         with open(file) as f:
             active = False
             data = []
             buf = []
             for s in f:
-                if not active:
-                    if LoaderMd2d.pat_data.match(s):
-                        active = True
-                        buf += convert(s)
-                else:
+                if active:
                     if LoaderMd2d.pat_split.match(s):
                         buf += convert(s)
                     else:
                         active = False
                         data.append(buf)
                         buf = []
+                else:
+                    if LoaderMd2d.pat_data.match(s):
+                        active = True
+                        buf += convert(s)
+        
+        if dim == 2:
+            data = [average(j, i % 2) for i, j in enumerate(data)]
+
         return data
 
 
@@ -390,3 +407,4 @@ class LoaderMd2d:
 #     d = '/run/media/towdium/Files/Work/FYP/software/data'
 #     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
 #     d, r = load('MD2D', files_)
+#     d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126

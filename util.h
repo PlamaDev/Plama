@@ -13,8 +13,8 @@ extern float PIH;
 
 QPair<int, int> unify(int number, int radix);
 QVector3D toV3D(const QColor &c);
-void toPolar(float x, float y, QVector2D &ret);
-void toCatsn(float r, float t, QVector2D &ret);
+void toPolar(double x, double y, QVector2D &ret);
+void toCatsn(double r, double t, QVector2D &ret);
 float fastSin(float x);
 float fastCos(float x);
 

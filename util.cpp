@@ -24,8 +24,14 @@ QPair<int, int> unify(int number, int radix) {
 
 QVector3D toV3D(const QColor &c) { return QVector3D(c.redF(), c.greenF(), c.blueF()); }
 
-void toPolar(float x, float y, QVector2D &ret) {
-    ret.setX(sqrt(x * x + y * y));
+void toPolar(double x, double y, QVector2D &ret) {
+    if (x == 0) {
+        ret.setX(abs(y));
+    } else {
+        double sy = y / x; // TODO
+        ret.setX(abs(x) * sqrt(1 + sy * sy));
+    }
+
     if (x == 0) {
         ret.setY(y > 0 ? PIH : -PIH);
     } else {
@@ -35,7 +41,7 @@ void toPolar(float x, float y, QVector2D &ret) {
     }
 }
 
-void toCatsn(float r, float t, QVector2D &ret) {
+void toCatsn(double r, double t, QVector2D &ret) {
     ret.setY(r * fastSin(t));
     ret.setX(r * fastCos(t));
 }
