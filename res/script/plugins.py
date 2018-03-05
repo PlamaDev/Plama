@@ -59,15 +59,15 @@ class Manager:
 
     @staticmethod
     def check_quantity(qtt, path):
-        def _chk_size(_size):
-            if len(_size) != 2:
+        def chk_size_(size_):
+            if len(size_) != 2:
                 s = 'Quantity {}/{} has incorrectly formatted ' + \
                     'model size, found {:d}, expecting {:d}.'
-                raise ValueError(s.format(path, ret['name'], len(_size), 2))
+                raise ValueError(s.format(path, ret['name'], len(size_), 2))
             else:
-                return [float(i) for i in _size]
+                return [float(i) for i in size_]
 
-        def _chk_data(_data):
+        def chk_data_(_data):
             ret_ = []
             try:
                 _data = _data()
@@ -96,8 +96,8 @@ class Manager:
         ret['times'] = [float(i) for i in qtt['times']]
         ret['dimData'] = int(qtt['dimData'])
         ret['sizeData'] = [int(i) for i in qtt['sizeData']]
-        ret['sizeModel'] = [_chk_size(i) for i in qtt['sizeModel']]
-        ret['data'] = lambda: _chk_data(qtt['data'])
+        ret['sizeModel'] = [chk_size_(i) for i in qtt['sizeModel']]
+        ret['data'] = lambda: chk_data_(qtt['data'])
         return ret
 
     @staticmethod
@@ -190,28 +190,30 @@ class LoaderMd2d:
     pat_comp = _re.compile(r'# *(\w)-components')
     pat_par = _re.compile(r'n\s+(\S+)\s+\S+\s+\S+')
     pat_rea = _re.compile(r'R\d\s{2,}(\S.+\S)\s{2,}\S+\s{2,}\S+')
+    pat_dlt_x = _re.compile(r'\s*deltaX\s*(.+)\*(\D+?)\s*\n')
+    pat_dlt_y = _re.compile(r'\s*deltaY\s*(.+)\*(\D+?)\s*\n')
 
     @staticmethod
     def name():
         return "MD2D"
 
     @staticmethod
-    def load(output, input):
+    def load(output, sim):
 
-        def find_name0(name):
+        def find_name0_(name):
             for file in output:
                 if file.endswith(name):
                     return file
             raise FileNotFoundError('No file found for name: ' + name)
 
-        def find_name1(name, index):
-            return find_name0('{:}{:02d}.txt'.format(name, index))
+        def find_name1_(name, index):
+            return find_name0_('{:}{:02d}.txt'.format(name, index))
 
-        def gen_time():
-            f = find_name0('D00.txt')
+        def gen_time_():
+            f = find_name0_('D00.txt')
             return LoaderMd2d.read_time(f)
 
-        def gen_qtt(name, file):
+        def gen_qtt_(name, file):
             dim, sx, sy = LoaderMd2d.read_dim(file)
             return {
                 'name': name,
@@ -222,12 +224,12 @@ class LoaderMd2d:
                 'data': lambda: LoaderMd2d.read_data(file)
             }
 
-        def gen_par(name, index):
+        def gen_par_(name, index):
             qtt = [
-                gen_qtt('D', find_name1('D', index)),
-                gen_qtt('mu', find_name1('mu', index)),
-                gen_qtt('n', find_name1('n', index)),
-                gen_qtt('phi', find_name1('phi', index))
+                gen_qtt_('D', find_name1_('D', index)),
+                gen_qtt_('mu', find_name1_('mu', index)),
+                gen_qtt_('n', find_name1_('n', index)),
+                gen_qtt_('phi', find_name1_('phi', index))
             ]
             return {
                 'abbr': 'Par' + str(index),
@@ -236,10 +238,10 @@ class LoaderMd2d:
                 'quantities': qtt
             }
 
-        def gen_rea(name, index):
+        def gen_rea_(name, index):
             qtt = [
-                gen_qtt('K', find_name1('K', index)),
-                gen_qtt('R', find_name1('R', index))
+                gen_qtt_('K', find_name1_('K', index)),
+                gen_qtt_('R', find_name1_('R', index))
             ]
             return {
                 'abbr': 'Rea' + str(index),
@@ -259,7 +261,7 @@ class LoaderMd2d:
                     'data': lambda: cache[name]
                 }
 
-            with open(find_name0('history.out')) as f:
+            with open(find_name0_('history.out')) as f:
                 s = f.readline()
                 names = LoaderMd2d.pat_split.split(s)[:-1]
                 data = [[] for i in names]
@@ -274,20 +276,22 @@ class LoaderMd2d:
             return [item(n) for n in names if n != 't']
 
         particles, reactions = LoaderMd2d.read_info(output)
-        size_model = [[0, 1], [0, 1]]
+        size_model = LoaderMd2d.read_model(sim)
+        size_data = LoaderMd2d.read_dim(find_name0_('P.txt'))
+        size_model = [[0, size_model[i] * size_data[i + 1]] for i in range(2)]
         fields = ['E', 'E_N', 'epsilon', 'Er', 'Ereff', 'J', 'Sigma', 'V']
-        times = gen_time()
+        times = gen_time_()
         cache = {}
 
         return [{
             'abbr': 'Par',
             'name': 'Particles',
-            'children': [gen_par(j, i+1) for i, j in enumerate(particles)],
+            'children': [gen_par_(j, i+1) for i, j in enumerate(particles)],
             'quantities': []
         }, {
             'abbr': 'Rea',
             'name': 'Reactions',
-            'children': [gen_rea(j, i) for i, j in enumerate(reactions)],
+            'children': [gen_rea_(j, i) for i, j in enumerate(reactions)],
             'quantities': []
         }, {
             'abbr': 'Ov',
@@ -295,10 +299,10 @@ class LoaderMd2d:
             'children': [],
             'quantities': gen_ov()
         }, {
-            'abbr': 'Fld',
-            'name': 'Field',
+            'abbr': 'Spa',
+            'name': 'Space',
             'children': [],
-            'quantities': [gen_qtt(i, find_name0(i + '.txt')) for i in fields]
+            'quantities': [gen_qtt_(i, find_name0_(i + '.txt')) for i in fields]
         }]
 
     @staticmethod
@@ -334,8 +338,8 @@ class LoaderMd2d:
 
     @staticmethod
     def read_dim(file):
-        def width(s_):
-            numbers = LoaderMd2d.pat_split.split(s_[:-1])
+        def width(s):
+            numbers = LoaderMd2d.pat_split.split(s[:-1])
             return len(numbers) - 1
 
         times = []
@@ -382,13 +386,32 @@ class LoaderMd2d:
         return ret
 
     @staticmethod
+    def read_model(file):
+        nx = ux = ny = uy = None 
+        unit = {'m' : 1, 'mm' : 0.001}
+        with open(file[0]) as f:
+            for line in f:
+                x = LoaderMd2d.pat_dlt_x.match(line)
+                y = LoaderMd2d.pat_dlt_y.match(line)
+                if x:
+                    nx = float(x[1])
+                    ux = x[2]
+                elif y:
+                    ny = float(y[1])
+                    uy = y[2]
+                if None not in [nx, ux, ny, uy]:
+                    break
+        return unit[ux] * nx, unit[uy] * ny
+
+
+    @staticmethod
     def read_data(file):
-        def convert(s_):
-            slices = LoaderMd2d.pat_split.split(s_[:-1])
+        def convert_(s):
+            slices = LoaderMd2d.pat_split.split(s[:-1])
             slices = slices[1:]
             return [float(i) for i in slices]
 
-        def average(d, is_y):
+        def average_(d, is_y):
             ret = []
             for iy, ix in _it.product(range(y), range(x)):
                 idx = iy * (x + 1 if is_y else x) + ix
@@ -406,7 +429,7 @@ class LoaderMd2d:
             for s in f:
                 if active:
                     if LoaderMd2d.pat_split.match(s):
-                        buf += convert(s)
+                        buf = convert_(s) + buf
                     else:
                         active = False
                         data.append(buf)
@@ -414,10 +437,10 @@ class LoaderMd2d:
                 else:
                     if LoaderMd2d.pat_data.match(s):
                         active = True
-                        buf += convert(s)
+                        buf += convert_(s)
 
         if dim == 2:
-            data = [average(j, i % 2) for i, j in enumerate(data)]
+            data = [average_(j, i % 2) for i, j in enumerate(data)]
 
         return data
 
@@ -442,5 +465,5 @@ def load(name, args):
 #     d = '/run/media/towdium/Files/Work/FYP/software/data'
 #     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
 #     a = args('MD2D')
-#     d, r = load('MD2D', [files_, ''])
+#     d, r = load('MD2D', [files_, '/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d'])
 #     d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126

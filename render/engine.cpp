@@ -235,7 +235,7 @@ void EngineGL::render(QPainter &p) {
 
     // draw text
     QFont font = p.font();
-    font.setPixelSize(min(sizeX, sizeY) / 35 + 2);
+    font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
     p.setFont(font);
     const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
@@ -389,7 +389,7 @@ void EngineQt::render(QPainter &p) {
     float width = canvas / 500.0;
     QString format("%1");
     QFont font = p.font();
-    font.setPixelSize(min(sizeX, sizeY) / 35 + 2);
+    font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
     p.setFont(font);
     const vector<QVector3D> &vAPoint = axis->getPoint();
     const vector<QVector3D> &vAColor = axis->getColor();

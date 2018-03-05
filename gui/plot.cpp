@@ -16,6 +16,7 @@
 #include <QPushButton>
 #include <QSize>
 #include <QSizeF>
+#include <QSizePolicy>
 #include <QSvgGenerator>
 #include <QTemporaryDir>
 #include <QToolBar>
@@ -189,7 +190,7 @@ void Plot::setPartition(float p, bool update) {
     setTime(t1 + td * p, update);
 }
 
-QSize Plot::sizeHint() const { return QSize(500, 500); }
+QSize Plot::sizeHint() const { return QSize(1000, 1000); }
 QSize Plot::minimumSizeHint() const { return QSize(100, 100); }
 
 void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {

@@ -6,6 +6,7 @@
 #include <QString>
 #include <QVector2D>
 #include <QVector3D>
+#include <QtDebug>
 #include <cmath>
 
 extern float PI;
@@ -15,6 +16,7 @@ QPair<int, int> unify(int number, int radix);
 QVector3D toV3D(const QColor &c);
 void toPolar(double x, double y, QVector2D &ret);
 void toCatsn(double r, double t, QVector2D &ret);
+double magnitude(double x, double y);
 float fastSin(float x);
 float fastCos(float x);
 

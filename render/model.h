@@ -30,7 +30,7 @@ private:
     void genLine(DATA x, const std::vector<std::vector<float>> &y, QVector2D extreme);
     void genLine(DATA x, DATA y, QVector2D extreme);
     void genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme);
-    void genVector(DATA dataX, DATA dataY, int sizeX, int sizeY);
+    void genVector(DATA dataX, DATA dataY, int sizeX, int sizeY, QVector2D extreme);
 
     static QPair<float, float> getExtreme(const float *data, int total);
     static std::vector<std::function<void(std::function<void(int)> &, int, int)>>

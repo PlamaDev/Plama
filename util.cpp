@@ -25,12 +25,7 @@ QPair<int, int> unify(int number, int radix) {
 QVector3D toV3D(const QColor &c) { return QVector3D(c.redF(), c.greenF(), c.blueF()); }
 
 void toPolar(double x, double y, QVector2D &ret) {
-    if (x == 0) {
-        ret.setX(abs(y));
-    } else {
-        double sy = y / x; // TODO
-        ret.setX(abs(x) * sqrt(1 + sy * sy));
-    }
+    ret.setX(magnitude(x, y));
 
     if (x == 0) {
         ret.setY(y > 0 ? PIH : -PIH);
@@ -63,4 +58,8 @@ float fastCos(float x) {
     si &= TABLE_SIZE - 1;
     ci &= TABLE_SIZE - 1;
     return SINE_TABLE[si] - (SINE_TABLE[ci] + 0.5 * SINE_TABLE[si] * d) * d;
+}
+
+double magnitude(double x, double y) {
+    return x == 0 ? abs(y) : abs(x) * sqrt(1 + pow(y / x, 2));
 }

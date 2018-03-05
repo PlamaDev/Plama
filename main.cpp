@@ -13,9 +13,7 @@
 #include <vector>
 
 // TODO
-// mainwindow layout
 // windows dependency
-// normal vector hardware unify
 // read model size
 
 using namespace std;

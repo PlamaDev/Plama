@@ -51,7 +51,7 @@ bool Model::setQuantity(SimQuantity &sq, float time) {
     case 2:
         switch (sq.getDim()) {
         case 1: genHeight(dataAt(), size[0], size[1], extreme); return false;
-        case 2: genVector(dataAt(0), dataAt(1), size[0], size[1]); return false;
+        case 2: genVector(dataAt(0), dataAt(1), size[0], size[1], extreme); return false;
         }
         break;
     }
@@ -108,7 +108,7 @@ void Model::genLineImpl(Model::DATA x, Model::DATA y, QVector2D extreme) {
 }
 
 void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
-    // if (checkSame(HEIGHT, {&data})) return;
+    if (checkSame(HEIGHT, {&data})) return;
     checkSize((sizeX - 1) * (sizeY - 1) * 9, (sizeX - 1) * (sizeY - 1) * 24, 0);
 
     static vector<vector<GLuint>> order{
@@ -208,26 +208,19 @@ void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
     }
 }
 
-void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY) {
+void Model::genVector(
+    Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY, QVector2D extreme) {
     static vector<QVector2D> polar;
     static float angle1 = PI * 13 / 12;
     static float angle2 = PI * 11 / 12;
-    // if (checkSame(VECTOR, {&dataX, &dataY})) return;
+    if (checkSame(VECTOR, {&dataX, &dataY})) return;
     checkSize(sizeX * sizeY * 5, sizeX * sizeY * 3, sizeX * sizeY * 2);
     polar.resize(dataX.size());
-    float max, min;
-    {
-        QVector2D p;
-        toPolar(dataX[0], dataY[0], p);
-        max = p.x();
-        min = p.x();
-        for (size_t i = 0; i < dataX.size(); i++) {
-            toPolar(dataX[i], dataY[i], p);
-            float ax = abs(p.x());
-            if (ax > max) max = ax;
-            if (ax < min) min = ax;
-            polar[i] = p;
-        }
+    float max = extreme.y();
+    QVector2D p;
+    for (size_t i = 0; i < dataX.size(); i++) {
+        toPolar(dataX[i], dataY[i], p);
+        polar[i] = p;
     }
     float mul = max == 0 ? 0 : 1 / max / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
     float ratio = 1 / max / mul;

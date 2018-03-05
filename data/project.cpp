@@ -1,4 +1,5 @@
 #include "project.h"
+#include "util.h"
 #include <Python.h>
 #include <QFileDialog>
 #include <QScopedPointer>
@@ -6,6 +7,7 @@
 #include <QStandardPaths>
 #include <QtDebug>
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 using namespace std;
@@ -66,7 +68,7 @@ std::unique_ptr<Project> ProjectLoader::load(QString name) const {
     PyObject *pluginArgs = buildArgs(typesConverted);
     args = Py_BuildValue("(s, O)", name.toLocal8Bit().data(), pluginArgs);
     PyObject *data = PyObject_CallObject(fLoad, args);
-    // Py_DECREF(pluginArgs);
+    Py_DECREF(pluginArgs);
     Py_DECREF(args);
     Py_DECREF(types);
     return make_unique<Project>(data);
@@ -92,22 +94,6 @@ PyObject *ProjectLoader::buildStringList(const QStringList &value) {
         PyList_Append(ret, PyUnicode_FromString(i.toLocal8Bit().data()));
     return ret;
 }
-
-// unique_ptr<Project> ProjectLoader::load(QString name, QStringList files) const {
-//    PyObject *pfiles = PyList_New(0);
-
-//    for (QString file : files)
-//        PyList_Append(pfiles, PyUnicode_FromString(file.toLocal8Bit().data()));
-//    PyObject *load = PyObject_GetAttrString(main, "load");
-//    PyObject *args = Py_BuildValue("(s, O)", name.toLocal8Bit().data(), pfiles);
-//    PyObject *data = PyObject_CallObject(load, args);
-
-//    Py_DECREF(pfiles);
-//    Py_DECREF(load);
-//    Py_DECREF(args);
-
-//    return make_unique<Project>(data);
-//}
 
 Project::Project(PyObject *data)
     : nodes(), data(data, [](PyObject *o) { Py_DECREF(o); }) {
@@ -225,21 +211,41 @@ void SimQuantity::initData() {
     if (!error.isEmpty()) return;
 
     Py_ssize_t lenI = PyList_Size(pData);
-    float f = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(pData, 0), 0));
-    max = f;
-    min = f;
-
     for (Py_ssize_t i = 0; i < lenI; i++) {
         vector<float> buf;
         PyObject *pBuf = PyList_GetItem(pData, i);
         Py_ssize_t lenJ = PyList_Size(pBuf);
-        for (Py_ssize_t j = 0; j < lenJ; j++) {
-            float f = PyFloat_AsDouble(PyList_GetItem(pBuf, j));
-            if (f > max) max = f;
-            if (f < min) min = f;
-            buf.push_back(f);
-        }
+        for (Py_ssize_t j = 0; j < lenJ; j++)
+            buf.push_back(PyFloat_AsDouble(PyList_GetItem(pBuf, j)));
         data.push_back(buf);
+    }
+
+    if (dimData == 1) {
+        max = data[0][0];
+        min = max;
+        for (auto i : data) {
+            for (auto j : i) {
+                if (j > max) max = j;
+                if (j < min) min = j;
+            }
+        }
+    } else if (dimData == 2) {
+        size_t sizeSection = data.size() / 2;
+        size_t sizeNumber = 1;
+        for (auto i : sizeData) sizeNumber *= i;
+
+        max = magnitude(data[0][0], data[1][0]);
+        min = 0;
+        for (size_t i = 0; i < sizeSection; i++) {
+            vector<float> &vx = data[2 * i];
+            vector<float> &vy = data[2 * i + 1];
+            for (size_t j = 0; j < sizeNumber; j++) {
+                float x = vx[j];
+                float y = vy[j];
+                float m = magnitude(x, y);
+                if (m > max) max = m;
+            }
+        }
     }
 
     Py_DECREF(pDataRet);

@@ -53,16 +53,20 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
     toolbar->addWidget(slider);
 
     addToolBar(toolbar);
+    QWidget *empty = new QWidget(this);
+    setCentralWidget(empty);
+    resize(700, 500);
 
-    setCentralWidget(nullptr);
-
-    setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks);
+    setDockOptions(QMainWindow::AnimatedDocks | QMainWindow::AllowNestedDocks |
+        QMainWindow::AllowTabbedDocks);
     QDockWidget *dock = new QDockWidget("Data list", this);
     QTreeWidget *tree = new QTreeWidget(dock);
     dock->setWidget(tree);
     tree->header()->close();
     dock->setAllowedAreas(Qt::LeftDockWidgetArea);
+    dock->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
     addDockWidget(Qt::LeftDockWidgetArea, dock);
+
     connect(tree, &QTreeWidget::itemDoubleClicked, [=](QTreeWidgetItem *i) {
         QVariant q = i->data(0, 0x0100);
         if (q.isValid()) {
@@ -70,7 +74,6 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
             SimTreeNode *sp = (SimTreeNode *)p.value<void *>();
             SimQuantity *sq = (SimQuantity *)q.value<void *>();
             vector<int> size = sq->getSizeData();
-            // l->addWidget(new OpenGLPlot(m));
 
             if (sq->getError().isEmpty()) {
                 QDockWidget *d =
@@ -82,14 +85,27 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
 
                 d->setAllowedAreas(Qt::LeftDockWidgetArea);
                 addDockWidget(Qt::LeftDockWidgetArea, d);
+                if (activePlots.size() == 0)
+                    splitDockWidget(dock, d, Qt::Horizontal);
+                else {
+                    QDockWidget *dst = *activeDocks.begin();
+                    QSize s = dst->size();
+                    splitDockWidget(
+                        dst, d, s.width() > s.height() ? Qt::Horizontal : Qt::Vertical);
+                }
 
                 connect(d, &QDockWidget::visibilityChanged, [=](bool v) {
                     if (v) {
                         activeDocks.insert(d);
                         activePlots.insert(plot);
+                        setCentralWidget(nullptr);
                     } else {
                         activeDocks.erase(d);
                         activePlots.erase(plot);
+                        if (activePlots.size() == 0) {
+                            QWidget *empty = new QWidget(this);
+                            setCentralWidget(empty);
+                        }
                     }
                 });
 
