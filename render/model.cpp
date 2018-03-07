@@ -83,7 +83,6 @@ void Model::genLineImpl(Model::DATA x, Model::DATA y, QVector2D extreme) {
     if (yDiff == 0) {
         if (yMin == 0) {
             yMin = -1;
-            yMax = 1;
             yDiff = 2;
         } else {
             yMin *= 0.9;

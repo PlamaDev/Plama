@@ -24,7 +24,6 @@ public:
     QPoint getRotation();
     void setModel(std::shared_ptr<Model> &model);
     void setRotation(int rotX, int rotY);
-    void setBackGround(const QColor &color);
     void setLabel(float pos);
     void setShader(bool en);
     void setEnBar(bool en);
@@ -33,7 +32,6 @@ public:
 protected:
     int rotX, rotY;
     int sizeX, sizeY;
-    QVector3D color;
     std::shared_ptr<Model> model;
     std::shared_ptr<Axis> axis;
     std::shared_ptr<Bar> bar;

@@ -4,6 +4,8 @@
 
 #define TABLE_SIZE 256
 
+using namespace std;
+
 float PI = acos(-1);
 float PIH = PI / 2;
 
@@ -62,4 +64,9 @@ float fastCos(float x) {
 
 double magnitude(double x, double y) {
     return x == 0 ? abs(y) : abs(x) * sqrt(1 + pow(y / x, 2));
+}
+
+QIcon getIcon(const QString &name) {
+    if (QIcon::hasThemeIcon(name)) return QIcon::fromTheme(name);
+    else return QIcon(":/icons/" + name + ".svg");
 }

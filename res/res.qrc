@@ -5,6 +5,9 @@
         <file>script/plugins.py</file>
         <file>render/plain.fsh</file>
         <file>render/plain.vsh</file>
-        <file>icons/drawing.svg</file>
+        <file>icons/document-open.svg</file>
+        <file>icons/document-export.svg</file>
+        <file>icons/plot-shader.svg</file>
+        <file>icons/plot-gradient.svg</file>
     </qresource>
 </RCC>

@@ -2,11 +2,7 @@
 #define PROJECT_H
 
 #include <Python.h>
-#include <QByteArray>
-#include <QFile>
-#include <QList>
-#include <QMap>
-#include <QObject>
+#include <cmath>
 #include <QPair>
 #include <QTextStream>
 #include <QVector2D>
@@ -83,7 +79,7 @@ public:
 
 private:
     const static int STRING_LIST = 1;
-    PyObject *main;
+    PyObject *globals;
     QStringList list;
     static PyObject *buildArgs(const std::vector<QPair<QString, int>> &types);
     static PyObject *buildStringList(const QStringList &value);

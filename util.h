@@ -7,6 +7,7 @@
 #include <QVector2D>
 #include <QVector3D>
 #include <QtDebug>
+#include <QIcon>
 #include <cmath>
 
 extern float PI;
@@ -19,6 +20,7 @@ void toCatsn(double r, double t, QVector2D &ret);
 double magnitude(double x, double y);
 float fastSin(float x);
 float fastCos(float x);
+QIcon getIcon(const QString &name);
 
 template<typename A, typename B, typename C> class Trio {
 public:

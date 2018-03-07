@@ -461,9 +461,8 @@ def load(name, args):
 
 
 # if __name__ == "__main__":
-#     init([])
-#     d = '/run/media/towdium/Files/Work/FYP/software/data'
-#     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-#     a = args('MD2D')
-#     d, r = load('MD2D', [files_, '/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d'])
-#     d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126
+    # d = '/run/media/towdium/Files/Work/FYP/software/data'
+    # files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
+    # a = args('MD2D')
+    # d, r = load('MD2D', [files_, '/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d'])
+    # d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126

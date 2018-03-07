@@ -12,7 +12,7 @@
 
 using namespace std;
 
-ProjectLoader::ProjectLoader() : main(PyImport_AddModule("__main__")), list() {
+ProjectLoader::ProjectLoader() : globals(PyImport_AddModule("__main__")), list() {
     // read script
     QFile f(":script/plugins.py");
 
@@ -31,11 +31,12 @@ ProjectLoader::ProjectLoader() : main(PyImport_AddModule("__main__")), list() {
     PyObject *args = Py_BuildValue("(O)", pDirs);
     // run python
     PyObject *rec;
-    PyObject *globals = PyModule_GetDict(main);
-    rec = PyRun_String(cmd, Py_file_input, globals, globals);
+    PyObject *variables = PyModule_GetDict(globals);
+    rec = PyRun_String(cmd, Py_file_input, variables, variables);
     Py_DecRef(rec);
-    PyObject *init = PyObject_GetAttrString(main, "init");
+    PyObject *init = PyObject_GetAttrString(globals, "init");
     PyObject *plugins = PyObject_CallObject(init, args);
+
     Py_DECREF(args);
     Py_DECREF(init);
     // PyObject to QStringList
@@ -52,8 +53,8 @@ ProjectLoader::ProjectLoader() : main(PyImport_AddModule("__main__")), list() {
 const QStringList &ProjectLoader::plugins() const { return list; }
 
 std::unique_ptr<Project> ProjectLoader::load(QString name) const {
-    PyObject *fArgs = PyObject_GetAttrString(main, "args");
-    PyObject *fLoad = PyObject_GetAttrString(main, "load");
+    PyObject *fArgs = PyObject_GetAttrString(globals, "args");
+    PyObject *fLoad = PyObject_GetAttrString(globals, "load");
     PyObject *args = Py_BuildValue("(s)", name.toLocal8Bit().data());
     PyObject *types = PyObject_CallObject(fArgs, args);
     Py_DECREF(args);

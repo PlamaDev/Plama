@@ -134,10 +134,9 @@ Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]) {
     QVBoxLayout *l = new QVBoxLayout;
     l->setMargin(0);
     QToolBar *bar = new QToolBar;
-    QAction *aExport = new QAction(QIcon::fromTheme("document-export"), "Export");
-    QAction *aShader = new QAction(QIcon::fromTheme("draw-cuboid"), "Enable shader");
-    QAction *aBar =
-        new QAction(QIcon::fromTheme("paint-gradient-linear"), "Enable color bar");
+    QAction *aExport = new QAction(getIcon("document-export"), "Export");
+    QAction *aShader = new QAction(getIcon("plot-shader"), "Enable shader");
+    QAction *aBar = new QAction(getIcon("plot-gradient"), "Enable color bar");
     aShader->setCheckable(true);
     aBar->setCheckable(true);
     connect(aExport, &QAction::triggered, [&]() {
@@ -243,8 +242,6 @@ PlotInternal::PlotInternal(
 
     engineGL = make_unique<EngineGL>(model, pa, pb, ps);
     engineQt = make_unique<EngineQt>(model, pa, pb, ps);
-    engineGL->setBackGround(Qt::white);
-    engineQt->setBackGround(Qt::transparent);
 }
 
 void PlotInternal::setRotation(int x, int y, bool update) {
@@ -317,6 +314,7 @@ void PlotInternal::initializeGL() { engineGL->initialize(); }
 void PlotInternal::resizeGL(int w, int h) {
     engineGL->resize(w, h);
     engineQt->resize(w, h);
+    requestUpdate();
 }
 
 void PlotInternal::paintGL() {

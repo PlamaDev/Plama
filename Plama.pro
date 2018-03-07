@@ -2,7 +2,7 @@ QT       += core gui widgets svg
 TARGET   = Plama
 TEMPLATE = app
 
-CONFIG += no_keywords
+CONFIG += no_keywords c++14
 
 SOURCES += \
     main.cpp \
@@ -32,5 +32,8 @@ RESOURCES += \
 
 unix: LIBS += -lpython3.6m
 unix: INCLUDEPATH += /usr/include/python3.6m
+win32: LIBS += -L $$(PY_LIBS) -lpython36
+win32:INCLUDEPATH += -I $$(PY_INCLUDE)
 
-DISTFILES +=
+
+

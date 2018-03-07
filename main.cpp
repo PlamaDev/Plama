@@ -1,37 +1,15 @@
-#define Py_LIMITED_API
 #include "gui/windowmain.h"
-#include "render/model.h"
+#include "util.h"
 #include <Python.h>
 #include <QApplication>
 #include <QDebug>
-#include <QList>
-#include <QProgressBar>
+#include <QFont>
 #include <QSurfaceFormat>
-#include <QVector2D>
-#include <cstdlib>
-#include <memory>
-#include <vector>
-
-// TODO
-// windows dependency
-// read model size
-
-using namespace std;
+#include <QSysInfo>
+#include <data/project.h>
 
 int main(int argc, char *argv[]) {
-    //    srand(time(0));
-    //    vector<float> data(40000);
 
-    //    for (int i = 0; i < 40000; i++) data[i] = rand();
-    //    for (int i = 0; i < 40000; i++) data[i] *= 2.0 / RAND_MAX;
-    //    QVector2D extreme(0, 2);
-    //    unique_ptr<Model> m = make_unique<Model>();
-
-    //    for (int i = 0; i < 1000; i++) {
-    //        m->genVector(data, data, 200, 200);
-    //        m->genHeight(data, 200, 200, extreme);
-    //        qDebug() << i;
-    //    }
     Py_Initialize();
 
     int ret;
@@ -45,6 +23,13 @@ int main(int argc, char *argv[]) {
         QSurfaceFormat::setDefaultFormat(format);
 
         QApplication a(argc, argv);
+        if (QSysInfo::productType() == "windows") {
+            QFont font("Segoe UI");
+            // font.setStyleHint(QFont::SansSerif, QFont::PreferQuality);
+            // font.setFamily(font.defaultFamily());
+            a.setFont(font);
+        }
+
         WindowMain w(nullptr);
 
         w.show();

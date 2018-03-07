@@ -10,8 +10,10 @@
 #include <QOpenGLShaderProgram>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPainterPath>
 #include <QPen>
 #include <QScopedPointer>
+#include <QSysInfo>
 #include <algorithm>
 #include <memory>
 
@@ -171,11 +173,6 @@ void Engine::setRotation(int rotX, int rotY) {
     this->rotY = rotY;
 }
 
-void Engine::setBackGround(const QColor &color) {
-    this->color =
-        QVector3D((float)color.redF(), (float)color.greenF(), (float)color.blueF());
-}
-
 void Engine::setLabel(float pos) { label = pos; }
 void Engine::setShader(bool en) { enShader = en; }
 void Engine::setEnBar(bool en) { enBar = en; }
@@ -213,7 +210,7 @@ void EngineGL::initialize() {
     argPlainVecColor = programPlain->attributeLocation("vecColor");
     argPlainVecPnt = programPlain->attributeLocation("vecPnt");
 
-    glClearColor(color.x(), color.y(), color.z(), 1.0f);
+    glClearColor(1, 1, 1, 1);
     glEnable(GL_BLEND);
     glEnable(GL_POLYGON_SMOOTH);
     glDisable(GL_DEPTH_TEST);
@@ -222,7 +219,16 @@ void EngineGL::initialize() {
 }
 
 void EngineGL::render(QPainter &p) {
+    QImage image(sizeX, sizeY, QImage::Format_ARGB32);
+    QPainter pImage(&image);
+    image.fill(qRgba(255, 255, 255, 255));
+    pImage.setRenderHint(QPainter::Antialiasing, true);
+    pImage.setRenderHint(QPainter::TextAntialiasing, true);
+    pImage.setRenderHint(QPainter::SmoothPixmapTransform, true);
+
     p.setRenderHint(QPainter::Antialiasing, true);
+    p.setRenderHint(QPainter::TextAntialiasing, true);
+    p.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -235,8 +241,10 @@ void EngineGL::render(QPainter &p) {
 
     // draw text
     QFont font = p.font();
+    font.setStyleHint(QFont::SansSerif, QFont::PreferAntialias);
     font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
-    p.setFont(font);
+    pImage.setFont(font);
+
     const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
     QString format("%1");
 
@@ -245,7 +253,7 @@ void EngineGL::render(QPainter &p) {
         if (pnts.size() == 0) continue;
         float diff = ((*size)[i].y() - (*size)[i].x()) / (pnts.size() - 1);
         for (size_t j = 0; j < pnts.size(); j++) {
-            drawText(p, format.arg((*size)[i].x() + diff * j, 0, 'g', 2), matText,
+            drawText(pImage, format.arg((*size)[i].x() + diff * j, 0, 'g', 2), matText,
                 num[i].second[j], num[i].first);
         }
     }
@@ -255,10 +263,11 @@ void EngineGL::render(QPainter &p) {
         float start = (*size)[2].x();
         float diff = ((*size)[2].y() - start) / (ns.size() - 1);
         for (size_t j = 0; j < ns.size(); j++) {
-            drawText(p, format.arg(start + diff * j, 0, 'g', 2), matScreen * matBar,
+            drawText(pImage, format.arg(start + diff * j, 0, 'g', 2), matScreen * matBar,
                 ns[j], false);
         }
     }
+    p.drawImage(QPoint(0, 0), image);
 
     p.beginNativePainting();
     glEnable(GL_DEPTH_TEST);
@@ -388,7 +397,8 @@ void EngineQt::render(QPainter &p) {
     int canvas = min(sizeX, sizeY);
     float width = canvas / 500.0;
     QString format("%1");
-    QFont font = p.font();
+    QFont font("sans-serif");
+    font.setStyleHint(QFont::SansSerif, QFont::PreferAntialias);
     font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
     p.setFont(font);
     const vector<QVector3D> &vAPoint = axis->getPoint();
@@ -407,8 +417,8 @@ void EngineQt::render(QPainter &p) {
     const vector<GLuint> &vBIndex = bar->getIndex();
     const vector<QVector3D> &vBNumber = bar->getNumber();
 
-    p.setBrush(Qt::white);
-    p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
+    // p.setBrush(Qt::white);
+    // p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
 
     // draw grid
     for (auto i : vASlice)
