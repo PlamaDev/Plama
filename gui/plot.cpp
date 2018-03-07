@@ -12,16 +12,11 @@
 #include <QPainter>
 #include <QPdfWriter>
 #include <QProcess>
-#include <QProgressBar>
-#include <QPushButton>
-#include <QSize>
-#include <QSizeF>
-#include <QSizePolicy>
+#include <QProgressDialog>
 #include <QSvgGenerator>
 #include <QTemporaryDir>
 #include <QToolBar>
 #include <QVBoxLayout>
-#include <QVector2D>
 #include <QWidget>
 #include <vector>
 
@@ -194,10 +189,8 @@ QSize Plot::minimumSizeHint() const { return QSize(100, 100); }
 
 void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
     QProgressDialog *progress = new QProgressDialog(this);
-    QProgressBar *bar = new QProgressBar(progress);
-    bar->setRange(0, 0);
+    progress->setRange(0, 0);
     progress->setLabelText("Processing...");
-    progress->setBar(bar);
     progress->show();
 
     QTemporaryDir *tmp = new QTemporaryDir();

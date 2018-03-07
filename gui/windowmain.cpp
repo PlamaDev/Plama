@@ -5,13 +5,10 @@
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QHeaderView>
-#include <QLabel>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QSizePolicy>
-#include <QSlider>
 #include <QToolBar>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>

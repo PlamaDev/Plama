@@ -10,7 +10,7 @@ Gradient Gradient::HEIGHT_MAP(
         {Qt::red, 0.8f}, {Qt::darkRed, 1.0f}},
     200);
 
-Gradient::Gradient(vector<QPair<QColor, float>> data, int steps)
+Gradient::Gradient(const vector<QPair<QColor, float>> &data, int steps)
     : cache(steps), step(1.0f / steps) {
     QVector3D c1 = toV3D(data[0].first);
     QVector3D c2 = c1;
@@ -22,7 +22,7 @@ Gradient::Gradient(vector<QPair<QColor, float>> data, int steps)
         p1 = p2;
         c2 = toV3D(i.first);
         p2 = i.second;
-        for (float pos = cnt * step; pos < p2; cnt++, pos = cnt * step)
+        for (float pos = cnt * step; pos < p2 && cnt < steps; cnt++, pos = cnt * step)
             cache[cnt] = (c1 * (p2 - pos) + c2 * (pos - p1)) / (p2 - p1);
     }
 }

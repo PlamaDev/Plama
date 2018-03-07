@@ -9,7 +9,6 @@
 #include <QOpenGLShaderProgram>
 #include <QPaintDevice>
 #include <QPainter>
-#include <QScopedPointer>
 #include <QVector3D>
 #include <memory>
 

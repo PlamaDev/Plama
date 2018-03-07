@@ -4,14 +4,8 @@
 #include "data/project.h"
 #include "render/engine.h"
 #include <QImage>
-#include <QOpenGLContext>
-#include <QOpenGLFunctions>
-#include <QOpenGLPaintDevice>
 #include <QOpenGLWindow>
-#include <QProcess>
-#include <QProgressDialog>
 #include <QWidget>
-#include <QWindow>
 #include <memory>
 #include <vector>
 

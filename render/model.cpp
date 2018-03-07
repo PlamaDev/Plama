@@ -1,8 +1,6 @@
 #include "render/model.h"
 #include "util.h"
-#include <QDebug>
 #include <QPair>
-#include <QVector2D>
 
 using namespace std;
 

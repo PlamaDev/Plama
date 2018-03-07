@@ -4,8 +4,6 @@
 #include "data/project.h"
 #include "render/gradient.h"
 #include <QOpenGLContext>
-#include <QPair>
-#include <QVector2D>
 #include <QVector3D>
 
 class Model {

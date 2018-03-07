@@ -8,6 +8,9 @@
 #include <QSysInfo>
 #include <data/project.h>
 
+// soft code file name
+// actual model size
+
 int main(int argc, char *argv[]) {
 
     Py_Initialize();
@@ -25,13 +28,10 @@ int main(int argc, char *argv[]) {
         QApplication a(argc, argv);
         if (QSysInfo::productType() == "windows") {
             QFont font("Segoe UI");
-            // font.setStyleHint(QFont::SansSerif, QFont::PreferQuality);
-            // font.setFamily(font.defaultFamily());
             a.setFont(font);
         }
 
         WindowMain w(nullptr);
-
         w.show();
         ret = a.exec();
     }

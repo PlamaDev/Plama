@@ -1,9 +1,8 @@
 #include "project.h"
 #include "util.h"
 #include <Python.h>
+#include <QApplication>
 #include <QFileDialog>
-#include <QScopedPointer>
-#include <QSharedPointer>
 #include <QStandardPaths>
 #include <QtDebug>
 #include <algorithm>
@@ -82,6 +81,7 @@ PyObject *ProjectLoader::buildArgs(const std::vector<QPair<QString, int>> &types
         case STRING_LIST:
             PyList_Append(builder,
                 buildStringList(QFileDialog::getOpenFileNames(nullptr, i.first)));
+            QApplication::processEvents();
             break;
         default: Q_ASSERT(true);
         }

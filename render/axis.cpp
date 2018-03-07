@@ -1,8 +1,6 @@
 #include "axis.h"
-#include <QColor>
 #include <QDebug>
 #include <QVector3D>
-#include <QVector>
 
 using namespace std;
 
@@ -230,7 +228,7 @@ const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int rotX, int rotY
     int rx = (360 - rotX) % 90;
     int dir = (360 - rotX) / 45 % 8;
     return getNumber(
-        dir, rx > 10 || rotY > 20, rx < 80 || rotY > 20, rotY<70, rx> 45, rotY > 20);
+        dir, rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45, rotY > 20);
 }
 
 QMatrix4x4 Axis::getTransform(int rotX, int rotY) const {

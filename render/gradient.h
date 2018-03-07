@@ -8,7 +8,7 @@
 
 class Gradient {
 public:
-    Gradient(std::vector<QPair<QColor, float>> data, int steps = 50);
+    Gradient(const std::vector<QPair<QColor, float>> &data, int steps = 50);
     const QVector3D &getColor(float pos) const;
 
     static Gradient HEIGHT_MAP;

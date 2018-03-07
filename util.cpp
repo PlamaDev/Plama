@@ -1,5 +1,4 @@
 #include "util.h"
-#include <QtMath>
 #include <cmath>
 
 #define TABLE_SIZE 256
@@ -67,6 +66,8 @@ double magnitude(double x, double y) {
 }
 
 QIcon getIcon(const QString &name) {
-    if (QIcon::hasThemeIcon(name)) return QIcon::fromTheme(name);
-    else return QIcon(":/icons/" + name + ".svg");
+    if (QIcon::hasThemeIcon(name))
+        return QIcon::fromTheme(name);
+    else
+        return QIcon(":/icons/" + name + ".svg");
 }

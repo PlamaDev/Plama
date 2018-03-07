@@ -5,7 +5,6 @@
 #include <QOpenGLContext>
 #include <QPair>
 #include <QVector3D>
-#include <QVector>
 #include <vector>
 
 class Axis {

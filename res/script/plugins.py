@@ -46,11 +46,11 @@ class Manager:
     def args(self, name):
         return self.plugins[name][1]
 
-    def load(self, name, args):
+    def load(self, name, arguments):
         func = self.plugins.get(name)[0]
         try:
-            data = func(*args)
-            ret = [Manager.check_node(j, '/{:d}'.format(i))
+            data = func(*arguments)
+            ret = [Manager.check_node(j, '')
                    for i, j in enumerate(data)]
             return ret, None
         except Exception as e:
@@ -72,8 +72,8 @@ class Manager:
             try:
                 _data = _data()
                 if len(_data) != len(ret['times']) * ret['dimData']:
-                    s = 'Data of quantity {}/{} has incorrect \
-                    section amount, find {:d} expecting {:d}.'
+                    s = 'Data of quantity {}/{} has incorrect  ' + \
+                        'section amount, find {:d} expecting {:d}.'
                     raise ValueError(s.format(path, ret['name'], len(
                         _data), len(ret['times']) * ret['dimData']))
                 size = 1
@@ -81,8 +81,8 @@ class Manager:
                     size *= j
                 for n, j in enumerate(_data):
                     if len(j) != size:
-                        s = 'Data section {:d} of quantity {}/{} \
-                        has incorrect size, find {:d} expecting {:d}.'
+                        s = 'Data section {:d} of quantity {}/{} ' + \
+                            'has incorrect size, find {:d} expecting {:d}.'
                         raise ValueError(
                             s.format(n, path, ret['name'], len(j), size))
                     ret_.append([float(k) for k in j])
@@ -91,24 +91,26 @@ class Manager:
                 _tb.print_exc()
                 return None, str(e)
 
-        ret = {}
-        ret['name'] = str(qtt['name'])
-        ret['times'] = [float(i) for i in qtt['times']]
-        ret['dimData'] = int(qtt['dimData'])
-        ret['sizeData'] = [int(i) for i in qtt['sizeData']]
-        ret['sizeModel'] = [chk_size_(i) for i in qtt['sizeModel']]
-        ret['data'] = lambda: chk_data_(qtt['data'])
+        ret = {
+            'name': str(qtt['name']),
+            'times': [float(i) for i in qtt['times']],
+            'dimData': int(qtt['dimData']),
+            'sizeData': [int(i) for i in qtt['sizeData']],
+            'sizeModel': [chk_size_(i) for i in qtt['sizeModel']],
+            'data': lambda: chk_data_(qtt['data'])
+        }
         return ret
 
     @staticmethod
     def check_node(node, path):
-        ret = {}
-        ret['abbr'] = str(node['abbr'])
-        ret['name'] = str(node['name'])
-        p = '{}/{}'.format(path, ret['name'])
-        ret['children'] = [Manager.check_node(n, p) for n in node['children']]
-        ret['quantities'] = [Manager.check_quantity(
-            q, p) for q in node['quantities']]
+        name = str(node['name'])
+        p = '{}/{}'.format(path, name)
+        ret = {
+            'abbr': str(node['abbr']),
+            'name': name,
+            'children': [Manager.check_node(n, p) for n in node['children']],
+            'quantities': [Manager.check_quantity(q, p) for q in node['quantities']]
+        }
         return ret
 
 
@@ -264,7 +266,7 @@ class LoaderMd2d:
             with open(find_name0_('history.out')) as f:
                 s = f.readline()
                 names = LoaderMd2d.pat_split.split(s)[:-1]
-                data = [[] for i in names]
+                data = [[] for _ in names]
                 for s in f:
                     ns = LoaderMd2d.pat_split.split(s)[:-1]
                     for i, n in enumerate(ns):
@@ -286,7 +288,7 @@ class LoaderMd2d:
         return [{
             'abbr': 'Par',
             'name': 'Particles',
-            'children': [gen_par_(j, i+1) for i, j in enumerate(particles)],
+            'children': [gen_par_(j, i + 1) for i, j in enumerate(particles)],
             'quantities': []
         }, {
             'abbr': 'Rea',
@@ -338,8 +340,8 @@ class LoaderMd2d:
 
     @staticmethod
     def read_dim(file):
-        def width(s):
-            numbers = LoaderMd2d.pat_split.split(s[:-1])
+        def width(string):
+            numbers = LoaderMd2d.pat_split.split(string[:-1])
             return len(numbers) - 1
 
         times = []
@@ -387,27 +389,26 @@ class LoaderMd2d:
 
     @staticmethod
     def read_model(file):
-        nx = ux = ny = uy = None 
-        unit = {'m' : 1, 'mm' : 0.001}
+        nx = ux = ny = uy = None
+        unit = {'m': 1, 'mm': 0.001}
         with open(file[0]) as f:
             for line in f:
                 x = LoaderMd2d.pat_dlt_x.match(line)
                 y = LoaderMd2d.pat_dlt_y.match(line)
                 if x:
-                    nx = float(x[1])
-                    ux = x[2]
+                    nx = float(x.group(1))
+                    ux = x.group(2)
                 elif y:
-                    ny = float(y[1])
-                    uy = y[2]
+                    ny = float(y.group(1))
+                    uy = y.group(2)
                 if None not in [nx, ux, ny, uy]:
                     break
         return unit[ux] * nx, unit[uy] * ny
 
-
     @staticmethod
     def read_data(file):
-        def convert_(s):
-            slices = LoaderMd2d.pat_split.split(s[:-1])
+        def convert_(string):
+            slices = LoaderMd2d.pat_split.split(string[:-1])
             slices = slices[1:]
             return [float(i) for i in slices]
 
@@ -456,13 +457,22 @@ def args(name):
     return manager.args(name)
 
 
-def load(name, args):
-    return manager.load(name, args)
+def load(name, arguments):
+    return manager.load(name, arguments)
 
 
+# if __name__ == '__main__':
+#     init([])
+#     d = 'D:\Work\FYP\software\data'
+#     i = 'D:\Work\FYP\software\input\md2d\pdp_demo.md2d'
+#     fs = [_os.path.join(d, i) for i in _os.listdir(d)]
+#     d, r = load('MD2D', [fs, [i]])
+#     d, r = d[0]['children'][0]['quantities'][3]['data']()
+
+# linux
 # if __name__ == "__main__":
-    # d = '/run/media/towdium/Files/Work/FYP/software/data'
-    # files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-    # a = args('MD2D')
-    # d, r = load('MD2D', [files_, '/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d'])
-    # d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126
+# d = '/run/media/towdium/Files/Work/FYP/software/data'
+# files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
+# a = args('MD2D')
+# d, r = load('MD2D', [files_, '/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d'])
+# d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126
