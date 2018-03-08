@@ -205,27 +205,42 @@ void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
     }
 }
 
-void Model::genVector(
-    Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY, QVector2D extreme) {
-    static vector<QVector2D> polar;
+void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY,
+    QVector2D extreme, float ratio) {
+    static vector<QPair<QVector2D, float>> polar;
     static float angle1 = PI * 13 / 12;
     static float angle2 = PI * 11 / 12;
+    static vector<float> lenY;
+    const vector<float> &lenX = dataX;
     if (checkSame(VECTOR, {&dataX, &dataY})) return;
     checkSize(sizeX * sizeY * 5, sizeX * sizeY * 3, sizeX * sizeY * 2);
     polar.resize(dataX.size());
-    float max = extreme.y();
-    QVector2D p;
+    lenY.resize(dataY.size());
+    for (size_t i = 0; i < dataX.size(); i++) lenY[i] = dataY[i] * ratio;
+
+    QVector2D pnt;
+    toPolar(lenX[0], lenY[0], pnt);
+    float maxActual = extreme.y();
+    float maxScaled = 0;
+
     for (size_t i = 0; i < dataX.size(); i++) {
-        toPolar(dataX[i], dataY[i], p);
-        polar[i] = p;
+        toPolar(lenX[i], lenY[i], pnt);
+        QPair<QVector2D, float> &pair = polar[i];
+        pair.first = pnt;
+        pair.second = magnitude(dataX[i], dataY[i]);
+        if (pnt.x() > maxScaled) maxScaled = pnt.x();
     }
-    float mul = max == 0 ? 0 : 1 / max / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
-    float ratio = 1 / max / mul;
+    int divs = sizeX > sizeY ? sizeX : sizeY;
+    float toLenth = maxScaled == 0 ? 0 : 1 / maxScaled / divs;
+    float toUnity = 1 / maxActual;
     float sizeL = 0.8 / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
     float sizeA = sizeL * cos(PI / 12);
     float diffX = 1.0 / (sizeX + 1);
     float diffY = 1.0 / (sizeY + 1);
-    for (auto &i : polar) i.setX(i.x() * mul);
+    for (auto &i : polar) {
+        i.first[0] *= toLenth;
+        i.second *= toUnity;
+    }
     QVector2D line0;
     QVector2D line1;
     QVector2D line2;
@@ -234,7 +249,7 @@ void Model::genVector(
             int idx = i * sizeX + j;
             float offX = diffX * (j + 1);
             float offY = diffY * (i + 1);
-            QVector2D &p = polar[idx];
+            QVector2D &p = polar[idx].first;
             QVector3D base(offX, offY, 0);
             toCatsn(p.x(), p.y(), line0);
             QVector3D top = base + line0;
@@ -247,7 +262,7 @@ void Model::genVector(
             point[idx * 5 + 2] = top;
             point[idx * 5 + 3] = top + line1;
             point[idx * 5 + 4] = top + line2;
-            QVector3D c = Gradient::HEIGHT_MAP.getColor(p.x() * ratio);
+            QVector3D c = Gradient::HEIGHT_MAP.getColor(polar[idx].second);
             for (int i = 0; i < 5; i++) color[idx * 5 + i] = c;
         }
     }
@@ -257,7 +272,7 @@ void Model::genVector(
         int cntL = 0;
         function<void(int)> func = [&](int j) {
             int offset = j * 5;
-            if (polar[j].x() == 0) return;
+            if (polar[j].first.x() == 0) return;
             for (int j = 0; j < 3; j++) indexT[i][cntT++] = offset + j + 2;
             for (int j = 0; j < 2; j++) indexL[i][cntL++] = offset + j;
         };

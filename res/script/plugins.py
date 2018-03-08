@@ -227,12 +227,13 @@ class LoaderMd2d:
             }
 
         def gen_par_(name, index):
-            qtt = [
-                gen_qtt_('D', find_name1_('D', index)),
-                gen_qtt_('mu', find_name1_('mu', index)),
-                gen_qtt_('n', find_name1_('n', index)),
-                gen_qtt_('phi', find_name1_('phi', index))
-            ]
+            qtt = []
+            for i in ['D', 'mu', 'n', 'phi']:
+                try:
+                    qtt.append(gen_qtt_(i, find_name1_(i, index)))
+                except FileNotFoundError:
+                    pass
+
             return {
                 'abbr': 'Par' + str(index),
                 'name': name,
@@ -241,10 +242,13 @@ class LoaderMd2d:
             }
 
         def gen_rea_(name, index):
-            qtt = [
-                gen_qtt_('K', find_name1_('K', index)),
-                gen_qtt_('R', find_name1_('R', index))
-            ]
+            qtt = []
+            for i in ['K', 'R']:
+                try:
+                    qtt.append(gen_qtt_(i, find_name1_(i, index)))
+                except FileNotFoundError:
+                    pass
+
             return {
                 'abbr': 'Rea' + str(index),
                 'name': name,
@@ -301,8 +305,8 @@ class LoaderMd2d:
             'children': [],
             'quantities': gen_ov()
         }, {
-            'abbr': 'Spa',
-            'name': 'Space',
+            'abbr': 'Gnr',
+            'name': 'General',
             'children': [],
             'quantities': [gen_qtt_(i, find_name0_(i + '.txt')) for i in fields]
         }]
