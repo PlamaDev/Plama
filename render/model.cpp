@@ -115,6 +115,8 @@ void Model::genHeight(DATA data, VectorD2D extreme) {
         {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}};
 
     float height = extreme.second - extreme.first;
+    float offsetX = data->offsetX();
+    float offsetY = data->offsetY();
     for (int y = 0; y < syi - 1; y++) {
         for (int x = 0; x < sxi - 1; x++) {
             double d[9];
@@ -125,7 +127,7 @@ void Model::genHeight(DATA data, VectorD2D extreme) {
             int offsetPoint = (y * (sxi - 1) + x) * 9;
 
             if (height == 0) {
-                for (int i = 0; i < 9; i++) d[i] = data->get(offsetPoint);
+                for (int i = 0; i < 9; i++) d[i] = data->get(0);
             } else {
                 d[0] = data->get(x, y);
                 d[2] = data->get(x + 1, y);
@@ -143,8 +145,8 @@ void Model::genHeight(DATA data, VectorD2D extreme) {
             }
 
             for (int i = 0; i < 3; i++) {
-                px[i] = (x + 0.5f * i) / sxf;
-                py[i] = (y + 0.5f * i) / syf;
+                px[i] = (x + 0.5f * i + offsetX) / sxf;
+                py[i] = (y + 0.5f * i + offsetY) / syf;
             }
 
             for (int yy = 0; yy < 3; yy++) {
@@ -232,8 +234,10 @@ void Model::genVector(
     double toUnity = 1 / maxActual;
     float sizeL = 0.8 / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
     float sizeA = sizeL * cos(PI / 12);
-    float diffX = 1.0 / (dataX->sizeXF() + 1);
-    float diffY = 1.0 / (dataX->sizeYF() + 1);
+    float marginX = 0.5 / (dataX->sizeXO() + 1);
+    float marginY = 0.5 / (dataX->sizeYO() + 1);
+    float diffX = (1.0 - 2 * marginX) / dataX->sizeXF();
+    float diffY = (1.0 - 2 * marginY) / dataX->sizeYF();
     for (auto &i : polar) {
         i.first.first *= toLenth;
         i.second *= toUnity;
@@ -241,11 +245,13 @@ void Model::genVector(
     QVector2D line0;
     QVector2D line1;
     QVector2D line2;
+    float offsetX = dataX->offsetX();
+    float offsetY = dataX->offsetY();
     for (int i = 0; i < sizeY; i++) {
         for (int j = 0; j < sizeX; j++) {
             int idx = i * sizeX + j;
-            float offX = diffX * (j + 0.5);
-            float offY = diffY * (i + 0.5);
+            float offX = marginX + diffX * (j + offsetX);
+            float offY = marginY + diffY * (i + offsetY);
             VectorD2D &p = polar[idx].first;
             QVector3D base(offX, offY, 0);
             toCatsn(p.first, p.second, line0);

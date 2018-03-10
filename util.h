@@ -14,9 +14,6 @@
 
 extern float PI;
 
-template<typename T> using Vec = std::vector<T>;
-template<typename T> using PtrU = std::unique_ptr<T>;
-template<typename T> using PtrS = std::shared_ptr<T>;
 typedef QPair<double, double> VectorD2D;
 QPair<int, int> unify(int number, int radix);
 QVector3D toV3D(const QColor &c);
@@ -39,28 +36,31 @@ public:
 
 class Sampler {
 public:
-    Sampler(int sizeX, int sizeY, int step)
-        : step(step), sXActual(sizeX), sYActual(sizeY),
-          sXImgI((sXActual + step - 1) / step), sYImgI((sYActual + step - 1) / step),
-          sXImgF((sXActual - 1) / (float)step), sYImgF((sYActual - 1) / (float)step) {}
+    Sampler(int sizeX, int sizeY, int step);
     virtual ~Sampler() = default;
     virtual unsigned long repr() const = 0;
-    float sizeXF() { return sXImgF; }
-    float sizeYF() { return sYImgF; }
-    int sizeXI() { return sXImgI; }
-    int sizeYI() { return sYImgI; }
-    double get(int x, int y = 0);
-    bool operator==(const Sampler *a);
+    float sizeXF() const;
+    float sizeYF() const;
+    int sizeXI() const;
+    int sizeYI() const;
+    int sizeXO() const;
+    int sizeYO() const;
+    float offsetX() const;
+    float offsetY() const;
+    double get(int x, int y = 0) const;
+    bool operator==(const Sampler *a) const;
 
-    static PtrS<Sampler> gen(const Vec<double> &data, int step, int width = -1);
-    static PtrS<Sampler> gen(const Vec<Vec<double>> &data, int step, int width = -1);
+    static std::shared_ptr<Sampler> gen(
+        const std::vector<double> &data, int step, int width = -1);
+    static std::shared_ptr<Sampler> gen(
+        const std::vector<std::vector<double>> &data, int step, int width = -1);
 
 protected:
-    int step, sXActual, sYActual, sXImgI, sYImgI;
-    float sXImgF, sYImgF;
+    int step, sXO, sYO, sxi, syi, startX, startY;
+    float sxf, syf, ofsetX, ofsetY;
 
     virtual double getRaw(int x, int y = 0) const = 0;
-    void conv(int &x, int &y);
+    void conv(int &x, int &y) const;
 };
 
 #endif // UTIL_H

@@ -215,14 +215,24 @@ class LoaderMd2d:
             return LoaderMd2d.read_time(f)
 
         def gen_qtt_(name, file):
+            def read_():
+                ret = LoaderMd2d.read_data(file)
+                if len(ret) != len(times) * dim:
+                    raise RuntimeError('Section size mismatch. ' + \
+                    'Please make sure all data files generated in ' + \
+                    'previous simulations are removed.')
+                else:
+                    return ret;
+
             dim, sx, sy = LoaderMd2d.read_dim(file)
+            
             return {
                 'name': name,
                 'times': times,
                 'dimData': dim,
                 'sizeData': [sx, sy],
                 'sizeModel': size_model,
-                'data': lambda: LoaderMd2d.read_data(file)
+                'data': lambda: read_()
             }
 
         def gen_par_(name, index):

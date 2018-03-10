@@ -97,9 +97,9 @@ void toCatsn(double r, double t, QVector2D &ret) {
 
 class AccessorV : public Sampler {
 public:
-    AccessorV(const Vec<double> &data, int step, int width)
+    AccessorV(const vector<double> &data, int step, int width)
         : Sampler(width, data.size() / width, step), data(data) {}
-    double getRaw(int x, int y) const override { return data[y * this->sXActual + x]; }
+    double getRaw(int x, int y) const override { return data[y * this->sXO + x]; }
     unsigned long repr() const override { return (unsigned long)&data; }
 
 private:
@@ -108,28 +108,44 @@ private:
 
 class AccessorVV : public Sampler {
 public:
-    AccessorVV(const Vec<Vec<double>> &data, int step, int width)
+    AccessorVV(const vector<vector<double>> &data, int step, int width)
         : Sampler(width, data.size() / width, step), data(data) {}
-    double getRaw(int x, int y) const override { return data[y * this->sXActual + x][0]; }
+    double getRaw(int x, int y) const override { return data[y * this->sXO + x][0]; }
     unsigned long repr() const override { return (unsigned long)&data; }
 
 private:
     const std::vector<std::vector<double>> &data;
 };
 
-double Sampler::get(int x, int y) {
+Sampler::Sampler(int sizeX, int sizeY, int step)
+    : step(step), sXO(sizeX), sYO(sizeY), sxi(sXO / step), syi(sYO / step),
+      startX(sizeX % step / 2), startY(sizeY % step / 2), //
+      sxf((sXO - 1) / (float)step), syf((sYO - 1) / (float)step),
+      ofsetX((step - 1) / (2.0 * step) + startX / (float)step),
+      ofsetY((step - 1) / (2.0 * step) + startY / (float)step) {}
+
+float Sampler::sizeXF() const { return sxf; }
+float Sampler::sizeYF() const { return syf; }
+int Sampler::sizeXI() const { return sxi; }
+int Sampler::sizeYI() const { return syi; }
+int Sampler::sizeXO() const { return sXO; }
+int Sampler::sizeYO() const { return sYO; }
+float Sampler::offsetX() const { return ofsetX; }
+float Sampler::offsetY() const { return ofsetY; }
+
+double Sampler::get(int x, int y) const {
     this->conv(x, y);
-    y += x / this->sXImgI;
-    x = x % this->sXImgI;
+    y += x / sxi;
+    x = x % sxi;
     int cnt = 0;
     double total = 0;
-    int startX = x * step;
-    int startY = y * step;
+    int startX = x * step + this->startX;
+    int startY = y * step + this->startY;
     int endX = startX + step;
     int endY = startY + step;
 
-    for (int ix = startX; ix < sXActual && ix < endX; ix++) {
-        for (int iy = startY; iy < sYActual && iy < endY; iy++) {
+    for (int ix = startX; ix < sXO && ix < endX; ix++) {
+        for (int iy = startY; iy < sYO && iy < endY; iy++) {
             total += this->getRaw(ix, iy);
             cnt++;
         }
@@ -137,19 +153,20 @@ double Sampler::get(int x, int y) {
     return total / cnt;
 }
 
-bool Sampler::operator==(const Sampler *a) {
+bool Sampler::operator==(const Sampler *a) const {
     return repr() == a->repr() && this->step == a->step;
 }
 
-PtrS<Sampler> Sampler::gen(const Vec<double> &data, int step, int width) {
+shared_ptr<Sampler> Sampler::gen(const vector<double> &data, int step, int width) {
     return std::make_shared<AccessorV>(data, step, width == -1 ? data.size() : width);
 }
 
-PtrS<Sampler> Sampler::gen(const Vec<Vec<double>> &data, int step, int width) {
+shared_ptr<Sampler> Sampler::gen(
+    const vector<vector<double>> &data, int step, int width) {
     return std::make_shared<AccessorVV>(data, step, width == -1 ? data.size() : width);
 }
 
-void Sampler::conv(int &x, int &y) {
-    if (x < 0) x += sXImgI;
-    if (y < 0) y += sYImgI;
+void Sampler::conv(int &x, int &y) const {
+    if (x < 0) x += sxi;
+    if (y < 0) y += syi;
 }
