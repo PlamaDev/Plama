@@ -95,22 +95,22 @@ void toCatsn(double r, double t, QVector2D &ret) {
     ret.setY(r * fastSin(t));
 }
 
-class AccessorV : public Sampler {
+class SamplerV : public Sampler {
 public:
-    AccessorV(const vector<double> &data, int step, int width)
+    SamplerV(const vector<double> &data, int step, int width)
         : Sampler(width, data.size() / width, step), data(data) {}
-    double getRaw(int x, int y) const override { return data[y * this->sXO + x]; }
+    double getRaw(int x, int y) const override { return data[y * this->sxo + x]; }
     unsigned long repr() const override { return (unsigned long)&data; }
 
 private:
     const std::vector<double> &data;
 };
 
-class AccessorVV : public Sampler {
+class SamplerVV : public Sampler {
 public:
-    AccessorVV(const vector<vector<double>> &data, int step, int width)
+    SamplerVV(const vector<vector<double>> &data, int step, int width)
         : Sampler(width, data.size() / width, step), data(data) {}
-    double getRaw(int x, int y) const override { return data[y * this->sXO + x][0]; }
+    double getRaw(int x, int y) const override { return data[y * this->sxo + x][0]; }
     unsigned long repr() const override { return (unsigned long)&data; }
 
 private:
@@ -118,9 +118,9 @@ private:
 };
 
 Sampler::Sampler(int sizeX, int sizeY, int step)
-    : step(step), sXO(sizeX), sYO(sizeY), sxi(sXO / step), syi(sYO / step),
+    : step(step), sxo(sizeX), syo(sizeY), sxi(sxo / step), syi(syo / step),
       startX(sizeX % step / 2), startY(sizeY % step / 2), //
-      sxf((sXO - 1) / (float)step), syf((sYO - 1) / (float)step),
+      sxf((sxo - 1) / (float)step), syf((syo - 1) / (float)step),
       ofsetX((step - 1) / (2.0 * step) + startX / (float)step),
       ofsetY((step - 1) / (2.0 * step) + startY / (float)step) {}
 
@@ -128,8 +128,8 @@ float Sampler::sizeXF() const { return sxf; }
 float Sampler::sizeYF() const { return syf; }
 int Sampler::sizeXI() const { return sxi; }
 int Sampler::sizeYI() const { return syi; }
-int Sampler::sizeXO() const { return sXO; }
-int Sampler::sizeYO() const { return sYO; }
+int Sampler::sizeXO() const { return sxo; }
+int Sampler::sizeYO() const { return syo; }
 float Sampler::offsetX() const { return ofsetX; }
 float Sampler::offsetY() const { return ofsetY; }
 
@@ -137,20 +137,17 @@ double Sampler::get(int x, int y) const {
     this->conv(x, y);
     y += x / sxi;
     x = x % sxi;
-    int cnt = 0;
     double total = 0;
     int startX = x * step + this->startX;
     int startY = y * step + this->startY;
     int endX = startX + step;
     int endY = startY + step;
 
-    for (int ix = startX; ix < sXO && ix < endX; ix++) {
-        for (int iy = startY; iy < sYO && iy < endY; iy++) {
+    for (int ix = startX; ix < endX; ix++)
+        for (int iy = startY; iy < endY; iy++) //
             total += this->getRaw(ix, iy);
-            cnt++;
-        }
-    }
-    return total / cnt;
+
+    return total / (step * step);
 }
 
 bool Sampler::operator==(const Sampler *a) const {
@@ -158,12 +155,12 @@ bool Sampler::operator==(const Sampler *a) const {
 }
 
 shared_ptr<Sampler> Sampler::gen(const vector<double> &data, int step, int width) {
-    return std::make_shared<AccessorV>(data, step, width == -1 ? data.size() : width);
+    return std::make_shared<SamplerV>(data, step, width == -1 ? data.size() : width);
 }
 
 shared_ptr<Sampler> Sampler::gen(
     const vector<vector<double>> &data, int step, int width) {
-    return std::make_shared<AccessorVV>(data, step, width == -1 ? data.size() : width);
+    return std::make_shared<SamplerVV>(data, step, width == -1 ? data.size() : width);
 }
 
 void Sampler::conv(int &x, int &y) const {

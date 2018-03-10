@@ -236,10 +236,10 @@ class LoaderMd2d:
             }
 
         def gen_par_(name, index):
-            qtt = []
+            ret = []
             for i in ['D', 'mu', 'n', 'phi']:
                 try:
-                    qtt.append(gen_qtt_(i, find_name1_(i, index)))
+                    ret.append(gen_qtt_(i, find_name1_(i, index)))
                 except FileNotFoundError:
                     pass
 
@@ -247,14 +247,14 @@ class LoaderMd2d:
                 'abbr': 'Par' + str(index),
                 'name': name,
                 'children': [],
-                'quantities': qtt
+                'quantities': ret
             }
 
         def gen_rea_(name, index):
-            qtt = []
+            ret = []
             for i in ['K', 'R']:
                 try:
-                    qtt.append(gen_qtt_(i, find_name1_(i, index)))
+                    ret.append(gen_qtt_(i, find_name1_(i, index)))
                 except FileNotFoundError:
                     pass
 
@@ -262,7 +262,7 @@ class LoaderMd2d:
                 'abbr': 'Rea' + str(index),
                 'name': name,
                 'children': [],
-                'quantities': qtt
+                'quantities': ret
             }
 
         def gen_ov():
@@ -290,11 +290,20 @@ class LoaderMd2d:
             t = [i[0] for i in cache['t']]
             return [item(n) for n in names if n != 't']
 
+        def gen_gnr():
+            ret = []
+            for i in ['E', 'E_N', 'epsilon', 'Er', 'Ereff', 'J', 'Sigma', 'V']:
+                try:
+                    ret.append(gen_qtt_(i, find_name0_(i + '.txt')))
+                except FileNotFoundError:
+                    pass
+            return ret
+
+
         particles, reactions = LoaderMd2d.read_info(output)
         size_model = LoaderMd2d.read_model(sim)
         size_data = LoaderMd2d.read_dim(find_name0_('P.txt'))
         size_model = [[0, size_model[i] * size_data[i + 1]] for i in range(2)]
-        fields = ['E', 'E_N', 'epsilon', 'Er', 'Ereff', 'J', 'Sigma', 'V']
         times = gen_time_()
         cache = {}
 
@@ -317,7 +326,7 @@ class LoaderMd2d:
             'abbr': 'Gnr',
             'name': 'General',
             'children': [],
-            'quantities': [gen_qtt_(i, find_name0_(i + '.txt')) for i in fields]
+            'quantities': gen_gnr()
         }]
 
     @staticmethod

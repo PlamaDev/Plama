@@ -26,7 +26,7 @@ float fastSin(float x);
 float fastCos(float x);
 QIcon getIcon(const QString &name);
 
-template<typename A, typename B, typename C> class Trio {
+template <typename A, typename B, typename C> class Trio {
 public:
     A a;
     B b;
@@ -56,7 +56,7 @@ public:
         const std::vector<std::vector<double>> &data, int step, int width = -1);
 
 protected:
-    int step, sXO, sYO, sxi, syi, startX, startY;
+    int step, sxo, syo, sxi, syi, startX, startY;
     float sxf, syf, ofsetX, ofsetY;
 
     virtual double getRaw(int x, int y = 0) const = 0;
