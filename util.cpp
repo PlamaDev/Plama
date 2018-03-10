@@ -6,7 +6,6 @@
 using namespace std;
 
 float PI = acos(-1);
-float PIH = PI / 2;
 
 float *genTable() {
     static float data[TABLE_SIZE];
@@ -26,11 +25,16 @@ QPair<int, int> unify(int number, int radix) {
 QVector3D toV3D(const QColor &c) { return QVector3D(c.redF(), c.greenF(), c.blueF()); }
 
 void toPolar(double x, double y, QVector2D &ret) {
+    static float PI_1O2 = PI / 2;
+    static float PI_3O2 = PI * 3 / 2;
+
     ret.setX(magnitude(x, y));
 
-    if (x == 0) {
-        ret.setY(y > 0 ? PIH : -PIH);
-    } else {
+    if (x == 0)
+        ret.setY(y > 0 ? PI_1O2 : PI_3O2);
+    else if (y == 0)
+        ret.setY(x > 0 ? 0 : PI);
+    else {
         float a = atan(y / x);
         if (a < 0) a += PI;
         ret.setY(y >= 0 ? a : a + PI);

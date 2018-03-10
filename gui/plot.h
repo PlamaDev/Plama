@@ -18,7 +18,7 @@ public:
     void setShader(bool en, bool update = true);
     void setEnBar(bool en, bool update = true);
     void setEnLabel(bool en, bool update = true);
-    bool setQuantity(SimQuantity &sq, float time, bool update = true);
+    bool setQuantity(SimQuantity &sq, float time, int step, bool update = true);
     void renderTo(QPaintDevice &d);
 
 private:
@@ -27,7 +27,6 @@ private:
     std::unique_ptr<EngineQt> engineQt;
     QPoint mouse;
     QPoint rotation;
-    float scale = 1;
 
 protected:
     void mouseMoveEvent(QMouseEvent *) override;
@@ -44,6 +43,7 @@ public:
     void setRotation(int x, int y, bool update = true);
     void setTime(float t, bool update = true);
     void setPartition(float p, bool update = true);
+    void setStep(int s, bool update = true);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -52,6 +52,7 @@ private:
     SimQuantity *quantity;
     const std::vector<float> *data;
     float time;
+    int step;
 
     void renderVideo(QString dir, int sizeX, int sizeY, int len, int fps);
 };

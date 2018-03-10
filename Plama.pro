@@ -35,5 +35,7 @@ unix: INCLUDEPATH += /usr/include/python3.6m
 win32: LIBS += -L $$(PY_LIBS) -lpython36
 win32:INCLUDEPATH += -I $$(PY_INCLUDE)
 
+FORMS +=
+
 
 

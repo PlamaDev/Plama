@@ -13,6 +13,7 @@
 #include <QPdfWriter>
 #include <QProcess>
 #include <QProgressDialog>
+#include <QSpinBox>
 #include <QSvgGenerator>
 #include <QTemporaryDir>
 #include <QToolBar>
@@ -64,12 +65,12 @@ void Plot::setTime(float t, bool update) {
     const vector<float> &times = quantity->getTimes();
     float t1 = times[0];
     float t2 = times[times.size() - 1];
-    if (plot->setQuantity(*quantity, t, update))
+    if (plot->setQuantity(*quantity, t, step, update))
         plot->setLabel((t - t1) / (t2 - t1), update);
     time = t;
 }
 
-Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]) {
+Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]), step(1) {
     static vector<Trio<QString, vector<QString>, function<void(QString, Plot &)>>> types =
         {
             {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
@@ -129,11 +130,16 @@ Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]) {
     QVBoxLayout *l = new QVBoxLayout;
     l->setMargin(0);
     QToolBar *bar = new QToolBar;
+    QSpinBox *nStep = new QSpinBox;
+    nStep->setMinimum(1);
+    nStep->setEnabled(false);
     QAction *aExport = new QAction(getIcon("document-export"), "Export");
     QAction *aShader = new QAction(getIcon("plot-shader"), "Enable shader");
     QAction *aBar = new QAction(getIcon("plot-gradient"), "Enable color bar");
+    QAction *aStep = new QAction(getIcon("plot-step"), "Set grid simplification");
     aShader->setCheckable(true);
     aBar->setCheckable(true);
+    aStep->setCheckable(true);
     connect(aExport, &QAction::triggered, [&]() {
         QString selected;
         QStringList filters;
@@ -159,14 +165,25 @@ Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]) {
     });
     connect(aShader, &QAction::toggled, [=](bool b) { plot->setShader(b); });
     connect(aBar, &QAction::toggled, [=](bool b) { plot->setEnBar(b); });
+    connect(aStep, &QAction::toggled, [=](bool b) {
+        nStep->setEnabled(b);
+        if (b)
+            this->setStep(nStep->value());
+        else
+            this->setStep(1);
+    });
+    connect(nStep, QOverload<int>::of(&QSpinBox::valueChanged),
+        [=](int v) { this->setStep(v); });
     bar->addAction(aExport);
     bar->addAction(aShader);
     bar->addAction(aBar);
+    bar->addAction(aStep);
+    bar->addWidget(nStep);
     l->addWidget(bar);
 
     plot = new PlotInternal(make_unique<Axis>(5, 5, 5),
         make_unique<Bar>(Gradient::HEIGHT_MAP, 5), std::move(range));
-    plot->setQuantity(quantity, quantity.getTimes()[0]);
+    plot->setQuantity(quantity, quantity.getTimes()[0], step);
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
     setLayout(l);
@@ -182,6 +199,11 @@ void Plot::setPartition(float p, bool update) {
     float t2 = times[times.size() - 1];
     float td = t2 - t1;
     setTime(t1 + td * p, update);
+}
+
+void Plot::setStep(int s, bool update) {
+    step = s;
+    plot->setQuantity(*quantity, time, step, update);
 }
 
 QSize Plot::sizeHint() const { return QSize(1000, 1000); }
@@ -267,8 +289,8 @@ void PlotInternal::setEnLabel(bool en, bool update) {
     if (update) requestUpdate();
 }
 
-bool PlotInternal::setQuantity(SimQuantity &sq, float time, bool update) {
-    bool ret = model->setQuantity(sq, time);
+bool PlotInternal::setQuantity(SimQuantity &sq, float time, int step, bool update) {
+    bool ret = model->setQuantity(sq, time, step);
     if (update) requestUpdate();
     return ret;
 }

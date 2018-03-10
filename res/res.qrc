@@ -9,5 +9,6 @@
         <file>icons/document-export.svg</file>
         <file>icons/plot-shader.svg</file>
         <file>icons/plot-gradient.svg</file>
+        <file>icons/plot-step.svg</file>
     </qresource>
 </RCC>

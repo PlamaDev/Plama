@@ -8,11 +8,7 @@
 #include <QSysInfo>
 #include <data/project.h>
 
-// soft code file name
-// actual model size
-
 int main(int argc, char *argv[]) {
-
     Py_Initialize();
 
     int ret;

@@ -39,40 +39,30 @@ const vector<QVector3D> &Model::getNormal() const { return normal; }
 const vector<QVector3D> &Model::getColor() const { return color; }
 const vector<QVector3D> &Model::getPosition() const { return position; }
 
-bool Model::setQuantity(SimQuantity &sq, float time) {
+bool Model::setQuantity(SimQuantity &sq, float time, int step) {
     QVector2D extreme = sq.getExtreme();
-    const std::vector<int> &size = sq.getSizeData();
-    auto dataAt = [&](int dim = 0) -> DATA { return sq.getDataAt(time, dim); };
+    auto dataAt = [&](int dim = 0) {
+        return Accessor<float>::gen(sq.getDataAt(time, dim), step, sq.getSizeData()[0]);
+    };
+    auto data = [&](const auto &d) { return Accessor<float>::gen(d, step); };
 
-    switch (size.size()) {
-    case 0: genLine(sq.getTimes(), sq.getData(), extreme); return true;
+    switch (sq.getSizeData().size()) {
+    case 0: genLine(data(sq.getTimes()), data(sq.getData()), extreme); return true;
     case 2:
         switch (sq.getDim()) {
-        case 1: genHeight(dataAt(), size[0], size[1], extreme); return false;
-        case 2: genVector(dataAt(0), dataAt(1), size[0], size[1], extreme); return false;
+        case 1: genHeight(dataAt(), extreme); return false;
+        case 2: genVector(dataAt(0), dataAt(1), extreme); return false;
         }
         break;
     }
     return false;
 }
 
-void Model::genLine(
-    Model::DATA x, const std::vector<std::vector<float>> &y, QVector2D extreme) {
-    if (checkSame(LINE, {&x, &y})) return;
-    std::vector<float> newY(y.size());
-    for (size_t i = 0; i < y.size(); i++) newY[i] = y[i][0];
-    genLineImpl(x, newY, extreme);
-}
-
 void Model::genLine(DATA x, DATA y, QVector2D extreme) {
-    if (checkSame(LINE, {&x, &y})) return; // TODO
-    genLineImpl(x, y, extreme);
-}
-
-void Model::genLineImpl(Model::DATA x, Model::DATA y, QVector2D extreme) {
-    checkSize(x.size(), 0, (x.size() - 1) * 2);
-    float xMin = x[0];
-    float xMax = x[x.size() - 1];
+    if (checkSame(LINE, {x, y})) return; // TODO
+    checkSize(x->sizeXI(), 0, (x->sizeXI() - 1) * 2);
+    float xMin = x->get(0);
+    float xMax = x->get(-1);
     float xDiff = xMax - xMin;
     float yMin = extreme.x();
     float yMax = extreme.y();
@@ -89,24 +79,28 @@ void Model::genLineImpl(Model::DATA x, Model::DATA y, QVector2D extreme) {
         }
     }
 
-    for (size_t i = 0; i < x.size(); i++) {
-        point[i] = QVector3D((x[i] - xMin) / xDiff, (y[i] - yMin) / yDiff, 0);
+    for (int i = 0; i < x->sizeXI(); i++) {
+        point[i] = QVector3D((x->get(i) - xMin) / xDiff, (y->get(i) - yMin) / yDiff, 0);
         normal[i] = QVector3D(0, 0, 1);
         color[i] = QVector3D(0, 0, 1);
         position[i] = point[i];
     }
 
     for (int j = 0; j < 8; j++) {
-        for (size_t i = 0; i < x.size() - 1; i++) {
+        for (int i = 0; i < x->sizeXI() - 1; i++) {
             indexL[j][2 * i] = i;
             indexL[j][2 * i + 1] = i + 1;
         }
     }
 }
 
-void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
-    if (checkSame(HEIGHT, {&data})) return;
-    checkSize((sizeX - 1) * (sizeY - 1) * 9, (sizeX - 1) * (sizeY - 1) * 24, 0);
+void Model::genHeight(DATA data, QVector2D extreme) {
+    if (checkSame(HEIGHT, {data})) return;
+    int sxi = data->sizeXI();
+    int syi = data->sizeYI();
+    float sxf = data->sizeXF();
+    float syf = data->sizeYF();
+    checkSize((sxi - 1) * (syi - 1) * 9, (sxi - 1) * (syi - 1) * 24, 0);
 
     static vector<vector<GLuint>> order{
         {0, 4, 3, 1, 4, 0, 3, 4, 6, 6, 4, 7, 2, 4, 1, 5, 4, 2, 7, 4, 8, 8, 4, 5},
@@ -118,26 +112,23 @@ void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
         {6, 4, 7, 3, 4, 6, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 5, 4, 2, 2, 4, 1},
         {3, 4, 6, 6, 4, 7, 7, 4, 8, 8, 4, 5, 0, 4, 3, 1, 4, 0, 2, 4, 1, 5, 4, 2}};
 
-    float sx = sizeX - 1;
-    float sy = sizeY - 1;
     float height = extreme.y() - extreme.x();
-    for (int y = 0; y < sizeY - 1; y++) {
-        for (int x = 0; x < sizeX - 1; x++) {
+    for (int y = 0; y < syi - 1; y++) {
+        for (int x = 0; x < sxi - 1; x++) {
             float d[9];
             float px[3];
             float py[3];
             QVector3D p[9];
 
-            int offsetRaw = y * sizeX + x;
-            int offsetPoint = (y * (sizeX - 1) + x) * 9;
+            int offsetPoint = (y * (sxi - 1) + x) * 9;
 
             if (height == 0) {
-                for (int i = 0; i < 9; i++) d[i] = data[offsetPoint];
+                for (int i = 0; i < 9; i++) d[i] = data->get(offsetPoint);
             } else {
-                d[0] = data[offsetRaw];
-                d[2] = data[offsetRaw + 1];
-                d[6] = data[offsetRaw + sizeX];
-                d[8] = data[offsetRaw + sizeX + 1];
+                d[0] = data->get(x, y);
+                d[2] = data->get(x + 1, y);
+                d[6] = data->get(x, y + 1);
+                d[8] = data->get(x + 1, y + 1);
                 d[0] = (d[0] - extreme.x()) / height;
                 d[2] = (d[2] - extreme.x()) / height;
                 d[6] = (d[6] - extreme.x()) / height;
@@ -150,8 +141,8 @@ void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
             }
 
             for (int i = 0; i < 3; i++) {
-                px[i] = (x + 0.5f * i) / sx;
-                py[i] = (y + 0.5f * i) / sy;
+                px[i] = (x + 0.5f * i) / sxf;
+                py[i] = (y + 0.5f * i) / syf;
             }
 
             for (int yy = 0; yy < 3; yy++) {
@@ -201,33 +192,39 @@ void Model::genHeight(DATA data, int sizeX, int sizeY, QVector2D extreme) {
             int offsetPoint = j * 9;
             for (int j = 0; j < 24; j++) indexT[i][cnt++] = order[i][j] + offsetPoint;
         };
-        indexFunc[i](func, sizeX - 1, sizeY - 1);
+        indexFunc[i](func, sxi - 1, syi - 1);
     }
 }
 
-void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY,
-    QVector2D extreme, float ratio) {
+void Model::genVector(
+    Model::DATA dataX, Model::DATA dataY, QVector2D extreme, float ratio) {
     static vector<QPair<QVector2D, float>> polar;
     static float angle1 = PI * 13 / 12;
     static float angle2 = PI * 11 / 12;
-    static vector<float> lenY;
-    const vector<float> &lenX = dataX;
-    if (checkSame(VECTOR, {&dataX, &dataY})) return;
+    static vector<float> bufY;
+    int sizeX = dataX->sizeXI();
+    int sizeY = dataX->sizeYI();
+    int sizeT = sizeX * sizeY;
+
+    if (checkSame(VECTOR, {dataX, dataY})) return; // TODO
     checkSize(sizeX * sizeY * 5, sizeX * sizeY * 3, sizeX * sizeY * 2);
-    polar.resize(dataX.size());
-    lenY.resize(dataY.size());
-    for (size_t i = 0; i < dataX.size(); i++) lenY[i] = dataY[i] * ratio;
+    polar.resize(sizeT);
+    bufY.resize(sizeT);
+    for (int i = 0; i < sizeT; i++) bufY[i] = dataY->get(i) * ratio;
+
+    const DATA &convX = dataX;
+    DATA convY = Accessor<float>::gen(bufY, 1, sizeX);
 
     QVector2D pnt;
-    toPolar(lenX[0], lenY[0], pnt);
+    toPolar(convX->get(0), convY->get(0), pnt);
     float maxActual = extreme.y();
     float maxScaled = 0;
 
-    for (size_t i = 0; i < dataX.size(); i++) {
-        toPolar(lenX[i], lenY[i], pnt);
+    for (int i = 0; i < sizeT; i++) {
+        toPolar(convX->get(i), convY->get(i), pnt);
         QPair<QVector2D, float> &pair = polar[i];
         pair.first = pnt;
-        pair.second = magnitude(dataX[i], dataY[i]);
+        pair.second = magnitude(dataX->get(i), dataY->get(i));
         if (pnt.x() > maxScaled) maxScaled = pnt.x();
     }
     int divs = sizeX > sizeY ? sizeX : sizeY;
@@ -235,8 +232,8 @@ void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY
     float toUnity = 1 / maxActual;
     float sizeL = 0.8 / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
     float sizeA = sizeL * cos(PI / 12);
-    float diffX = 1.0 / (sizeX + 1);
-    float diffY = 1.0 / (sizeY + 1);
+    float diffX = 1.0 / (dataX->sizeXF() + 1);
+    float diffY = 1.0 / (dataX->sizeYF() + 1);
     for (auto &i : polar) {
         i.first[0] *= toLenth;
         i.second *= toUnity;
@@ -247,8 +244,8 @@ void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY
     for (int i = 0; i < sizeY; i++) {
         for (int j = 0; j < sizeX; j++) {
             int idx = i * sizeX + j;
-            float offX = diffX * (j + 1);
-            float offY = diffY * (i + 1);
+            float offX = diffX * (j + 0.5);
+            float offY = diffY * (i + 0.5);
             QVector2D &p = polar[idx].first;
             QVector3D base(offX, offY, 0);
             toCatsn(p.x(), p.y(), line0);
@@ -282,7 +279,7 @@ void Model::genVector(Model::DATA dataX, Model::DATA dataY, int sizeX, int sizeY
     }
 }
 
-bool Model::checkSame(Model::enumType type, std::vector<const void *> &&data) {
+bool Model::checkSame(Model::enumType type, std::vector<DATA> &&data) {
     bool ret = true;
     if (type != this->type)
         ret = false;
