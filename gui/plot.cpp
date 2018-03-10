@@ -61,16 +61,16 @@ int mouseFuncInverseLoop(int x) {
     return p.first * (2 * width + (int)(90 / slope)) + mouseFuncInverse(p.second);
 }
 
-void Plot::setTime(float t, bool update) {
-    const vector<float> &times = quantity->getTimes();
-    float t1 = times[0];
-    float t2 = times[times.size() - 1];
+void Plot::setTime(double t, bool update) {
+    const vector<double> &times = quantity->getTimes();
+    double t1 = times[0];
+    double t2 = times[times.size() - 1];
     if (plot->setQuantity(*quantity, t, step, update))
         plot->setLabel((t - t1) / (t2 - t1), update);
     time = t;
 }
 
-Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]), step(1) {
+Plot::Plot(SimQuantity &quantity) : time(quantity.getTimes()[0]), step(1) {
     static vector<Trio<QString, vector<QString>, function<void(QString, Plot &)>>> types =
         {
             {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
@@ -117,7 +117,7 @@ Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]), step(
                 [](QString s, Plot &p) { p.renderVideo(s, 800, 800, 10, 20); }},
         };
 
-    auto range = make_unique<vector<QVector2D>>();
+    auto range = make_unique<vector<VectorD2D>>();
     if (quantity.getSizeModel().size() == 0) {
         *range = {
             {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
@@ -188,16 +188,15 @@ Plot::Plot(SimQuantity &quantity, int dim) : time(quantity.getTimes()[0]), step(
     l->setMargin(0);
     setLayout(l);
     this->quantity = &quantity;
-    data = &quantity.getDataAt(quantity.getTimes()[0], dim);
 }
 
 void Plot::setRotation(int x, int y, bool update) { plot->setRotation(x, y, update); }
 
 void Plot::setPartition(float p, bool update) {
-    const vector<float> &times = quantity->getTimes();
-    float t1 = times[0];
-    float t2 = times[times.size() - 1];
-    float td = t2 - t1;
+    const vector<double> &times = quantity->getTimes();
+    double t1 = times[0];
+    double t2 = times[times.size() - 1];
+    double td = t2 - t1;
     setTime(t1 + td * p, update);
 }
 
@@ -249,10 +248,10 @@ void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
 }
 
 PlotInternal::PlotInternal(
-    unique_ptr<Axis> &&axis, unique_ptr<Bar> &&bar, unique_ptr<vector<QVector2D>> &&size)
+    unique_ptr<Axis> &&axis, unique_ptr<Bar> &&bar, unique_ptr<vector<VectorD2D>> &&size)
     : model(new Model()) {
     shared_ptr<Axis> pa = move(axis);
-    shared_ptr<vector<QVector2D>> ps = move(size);
+    shared_ptr<vector<VectorD2D>> ps = move(size);
     shared_ptr<Bar> pb = move(bar);
 
     engineGL = make_unique<EngineGL>(model, pa, pb, ps);

@@ -23,16 +23,15 @@ public:
 
 private:
     enum enumType { LINE, HEIGHT, VECTOR };
-    typedef std::shared_ptr<Accessor<float>> DATA;
+    typedef std::shared_ptr<Sampler> DATA;
 
     bool checkSame(Model::enumType type, std::vector<DATA> &&data);
     void checkSize(int point, int indexT, int indexL);
-    void genLine(DATA x, DATA y, QVector2D extreme);
-    void genHeight(DATA data, QVector2D extreme);
-    void genVector(DATA dataX, DATA dataY, QVector2D extreme,
+    void genLine(DATA x, DATA y, VectorD2D extreme);
+    void genHeight(DATA data, VectorD2D extreme);
+    void genVector(DATA dataX, DATA dataY, VectorD2D extreme,
         float ratio = 1); // ratio = model x size / model y size
 
-    static QPair<float, float> getExtreme(const float *data, int total);
     static std::vector<std::function<void(std::function<void(int)> &, int, int)>>
         indexFunc;
 

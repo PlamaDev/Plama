@@ -148,7 +148,7 @@ SimQuantity::SimQuantity(PyObject *data)
     len = PyList_Size(pSizeModel);
     for (Py_ssize_t i = 0; i < len; i++) {
         PyObject *o = PyList_GetItem(pSizeModel, i);
-        sizeModel.push_back(QVector2D(PyFloat_AsDouble(PyList_GetItem(o, 0)),
+        sizeModel.push_back(VectorD2D(PyFloat_AsDouble(PyList_GetItem(o, 0)),
             PyFloat_AsDouble(PyList_GetItem(o, 1))));
     }
 
@@ -158,30 +158,30 @@ SimQuantity::SimQuantity(PyObject *data)
 }
 
 const QString &SimQuantity::getName() const { return name; }
-const vector<float> &SimQuantity::getTimes() const { return times; }
-const vector<QVector2D> &SimQuantity::getSizeModel() const { return sizeModel; }
+const vector<double> &SimQuantity::getTimes() const { return times; }
+const vector<VectorD2D> &SimQuantity::getSizeModel() const { return sizeModel; }
 const vector<int> &SimQuantity::getSizeData() const { return sizeData; }
 
-const vector<float> &SimQuantity::getDataAt(float time, int dim) const {
+const vector<double> &SimQuantity::getDataAt(double time, int dim) const {
     auto t = lower_bound(times.begin(), times.end(), time);
     int d = t - times.begin();
-    const vector<float> &ret = data[dimData * d + dim];
+    const vector<double> &ret = data[dimData * d + dim];
     return ret;
 }
 
-const vector<float> &SimQuantity::getDataAt(float time, int dim) {
+const vector<double> &SimQuantity::getDataAt(double time, int dim) {
     if (!initialized) initData();
     return ((const SimQuantity *)this)->getDataAt(time, dim);
 }
 
-const vector<vector<float>> &SimQuantity::getData() {
+const vector<vector<double>> &SimQuantity::getData() {
     if (!initialized) initData();
     return data;
 }
 
-QVector2D SimQuantity::getExtreme() const { return QVector2D(min, max); }
+VectorD2D SimQuantity::getExtreme() const { return VectorD2D(min, max); }
 
-QVector2D SimQuantity::getExtreme() {
+VectorD2D SimQuantity::getExtreme() {
     if (!initialized) initData();
     return ((const SimQuantity *)this)->getExtreme();
 }
@@ -211,7 +211,7 @@ void SimQuantity::initData() {
 
     Py_ssize_t lenI = PyList_Size(pData);
     for (Py_ssize_t i = 0; i < lenI; i++) {
-        vector<float> buf;
+        vector<double> buf;
         PyObject *pBuf = PyList_GetItem(pData, i);
         Py_ssize_t lenJ = PyList_Size(pBuf);
         for (Py_ssize_t j = 0; j < lenJ; j++)
@@ -236,8 +236,8 @@ void SimQuantity::initData() {
         max = magnitude(data[0][0], data[1][0]);
         min = 0;
         for (size_t i = 0; i < sizeSection; i++) {
-            vector<float> &vx = data[2 * i];
-            vector<float> &vy = data[2 * i + 1];
+            vector<double> &vx = data[2 * i];
+            vector<double> &vy = data[2 * i + 1];
             for (size_t j = 0; j < sizeNumber; j++) {
                 float x = vx[j];
                 float y = vy[j];

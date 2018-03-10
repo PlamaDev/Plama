@@ -10,7 +10,6 @@
 #include <QOpenGLShaderProgram>
 #include <QPainter>
 #include <QPainterPath>
-#include <QPainterPath>
 #include <QPen>
 #include <QScopedPointer>
 #include <QSysInfo>
@@ -155,7 +154,7 @@ void drawText(QPainter &painter, QString &&str, const QMatrix4x4 &matrix,
 }
 
 Engine::Engine(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> &size)
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size)
     : rotX(0), rotY(0), model(model), axis(axis), bar(bar), size(size), label(-1),
       enShader(false), enBar(false), enLabel(true) {}
 
@@ -179,7 +178,7 @@ void Engine::setEnBar(bool en) { enBar = en; }
 void Engine::setEnLabel(bool en) { enLabel = en; }
 
 EngineGL::EngineGL(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> &size)
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size)
     : Engine(model, axis, bar, size) {}
 
 void EngineGL::initialize() {
@@ -251,17 +250,17 @@ void EngineGL::render(QPainter &p) {
     for (int i = 0; i < 3; i++) {
         auto pnts = num[i].second;
         if (pnts.size() == 0) continue;
-        float diff = ((*size)[i].y() - (*size)[i].x()) / (pnts.size() - 1);
+        double diff = ((*size)[i].second - (*size)[i].first) / (pnts.size() - 1);
         for (size_t j = 0; j < pnts.size(); j++) {
-            drawText(pImage, format.arg((*size)[i].x() + diff * j, 0, 'g', 2), matText,
+            drawText(pImage, format.arg((*size)[i].first + diff * j, 0, 'g', 2), matText,
                 num[i].second[j], num[i].first);
         }
     }
 
     if (enBar) {
         const vector<QVector3D> &ns = bar->getNumber();
-        float start = (*size)[2].x();
-        float diff = ((*size)[2].y() - start) / (ns.size() - 1);
+        double start = (*size)[2].first;
+        double diff = ((*size)[2].second - start) / (ns.size() - 1);
         for (size_t j = 0; j < ns.size(); j++) {
             drawText(pImage, format.arg(start + diff * j, 0, 'g', 2), matScreen * matBar,
                 ns[j], false);
@@ -383,7 +382,7 @@ void EngineGL::render(QPainter &p) {
 }
 
 EngineQt::EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> size)
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> size)
     : Engine(model, axis, bar, size) {}
 
 void EngineQt::render(QPainter &p) {
@@ -428,9 +427,9 @@ void EngineQt::render(QPainter &p) {
     for (int i = 0; i < 3; i++) {
         auto pnts = vANumber[i].second;
         if (pnts.size() == 0) continue;
-        float diff = ((*size)[i].y() - (*size)[i].x()) / (pnts.size() - 1);
+        double diff = ((*size)[i].second - (*size)[i].first) / (pnts.size() - 1);
         for (size_t j = 0; j < pnts.size(); j++) {
-            drawText(p, format.arg((*size)[i].x() + diff * j, 0, 'g', 2), matFinA,
+            drawText(p, format.arg((*size)[i].first + diff * j, 0, 'g', 2), matFinA,
                 vANumber[i].second[j], vANumber[i].first);
         }
     }
@@ -463,9 +462,9 @@ void EngineQt::render(QPainter &p) {
         slice.second, width);
 
     p.setPen(QPen(Qt::black, width));
-    float diff = ((*size)[2].y() - (*size)[2].x()) / (vBNumber.size() - 1);
+    double diff = ((*size)[2].second - (*size)[2].first) / (vBNumber.size() - 1);
     for (size_t j = 0; j < vBNumber.size(); j++) {
-        drawText(p, format.arg((*size)[2].x() + diff * j, 0, 'g', 2), matScreen * matBar,
-            vBNumber[j], false);
+        drawText(p, format.arg((*size)[2].first + diff * j, 0, 'g', 2),
+            matScreen * matBar, vBNumber[j], false);
     }
 }

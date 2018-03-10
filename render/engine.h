@@ -15,7 +15,7 @@
 class Engine {
 public:
     Engine(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-        std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> &size);
+        std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size);
     virtual ~Engine() = default;
     virtual void initialize() = 0;
     virtual void render(QPainter &p) = 0;
@@ -34,7 +34,7 @@ protected:
     std::shared_ptr<Model> model;
     std::shared_ptr<Axis> axis;
     std::shared_ptr<Bar> bar;
-    std::shared_ptr<std::vector<QVector2D>> size;
+    std::shared_ptr<std::vector<VectorD2D>> size;
     float label;
     bool enShader, enBar, enLabel;
 };
@@ -42,7 +42,7 @@ protected:
 class EngineGL : public Engine, protected QOpenGLFunctions {
 public:
     EngineGL(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-        std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> &size);
+        std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size);
     void initialize() override;
     void render(QPainter &p) override;
 
@@ -69,7 +69,7 @@ private:
 class EngineQt : public Engine {
 public:
     EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-        std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<QVector2D>> size);
+        std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> size);
     void initialize() override{};
     void render(QPainter &p) override;
     void render(QPaintDevice &p);

@@ -1,10 +1,10 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
+#include "util.h"
 #include <Python.h>
 #include <QPair>
 #include <QTextStream>
-#include <QVector2D>
 #include <cmath>
 #include <memory>
 
@@ -14,14 +14,14 @@ class SimQuantity {
 public:
     SimQuantity(PyObject *data);
     const QString &getName() const;
-    const std::vector<float> &getTimes() const;
-    const std::vector<QVector2D> &getSizeModel() const;
+    const std::vector<double> &getTimes() const;
+    const std::vector<VectorD2D> &getSizeModel() const;
     const std::vector<int> &getSizeData() const;
-    const std::vector<float> &getDataAt(float time, int dim = 0) const;
-    const std::vector<float> &getDataAt(float time, int dim = 0);
-    const std::vector<std::vector<float>> &getData();
-    QVector2D getExtreme() const;
-    QVector2D getExtreme();
+    const std::vector<double> &getDataAt(double time, int dim = 0) const;
+    const std::vector<double> &getDataAt(double time, int dim = 0);
+    const std::vector<std::vector<double>> &getData();
+    VectorD2D getExtreme() const;
+    VectorD2D getExtreme();
     int getDim() const;
     QString getError() const;
     QString getError();
@@ -31,10 +31,10 @@ private:
     QString name, error;
     int dimData;
     bool uniform;
-    std::vector<float> times;
-    std::vector<QVector2D> sizeModel;
+    std::vector<double> times;
+    std::vector<VectorD2D> sizeModel;
     std::vector<int> sizeData;
-    std::vector<std::vector<float>> data;
+    std::vector<std::vector<double>> data;
     void initData();
     float max, min;
     bool initialized;

@@ -75,7 +75,7 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
             if (sq->getError().isEmpty()) {
                 QDockWidget *d =
                     new QDockWidget(sp->getAbbr() + '>' + sq->getName(), this);
-                Plot *plot = new Plot(*sq, 0);
+                Plot *plot = new Plot(*sq);
                 plot->setRotation(90, 90);
                 plot->setPartition(slider->value() / (float)10000);
                 d->setWidget(plot);
