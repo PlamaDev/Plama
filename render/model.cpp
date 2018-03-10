@@ -41,17 +41,19 @@ const vector<QVector3D> &Model::getPosition() const { return position; }
 
 bool Model::setQuantity(SimQuantity &sq, float time, int step) {
     QVector2D extreme = sq.getExtreme();
+    const vector<QVector2D> &size = sq.getSizeModel();
     auto dataAt = [&](int dim = 0) {
         return Accessor<float>::gen(sq.getDataAt(time, dim), step, sq.getSizeData()[0]);
     };
     auto data = [&](const auto &d) { return Accessor<float>::gen(d, step); };
+    float ratio = (size[0][1] - size[0][0]) / (size[1][1] - size[1][0]);
 
     switch (sq.getSizeData().size()) {
     case 0: genLine(data(sq.getTimes()), data(sq.getData()), extreme); return true;
     case 2:
         switch (sq.getDim()) {
         case 1: genHeight(dataAt(), extreme); return false;
-        case 2: genVector(dataAt(0), dataAt(1), extreme); return false;
+        case 2: genVector(dataAt(0), dataAt(1), extreme, ratio); return false;
         }
         break;
     }
@@ -202,6 +204,7 @@ void Model::genVector(
     static float angle1 = PI * 13 / 12;
     static float angle2 = PI * 11 / 12;
     static vector<float> bufY;
+
     int sizeX = dataX->sizeXI();
     int sizeY = dataX->sizeYI();
     int sizeT = sizeX * sizeY;
@@ -210,22 +213,19 @@ void Model::genVector(
     checkSize(sizeX * sizeY * 5, sizeX * sizeY * 3, sizeX * sizeY * 2);
     polar.resize(sizeT);
     bufY.resize(sizeT);
-    for (int i = 0; i < sizeT; i++) bufY[i] = dataY->get(i) * ratio;
-
     const DATA &convX = dataX;
     DATA convY = Accessor<float>::gen(bufY, 1, sizeX);
+    for (int i = 0; i < sizeT; i++) bufY[i] = dataY->get(i) * ratio;
+
+    float maxActual = extreme.y();
+    float maxScaled = maxActual * (ratio > 1 ? ratio : 1 / ratio);
 
     QVector2D pnt;
-    toPolar(convX->get(0), convY->get(0), pnt);
-    float maxActual = extreme.y();
-    float maxScaled = 0;
-
     for (int i = 0; i < sizeT; i++) {
         toPolar(convX->get(i), convY->get(i), pnt);
         QPair<QVector2D, float> &pair = polar[i];
         pair.first = pnt;
         pair.second = magnitude(dataX->get(i), dataY->get(i));
-        if (pnt.x() > maxScaled) maxScaled = pnt.x();
     }
     int divs = sizeX > sizeY ? sizeX : sizeY;
     float toLenth = maxScaled == 0 ? 0 : 1 / maxScaled / divs;

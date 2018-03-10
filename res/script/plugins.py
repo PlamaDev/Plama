@@ -50,8 +50,7 @@ class Manager:
         func = self.plugins.get(name)[0]
         try:
             data = func(*arguments)
-            ret = [Manager.check_node(j, '')
-                   for i, j in enumerate(data)]
+            ret = [Manager.check_node(i, '') for i in data]
             return ret, None
         except Exception as e:
             _tb.print_exc()
@@ -165,7 +164,7 @@ class LoaderDummy:
                 'times': [1],
                 'dimData': 2,
                 'sizeData': [3, 2],
-                'sizeModel': [[2, 3], [4, 5]],
+                'sizeModel': [[2, 20], [4, 5]],
                 'data': lambda: [
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 1, 0, 0, 0]

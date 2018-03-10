@@ -7,6 +7,7 @@
 #include <QOpenGLContext>
 #include <QVector3D>
 #include <memory>
+#include <vector>
 
 class Model {
 public:

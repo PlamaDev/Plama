@@ -2,10 +2,10 @@
 #define PROJECT_H
 
 #include <Python.h>
-#include <cmath>
 #include <QPair>
 #include <QTextStream>
 #include <QVector2D>
+#include <cmath>
 #include <memory>
 
 class SimTreeNode;
@@ -20,8 +20,6 @@ public:
     const std::vector<float> &getDataAt(float time, int dim = 0) const;
     const std::vector<float> &getDataAt(float time, int dim = 0);
     const std::vector<std::vector<float>> &getData();
-    float getMax() const;
-    float getMin() const;
     QVector2D getExtreme() const;
     QVector2D getExtreme();
     int getDim() const;

@@ -43,12 +43,32 @@ public:
           sizeXImgF((sizeXActual - 1) / (float)step),
           sizeYImgF((sizeYActual - 1) / (float)step) {}
     virtual ~Accessor() = default;
-    virtual const T &get(int x, int y = 0) = 0;
     virtual unsigned long repr() = 0;
     float sizeXF() { return sizeXImgF; }
     float sizeYF() { return sizeYImgF; }
     int sizeXI() { return sizeXImgI; }
     int sizeYI() { return sizeYImgI; }
+
+    T get(int x, int y = 0) {
+        this->conv(x, y);
+        y += x / this->sizeXImgI;
+        x = x % this->sizeXImgI;
+        int cnt = 0;
+        T total = 0;
+        int startX = x * step;
+        int startY = y * step;
+        int endX = startX + step;
+        int endY = startY + step;
+
+        for (int ix = startX; ix < sizeXActual && ix < endX; ix++) {
+            for (int iy = startY; iy < sizeYActual && iy < endY; iy++) {
+                total += this->getRaw(ix, iy);
+                cnt++;
+            }
+        }
+        return total / cnt;
+    }
+
     bool operator==(const Accessor *a) {
         return repr() == a->repr() && this->step == a->step;
     }
@@ -59,6 +79,8 @@ public:
 protected:
     int step, sizeXActual, sizeYActual, sizeXImgI, sizeYImgI;
     float sizeXImgF, sizeYImgF;
+
+    virtual const T &getRaw(int x, int y = 0) = 0;
     inline void conv(int &x, int &y) {
         if (x < 0) x += sizeXImgI;
         if (y < 0) y += sizeYImgI;
@@ -70,12 +92,7 @@ public:
     AccessorV(const Vec<T> &data, int step, int width)
         : Accessor<T>(width, data.size() / width, step), data(data) {}
 
-    const T &get(int x, int y) override {
-        this->conv(x, y);
-        y += x / this->sizeXImgI;
-        x = x % this->sizeXImgI;
-        return data[this->step * (y * this->sizeXActual + x)];
-    }
+    const T &getRaw(int x, int y) override { return data[y * this->sizeXActual + x]; }
 
     unsigned long repr() override { return (unsigned long)&data; }
 
@@ -88,12 +105,7 @@ public:
     AccessorVV(const Vec<Vec<T>> &data, int step, int width)
         : Accessor<T>(width, data.size() / width, step), data(data) {}
 
-    const T &get(int x, int y) override {
-        this->conv(x, y);
-        y += x / this->sizeXImgI;
-        x = x % this->sizeXImgI;
-        return data[y * this->step * this->sizeXActual + x * this->step][0];
-    }
+    const T &getRaw(int x, int y) override { return data[y * this->sizeXActual + x][0]; }
 
     unsigned long repr() override { return (unsigned long)&data; }
 

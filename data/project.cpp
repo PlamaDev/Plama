@@ -179,8 +179,6 @@ const vector<vector<float>> &SimQuantity::getData() {
     return data;
 }
 
-float SimQuantity::getMax() const { return max; }
-float SimQuantity::getMin() const { return min; }
 QVector2D SimQuantity::getExtreme() const { return QVector2D(min, max); }
 
 QVector2D SimQuantity::getExtreme() {
