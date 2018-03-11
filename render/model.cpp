@@ -46,7 +46,9 @@ bool Model::setQuantity(SimQuantity &sq, float time, int step) {
         return Sampler::gen(sq.getDataAt(time, dim), step, sq.getSizeData()[0]);
     };
     auto data = [&](const auto &d) { return Sampler::gen(d, step); };
-    double ratio = (size[0].second - size[0].first) / (size[1].second - size[1].first);
+    double ratio = sq.getSizeData().size() == 2
+        ? (size[0].second - size[0].first) / (size[1].second - size[1].first)
+        : 0;
 
     switch (sq.getSizeData().size()) {
     case 0: genLine(data(sq.getTimes()), data(sq.getData()), extreme); return true;

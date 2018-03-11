@@ -3,6 +3,7 @@ import re as _re
 import traceback as _tb
 import itertools as _it
 import typing as _tp
+import gc as _gc
 
 
 class Manager:
@@ -51,9 +52,11 @@ class Manager:
         try:
             data = func(*arguments)
             ret = [Manager.check_node(i, '') for i in data]
+            _gc.collect()
             return ret, None
         except Exception as e:
             _tb.print_exc()
+            _gc.collect()
             return None, str(e)
 
     @staticmethod
@@ -85,9 +88,11 @@ class Manager:
                         raise ValueError(
                             s.format(n, path, ret['name'], len(j), size))
                     ret_.append([float(k) for k in j])
+                _gc.collect()
                 return ret_, None
             except Exception as e:
                 _tb.print_exc()
+                _gc.collect()
                 return None, str(e)
 
         ret = {
@@ -222,7 +227,7 @@ class LoaderMd2d:
                     'Please make sure all data files generated in ' + \
                     'previous simulations are removed.')
                 else:
-                    return ret;
+                    return ret
 
             dim, sx, sy = LoaderMd2d.read_dim(file)
             
@@ -493,8 +498,9 @@ def load(name, arguments):
 
 # linux
 # if __name__ == "__main__":
-# d = '/run/media/towdium/Files/Work/FYP/software/data'
-# files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-# a = args('MD2D')
-# d, r = load('MD2D', [files_, '/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d'])
-# d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126
+#     init([])
+#     d = '/run/media/towdium/Files/Work/FYP/software/data'
+#     files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
+#     a = args('MD2D')
+#     d, r = load('MD2D', [files_, ['/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d']])
+#     d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126
