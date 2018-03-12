@@ -245,14 +245,13 @@ void EngineGL::render(QPainter &p) {
     pImage.setFont(font);
 
     const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
-    QString format("%1");
 
     for (int i = 0; i < 3; i++) {
         auto pnts = num[i].second;
         if (pnts.size() == 0) continue;
         double diff = ((*size)[i].second - (*size)[i].first) / (pnts.size() - 1);
         for (size_t j = 0; j < pnts.size(); j++) {
-            drawText(pImage, format.arg((*size)[i].first + diff * j, 0, 'g', 2), matText,
+            drawText(pImage, format((*size)[i].first + diff * j), matText,
                 num[i].second[j], num[i].first);
         }
     }
@@ -262,8 +261,7 @@ void EngineGL::render(QPainter &p) {
         double start = (*size)[2].first;
         double diff = ((*size)[2].second - start) / (ns.size() - 1);
         for (size_t j = 0; j < ns.size(); j++) {
-            drawText(pImage, format.arg(start + diff * j, 0, 'g', 2), matScreen * matBar,
-                ns[j], false);
+            drawText(pImage, format(start + diff * j), matScreen * matBar, ns[j], false);
         }
     }
     p.drawImage(QPoint(0, 0), image);
@@ -395,7 +393,6 @@ void EngineQt::render(QPainter &p) {
     int dir = (360 - rotX) / 45 % 8;
     int canvas = min(sizeX, sizeY);
     float width = canvas / 500.0;
-    QString format("%1");
     QFont font("sans-serif");
     font.setStyleHint(QFont::SansSerif, QFont::PreferAntialias);
     font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
@@ -429,7 +426,7 @@ void EngineQt::render(QPainter &p) {
         if (pnts.size() == 0) continue;
         double diff = ((*size)[i].second - (*size)[i].first) / (pnts.size() - 1);
         for (size_t j = 0; j < pnts.size(); j++) {
-            drawText(p, format.arg((*size)[i].first + diff * j, 0, 'g', 2), matFinA,
+            drawText(p, format((*size)[i].first + diff * j), matFinA,
                 vANumber[i].second[j], vANumber[i].first);
         }
     }
@@ -464,7 +461,7 @@ void EngineQt::render(QPainter &p) {
     p.setPen(QPen(Qt::black, width));
     double diff = ((*size)[2].second - (*size)[2].first) / (vBNumber.size() - 1);
     for (size_t j = 0; j < vBNumber.size(); j++) {
-        drawText(p, format.arg((*size)[2].first + diff * j, 0, 'g', 2),
-            matScreen * matBar, vBNumber[j], false);
+        drawText(p, format((*size)[2].first + diff * j), matScreen * matBar, vBNumber[j],
+            false);
     }
 }

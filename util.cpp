@@ -167,3 +167,16 @@ void Sampler::conv(int &x, int &y) const {
     if (x < 0) x += sxi;
     if (y < 0) y += syi;
 }
+
+QString format(double value) {
+    if (value == 0) return "0";
+    double v = fabs(value);
+    if (v < 0.001)
+        return QString::number(value, 'e', 1);
+    else if (v < 1)
+        return QString::number(value, 'f', 3);
+    else if (v < 1000)
+        return QString::number(value, 'g', 3);
+    else
+        return QString::number(value, 'e', 1);
+}

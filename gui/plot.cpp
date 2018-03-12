@@ -76,6 +76,7 @@ Plot::Plot(SimQuantity &quantity) : time(quantity.getTimes()[0]), step(1) {
             {"JPEG image (*.jpg *.jpeg *.jpe)", {"jpg", "jpeg", "jpe"},
                 [](QString s, Plot &p) {
                     QImage image(3000, 3000, QImage::Format_ARGB32);
+                    image.fill(Qt::white);
                     p.plot->setEnLabel(false, false);
                     p.plot->renderTo(image);
                     p.plot->setEnLabel(true, false);

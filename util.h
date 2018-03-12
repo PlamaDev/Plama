@@ -25,8 +25,9 @@ double magnitude(double x, double y);
 float fastSin(float x);
 float fastCos(float x);
 QIcon getIcon(const QString &name);
+QString format(double value);
 
-template <typename A, typename B, typename C> class Trio {
+template<typename A, typename B, typename C> class Trio {
 public:
     A a;
     B b;
