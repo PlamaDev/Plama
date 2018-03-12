@@ -228,6 +228,7 @@ void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
         f2 = format.arg(int(i), sizeName, 10, QLatin1Char('0'));
         setPartition(i * lenStep, false);
         QImage image(sizeX * 2, sizeY * 2, QImage::Format_ARGB32);
+        image.fill(Qt::white);
         QString filePath = tmp->filePath(f2);
         plot->renderTo(image);
         image.save(filePath, Q_NULLPTR, 100);
