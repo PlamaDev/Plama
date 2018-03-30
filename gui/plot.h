@@ -12,7 +12,8 @@
 class PlotInternal : public QOpenGLWindow {
 public:
     PlotInternal(std::unique_ptr<Axis> &&axis, std::unique_ptr<Bar> &&bar,
-        std::unique_ptr<std::vector<VectorD2D>> &&size);
+        std::unique_ptr<std::vector<VectorD2D>> &&size,
+        std::unique_ptr<std::vector<QString>> &&labels);
     void setRotation(int x, int y, bool update = true);
     void setLabel(float pos, bool update = true);
     void setShader(bool en, bool update = true);

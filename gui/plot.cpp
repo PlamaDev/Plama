@@ -128,6 +128,9 @@ Plot::Plot(SimQuantity &quantity) : time(quantity.getTimes()[0]), step(1) {
             quantity.getExtreme()};
     }
 
+    auto labels = make_unique<vector<QString>>();
+    *labels = quantity.getLabels();
+
     QVBoxLayout *l = new QVBoxLayout;
     l->setMargin(0);
     QToolBar *bar = new QToolBar;
@@ -183,7 +186,7 @@ Plot::Plot(SimQuantity &quantity) : time(quantity.getTimes()[0]), step(1) {
     l->addWidget(bar);
 
     plot = new PlotInternal(make_unique<Axis>(5, 5, 5),
-        make_unique<Bar>(Gradient::HEIGHT_MAP, 5), std::move(range));
+        make_unique<Bar>(Gradient::HEIGHT_MAP, 5), std::move(range), std::move(labels));
     plot->setQuantity(quantity, quantity.getTimes()[0], step);
     l->addWidget(QWidget::createWindowContainer(plot));
     l->setMargin(0);
@@ -249,15 +252,16 @@ void Plot::renderVideo(QString dir, int sizeX, int sizeY, int len, int fps) {
     process->start(cmd);
 }
 
-PlotInternal::PlotInternal(
-    unique_ptr<Axis> &&axis, unique_ptr<Bar> &&bar, unique_ptr<vector<VectorD2D>> &&size)
+PlotInternal::PlotInternal(unique_ptr<Axis> &&axis, unique_ptr<Bar> &&bar,
+    unique_ptr<vector<VectorD2D>> &&size, unique_ptr<vector<QString>> &&labels)
     : model(new Model()) {
     shared_ptr<Axis> pa = move(axis);
     shared_ptr<vector<VectorD2D>> ps = move(size);
     shared_ptr<Bar> pb = move(bar);
+    shared_ptr<vector<QString>> pl = move(labels);
 
-    engineGL = make_unique<EngineGL>(model, pa, pb, ps);
-    engineQt = make_unique<EngineQt>(model, pa, pb, ps);
+    engineGL = make_unique<EngineGL>(model, pa, pb, ps, pl);
+    engineQt = make_unique<EngineQt>(model, pa, pb, ps, pl);
 }
 
 void PlotInternal::setRotation(int x, int y, bool update) {
@@ -267,8 +271,8 @@ void PlotInternal::setRotation(int x, int y, bool update) {
 }
 
 void PlotInternal::setLabel(float pos, bool update) {
-    engineGL->setLabel(pos);
-    engineQt->setLabel(pos);
+    engineGL->setLine(pos);
+    engineQt->setLine(pos);
     if (update) requestUpdate();
 }
 

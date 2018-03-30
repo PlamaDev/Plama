@@ -5,10 +5,12 @@
 #include <QOpenGLContext>
 #include <QPair>
 #include <QVector3D>
+#include <util.h>
 #include <vector>
 
 class Axis {
 public:
+    enum EnumPosition { LEFT, RIGHT, CENTER, PARALLEL };
     Axis(int sizeX, int sizeY, int sizeZ);
     const std::vector<QVector3D> &getPoint() const;
     const std::vector<QVector3D> &getColor() const;
@@ -16,10 +18,17 @@ public:
     std::vector<QPair<int, int>> getSlice(int rotX, int rotY);
     std::vector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
         bool zStrait, bool xyStrait, bool invert);
-    const std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(int dir,
+    const std::vector<QPair<EnumPosition, std::vector<QVector3D>>> &getNumber(int dir,
         bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const;
-    const std::vector<QPair<bool, std::vector<QVector3D>>> &getNumber(
+    const std::vector<QPair<EnumPosition, std::vector<QVector3D>>> &getNumber(
         int rotX, int rotY) const;
+    const std::vector<Quad<EnumPosition, QVector3D, QVector3D, QVector3D>> &getLabel(
+        int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait,
+        bool xyStrait) const;
+    const std::vector<Quad<EnumPosition, QVector3D, QVector3D, QVector3D>> &getLabel(
+        int rotX, int rotY) const;
+    bool getDir(int rotX, int rotY) const;
+
     QMatrix4x4 getTransform(int rotX, int rotY) const;
     QMatrix4x4 getTransform(int dir, bool flipX) const;
 
@@ -27,11 +36,13 @@ private:
     std::vector<QVector3D> point;
     std::vector<QVector3D> color;
     std::vector<GLuint> index;
-    std::vector<std::vector<QVector3D>> number;
     int sizeX, sizeY, sizeZ;
     std::vector<int> offset;
-    static const float DIST, EXTRA;
-    static const QVector3D BLACK, GREY;
+    static constexpr float DIST = 0.07f;
+    static constexpr float EXTRA = 0.04f;
+    static constexpr float LABEL = 0.5f;
+    static constexpr QVector3D BLACK = QVector3D(0.4, 0.4, 0.4);
+    static constexpr QVector3D GREY = QVector3D(0.8, 0.8, 0.8);
     static const int XY_X_B = 0;
     static const int XY_X_G = 1;
     static const int XY_Y_B = 2;

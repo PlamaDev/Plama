@@ -61,15 +61,24 @@ class Manager:
 
     @staticmethod
     def check_quantity(qtt, path):
-        def chk_size_(size_):
+        def _chk_size(size_):
             if len(size_) != 2:
                 s = 'Quantity {}/{} has incorrectly formatted ' + \
                     'model size, found {:d}, expecting {:d}.'
-                raise ValueError(s.format(path, ret['name'], len(size_), 2))
+                raise ValueError(s.format(path, qtt['name'], len(size_), 2))
             else:
                 return [float(i) for i in size_]
 
-        def chk_data_(_data):
+        def _chk_labels():
+            exp = len(qtt['sizeData']) + 2
+            if len(qtt['labels']) != exp:
+                s = 'Quantity {}/{} has incorrectly formatted ' + \
+                    'labels, found {:d}, expecting {:d}.'
+                raise ValueError(s.format(path, qtt['name'], len(qtt['labels']), exp))
+            else:
+                return [str(i) for i in qtt['labels']]
+
+        def _chk_data(_data):
             ret_ = []
             try:
                 _data = _data()
@@ -100,8 +109,9 @@ class Manager:
             'times': [float(i) for i in qtt['times']],
             'dimData': int(qtt['dimData']),
             'sizeData': [int(i) for i in qtt['sizeData']],
-            'sizeModel': [chk_size_(i) for i in qtt['sizeModel']],
-            'data': lambda: chk_data_(qtt['data'])
+            'sizeModel': [_chk_size(i) for i in qtt['sizeModel']],
+            'labels': _chk_labels(),
+            'data': lambda: _chk_data(qtt['data'])
         }
         return ret
 
@@ -150,6 +160,7 @@ class LoaderDummy:
                 'dimData': 1,
                 'sizeData': [3, 3],
                 'sizeModel': [[0, 1], [0, 1]],
+                'labels': ['t(s)', 'h(m)', 'x(m)', 'y(m)'],
                 'data': lambda: [
                     [0, 1, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 1, 0, 0, 0, 0, 0, 0],
@@ -161,6 +172,7 @@ class LoaderDummy:
                 'dimData': 1,
                 'sizeData': [],
                 'sizeModel': [],
+                'labels': ['t(s)', 'h(m)'],
                 'data': lambda: [
                     [0], [3], [2]
                 ]
@@ -170,6 +182,7 @@ class LoaderDummy:
                 'dimData': 2,
                 'sizeData': [3, 2],
                 'sizeModel': [[2, 20], [4, 5]],
+                'labels': ['t(s)', 'h(m)', 'x(m)', 'y(m)'],
                 'data': lambda: [
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 1, 0, 0, 0]
@@ -180,6 +193,7 @@ class LoaderDummy:
                 'dimData': 1,
                 'sizeData': [],
                 'sizeModel': [],
+                'labels': ['t(s)', 'h(m)'],
                 'data': lambda: [[1], [2]]
             }]
         }]
@@ -497,10 +511,16 @@ def load(name, arguments):
 #     d, r = d[0]['children'][0]['quantities'][3]['data']()
 
 # linux
-#if __name__ == "__main__":
+# if __name__ == "__main__":
 #    init([])
 #    d = '/run/media/towdium/Files/Work/FYP/software/data'
 #    files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
 #    a = args('MD2D')
-#    d, r = load('MD2D', [files_, ['/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d']])
+#    d, r = load('MD2D', [files_,['/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d']])
+#    d, r = d[0]['children'][0]['quantities'][3]['data']() #pylint: disable=E1126
+   
+# dummy
+# if __name__ == "__main__":
+#    init([])
+#    d, r = load('Dummy', [])
 #    d, r = d[0]['children'][0]['quantities'][3]['data']()  #pylint: disable=E1126

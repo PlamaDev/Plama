@@ -4,11 +4,6 @@
 
 using namespace std;
 
-const float Axis::DIST = 0.07f;
-const float Axis::EXTRA = 0.04f;
-const QVector3D Axis::BLACK = QVector3D(0.4, 0.4, 0.4);
-const QVector3D Axis::GREY = QVector3D(0.8, 0.8, 0.8);
-
 Axis::Axis(int sizeX, int sizeY, int sizeZ)
     : point(12 * (sizeX + sizeY + sizeZ + 1)), color(12 * (sizeX + sizeY + sizeZ + 1)),
       index((sizeX + sizeY + sizeY + 3) * 16 + 12), sizeX(sizeX), sizeY(sizeY),
@@ -224,11 +219,43 @@ vector<QPair<int, int>> Axis::getSlice(
     return ret;
 }
 
-const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int rotX, int rotY) const {
+const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(
+    int rotX, int rotY) const {
     int rx = (360 - rotX) % 90;
     int dir = (360 - rotX) / 45 % 8;
     return getNumber(
         dir, rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45, rotY > 20);
+}
+
+// position, base line dir, expand dir
+const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &Axis::getLabel(
+    int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait,
+    bool xyStrait) const {
+    static vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> ret(3);
+    float xy1 = xyStrait ? 1 + 2 * EXTRA : 1;
+    float xy2 = xyStrait ? -DIST : -DIST - 2 * EXTRA;
+    float z1 = zStrait ? 1 + 2 * EXTRA : 1;
+    float z2 = zStrait ? -DIST : -DIST - 2 * EXTRA;
+    ret[0] = {CENTER, {0.5, xy1, xy2}, {1, 0, 0},
+        xEnable ? (xyStrait ? QVector3D{0, 1, 0} : QVector3D{0, 1, -1}) : QVector3D()};
+    ret[1] = {CENTER, {xy1, 0.5, xy2}, {0, 1, 0},
+        yEnable ? (xyStrait ? QVector3D{1, 0, 0} : QVector3D{1, 0, -1}) : QVector3D()};
+    ret[2] = {PARALLEL, {z1, z2, 0.5}, {0, 0, 1},
+        zEnable ? (zStrait ? QVector3D{1, 0, 0} : QVector3D{0, -1, 0}) : QVector3D()};
+    return ret;
+}
+
+const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &Axis::getLabel(
+    int rotX, int rotY) const {
+    int rx = (360 - rotX) % 90;
+    int dir = (360 - rotX) / 45 % 8;
+    return getLabel(
+        dir, rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45, rotY > 20);
+}
+
+bool Axis::getDir(int rotX, int rotY) const {
+    (void)rotX;
+    return rotY < 70;
 }
 
 QMatrix4x4 Axis::getTransform(int rotX, int rotY) const {
@@ -242,9 +269,9 @@ QMatrix4x4 Axis::getTransform(int dir, bool flipX) const {
     return ret * tmp;
 }
 
-const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int dir, bool xEnable,
-    bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const {
-    static vector<QPair<bool, vector<QVector3D>>> ret(3); // true for right align
+const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(int dir,
+    bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const {
+    static vector<QPair<EnumPosition, vector<QVector3D>>> ret(3); // true for right align
     for (int i = 0; i < 3; i++) ret[i].second.clear();
     float diffX = 1.0f / sizeX;
     float diffY = 1.0f / sizeY;
@@ -268,8 +295,8 @@ const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int dir, bool xEna
                     ret[1].second.push_back(
                         QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
         }
-        ret[0].first = !zEnable;
-        ret[1].first = true;
+        ret[0].first = zEnable ? RIGHT : LEFT;
+        ret[1].first = LEFT;
     } else if (d == 1) {
         if (xEnable)
             for (int i = 0; i < sizeY + 1; i++)
@@ -283,8 +310,8 @@ const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int dir, bool xEna
                 for (int i = 0; i < sizeX + 1; i++)
                     ret[0].second.push_back(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
         }
-        ret[0].first = true;
-        ret[1].first = !zEnable;
+        ret[0].first = LEFT;
+        ret[1].first = zEnable ? RIGHT : LEFT;
     } else if (d == 2) {
         if (xEnable)
             for (int i = 0; i < sizeX + 1; i++)
@@ -298,8 +325,8 @@ const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int dir, bool xEna
                 for (int i = 0; i < sizeY + 1; i++)
                     ret[1].second.push_back(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
         }
-        ret[0].first = !zEnable;
-        ret[1].first = true;
+        ret[0].first = zEnable ? RIGHT : LEFT;
+        ret[1].first = LEFT;
     } else {
         if (xEnable)
             for (int i = 0; i < sizeY + 1; i++)
@@ -313,13 +340,13 @@ const vector<QPair<bool, vector<QVector3D>>> &Axis::getNumber(int dir, bool xEna
                     ret[0].second.push_back(
                         QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
         }
-        ret[0].first = true;
-        ret[1].first = !zEnable;
+        ret[0].first = LEFT;
+        ret[1].first = zEnable ? RIGHT : LEFT;
     }
     if (zEnable)
         for (int i = 0; i < sizeZ + 1; i++)
             ret[2].second.push_back(QVector3D(1 + xEx, yEx, diffZ * i));
-    ret[2].first = true;
+    ret[2].first = LEFT;
 
     return ret;
 }

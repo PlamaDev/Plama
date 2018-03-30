@@ -137,10 +137,11 @@ const vector<SimTreeNode> &SimTreeNode::getChildren() const { return children; }
 SimQuantity::SimQuantity(PyObject *data)
     : raw(data), name(PyUnicode_AsUTF8(PyDict_GetItemString(data, "name"))),
       dimData(PyLong_AsLong(PyDict_GetItemString(data, "dimData"))), times(), sizeModel(),
-      sizeData(), data(), max(0), min(0), initialized(false) {
+      sizeData(), labels(), data(), max(0), min(0), initialized(false) {
     PyObject *pTimes = PyDict_GetItemString(data, "times");
     PyObject *pSizeData = PyDict_GetItemString(data, "sizeData");
     PyObject *pSizeModel = PyDict_GetItemString(data, "sizeModel");
+    PyObject *pLabels = PyDict_GetItemString(data, "labels");
     Py_ssize_t len = PyList_Size(pTimes);
 
     for (Py_ssize_t i = 0; i < len; i++)
@@ -148,13 +149,17 @@ SimQuantity::SimQuantity(PyObject *data)
     len = PyList_Size(pSizeModel);
     for (Py_ssize_t i = 0; i < len; i++) {
         PyObject *o = PyList_GetItem(pSizeModel, i);
-        sizeModel.push_back(VectorD2D(PyFloat_AsDouble(PyList_GetItem(o, 0)),
-            PyFloat_AsDouble(PyList_GetItem(o, 1))));
+        sizeModel.emplace_back(PyFloat_AsDouble(PyList_GetItem(o, 0)),
+            PyFloat_AsDouble(PyList_GetItem(o, 1)));
     }
 
     len = PyList_Size(pSizeData);
     for (Py_ssize_t i = 0; i < len; i++)
         sizeData.push_back(PyLong_AsLong(PyList_GetItem(pSizeData, i)));
+
+    for (Py_ssize_t i = 0; i < PyList_Size(pSizeData) + 2; i++) {
+        labels.emplace_back(PyUnicode_AsUTF8(PyList_GetItem(pLabels, i)));
+    }
 }
 
 const QString &SimQuantity::getName() const { return name; }
@@ -162,16 +167,11 @@ const vector<double> &SimQuantity::getTimes() const { return times; }
 const vector<VectorD2D> &SimQuantity::getSizeModel() const { return sizeModel; }
 const vector<int> &SimQuantity::getSizeData() const { return sizeData; }
 
-const vector<double> &SimQuantity::getDataAt(double time, int dim) const {
+const vector<double> &SimQuantity::getDataAt(double time, int dim) {
     auto t = lower_bound(times.begin(), times.end(), time);
     int d = t - times.begin();
-    const vector<double> &ret = data[dimData * d + dim];
+    const vector<double> &ret = getData()[dimData * d + dim];
     return ret;
-}
-
-const vector<double> &SimQuantity::getDataAt(double time, int dim) {
-    if (!initialized) initData();
-    return ((const SimQuantity *)this)->getDataAt(time, dim);
 }
 
 const vector<vector<double>> &SimQuantity::getData() {
@@ -179,11 +179,11 @@ const vector<vector<double>> &SimQuantity::getData() {
     return data;
 }
 
-VectorD2D SimQuantity::getExtreme() const { return VectorD2D(min, max); }
+const std::vector<QString> &SimQuantity::getLabels() const { return labels; }
 
 VectorD2D SimQuantity::getExtreme() {
     if (!initialized) initData();
-    return ((const SimQuantity *)this)->getExtreme();
+    return VectorD2D(min, max);
 }
 
 int SimQuantity::getDim() const { return dimData; }

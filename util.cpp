@@ -173,8 +173,6 @@ QString format(double value) {
     double v = fabs(value);
     if (v < 0.001)
         return QString::number(value, 'e', 1);
-    else if (v < 1)
-        return QString::number(value, 'f', 3);
     else if (v < 1000)
         return QString::number(value, 'g', 3);
     else

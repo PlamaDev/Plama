@@ -17,10 +17,9 @@ public:
     const std::vector<double> &getTimes() const;
     const std::vector<VectorD2D> &getSizeModel() const;
     const std::vector<int> &getSizeData() const;
-    const std::vector<double> &getDataAt(double time, int dim = 0) const;
     const std::vector<double> &getDataAt(double time, int dim = 0);
     const std::vector<std::vector<double>> &getData();
-    VectorD2D getExtreme() const;
+    const std::vector<QString> &getLabels() const;
     VectorD2D getExtreme();
     int getDim() const;
     QString getError() const;
@@ -34,10 +33,11 @@ private:
     std::vector<double> times;
     std::vector<VectorD2D> sizeModel;
     std::vector<int> sizeData;
+    std::vector<QString> labels;
     std::vector<std::vector<double>> data;
-    void initData();
     float max, min;
     bool initialized;
+    void initData();
 };
 
 class SimTreeNode {

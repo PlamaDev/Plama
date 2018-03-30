@@ -3,6 +3,7 @@
 #include "util.h"
 #include <QColor>
 #include <QFont>
+#include <QFontMetricsF>
 #include <QMatrix3x3>
 #include <QMatrix>
 #include <QOpenGLFunctions>
@@ -11,8 +12,10 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
+#include <QRectF>
 #include <QScopedPointer>
 #include <QSysInfo>
+#include <QTextDocument>
 #include <algorithm>
 #include <memory>
 
@@ -64,7 +67,7 @@ void genMatrix(int rX, int rY, int sX, int sY, bool enBar, const Axis &axis,
             t += f2;
         }
         float f = t / 6 / size;
-        size *= 1 + 0.2 * f * f;
+        size *= 1 + 0.4 * f * f;
     }
 
     // transform matrix
@@ -143,20 +146,120 @@ void drawLine(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
     }
 }
 
-void drawText(QPainter &painter, QString &&str, const QMatrix4x4 &matrix,
-    const QVector3D &anchor, bool left) {
+void drawText(QPainter &painter, QString &str, const QMatrix4x4 &matrix,
+    const QVector3D &anchor, Axis::EnumPosition align) {
     int i = painter.font().pixelSize() * str.length() * 100;
-    int f = (left ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
+    int f = (align == Axis::EnumPosition::LEFT ? Qt::AlignRight : Qt::AlignLeft) |
+        Qt::AlignVCenter;
     QPointF n = (matrix * anchor).toPointF();
-    QRect r = left ? QRect(n.x() - i, n.y() - i / 10, i, i / 5)
-                   : QRect(n.x(), n.y() - i / 10, i, i / 5);
+    QRect r = align == Axis::EnumPosition::LEFT
+        ? QRect(n.x() - i, n.y() - i / 10, i, i / 5)
+        : QRect(n.x(), n.y() - i / 10, i, i / 5);
     painter.drawText(r, f, str);
 }
 
+void drawTextRich(QPainter &painter, QTextDocument &td, QPointF pos, QVector2D dir) {
+    const float coef = 180 / PI;
+    painter.save();
+    QSizeF s = td.size();
+    VectorD2D polar;
+    toPolar(dir.x(), dir.y(), polar);
+    float angle = coef * polar.second;
+    if (angle > 90 && angle <= 270) angle -= 180;
+    painter.translate(pos);
+    painter.rotate(-angle);
+    painter.translate(-s.width() / 2, -s.height());
+    td.drawContents(&painter);
+    painter.restore();
+}
+
+void drawTextRich(
+    QPainter &painter, QTextDocument &td, QPointF pos, Axis::EnumPosition dir) {
+    painter.save();
+    QSizeF s = td.size();
+    pos.rx() -= s.width() / 2;
+    pos.ry() -= s.height() / 2;
+    painter.translate(pos);
+    td.drawContents(&painter);
+    painter.restore();
+}
+
+QPointF getDiff(QVector2D line, QVector2D expand, float x, float y) {
+    VectorD2D linePoloar;
+    toPolar(line.x(), line.y(), linePoloar);
+    VectorD2D expandPolar;
+    toPolar(expand.x(), expand.y(), expandPolar);
+    VectorD2D textPolar[4];
+    QVector2D textCatsn[4];
+    toPolar(x, y, textPolar[0]);
+    toPolar(x, -y, textPolar[1]);
+    toPolar(x, 0, textPolar[2]);
+    toPolar(0, y, textPolar[3]);
+    expandPolar.second -= linePoloar.second;
+    for (auto &i : textPolar) i.second -= linePoloar.second;
+    for (int i = 0; i < 4; i++)
+        toCatsn(textPolar[i].first, textPolar[i].second, textCatsn[i]);
+    QVector2D expandCatsn;
+    toCatsn(expandPolar.first, expandPolar.second, expandCatsn);
+    float lenOut = max(fabs(textCatsn[0].y()), fabs(textCatsn[1].y()));
+    float lenIn = max(fabs(textCatsn[2].y()), fabs(textCatsn[3].y()));
+    float len = (2 * lenOut + lenIn) / 3;
+    expandPolar.first *= fabs(len / expandCatsn.y());
+    expandPolar.second += linePoloar.second;
+    toCatsn(expandPolar.first, expandPolar.second, expandCatsn);
+    return expandCatsn.toPointF();
+}
+
+QVector2D get2DVector(const QMatrix4x4 &matrix, QVector3D vector) {
+    return (matrix * vector - matrix * QVector3D()).toVector2D();
+}
+
+void drawTextRich(QPainter &painter, float space, QString &str, const QMatrix4x4 &matrix,
+    QVector3D pos, QVector3D line, QVector3D expand, Axis::EnumPosition dir) {
+    static QTextDocument td;
+    td.setHtml(str);
+    QFont font = painter.font();
+    QFontMetricsF met(font);
+    font.setPixelSize(1.2 * font.pixelSize());
+    td.setDefaultFont(font);
+    QVector2D nExpand;
+    if (dir == Axis::EnumPosition::PARALLEL) {
+        nExpand = get2DVector(matrix, line);
+        if (nExpand.x() > 0)
+            nExpand = QVector2D(nExpand.y(), -nExpand.x());
+        else
+            nExpand = QVector2D(-nExpand.y(), nExpand.x());
+        if (nExpand.y() == 0 &&
+            (get2DVector(matrix, expand).x() < 0) != (nExpand.x() < 0))
+            nExpand.setX(nExpand.x() * -1);
+        QVector2D nLine = get2DVector(matrix, line);
+        QPointF pPos =
+            (matrix * pos).toPointF() + getDiff(nLine, nExpand, space, met.height());
+        drawTextRich(painter, td, pPos, nLine);
+    } else {
+        nExpand = get2DVector(matrix, expand);
+        QPointF pPos = (matrix * pos).toPointF() +
+            getDiff(get2DVector(matrix, line), nExpand, space + td.size().width() / 2,
+                met.height() + met.height() / 2);
+        drawTextRich(painter, td, pPos, dir);
+    }
+}
+
+float getAngle(const QMatrix4x4 &matrix, QVector3D p1, QVector3D p2) {
+    const float conv = 180 / PI;
+    p1 = matrix * p1;
+    p2 = matrix * p2;
+    QVector3D pd = p2 - p1;
+    QVector2D polar;
+    toPolar(pd.x(), pd.y(), polar);
+    return conv * polar.y();
+}
+
 Engine::Engine(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size)
-    : rotX(0), rotY(0), model(model), axis(axis), bar(bar), size(size), label(-1),
-      enShader(false), enBar(false), enLabel(true) {}
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size,
+    std::shared_ptr<std::vector<QString>> &labels)
+    : rotX(0), rotY(0), model(model), axis(axis), bar(bar), size(size), labels(labels),
+      line(-1), enShader(false), enBar(false), enLine(true) {}
 
 void Engine::resize(int sizeX, int sizeY) {
     this->sizeX = sizeX;
@@ -172,14 +275,15 @@ void Engine::setRotation(int rotX, int rotY) {
     this->rotY = rotY;
 }
 
-void Engine::setLabel(float pos) { label = pos; }
+void Engine::setLine(float pos) { line = pos; }
 void Engine::setShader(bool en) { enShader = en; }
 void Engine::setEnBar(bool en) { enBar = en; }
-void Engine::setEnLabel(bool en) { enLabel = en; }
+void Engine::setEnLabel(bool en) { enLine = en; }
 
 EngineGL::EngineGL(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size)
-    : Engine(model, axis, bar, size) {}
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> &size,
+    std::shared_ptr<std::vector<QString>> &labels)
+    : Engine(model, axis, bar, size, labels) {}
 
 void EngineGL::initialize() {
     initializeOpenGLFunctions();
@@ -240,19 +344,25 @@ void EngineGL::render(QPainter &p) {
 
     // draw text
     QFont font = p.font();
+
     font.setStyleHint(QFont::SansSerif, QFont::PreferAntialias);
     font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
     pImage.setFont(font);
+    QFontMetricsF met(font);
+    float textWidth[]{0, 0, 0};
 
-    const vector<QPair<bool, vector<QVector3D>>> &num = axis->getNumber(rotX, rotY);
+    const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &num =
+        axis->getNumber(rotX, rotY);
 
     for (int i = 0; i < 3; i++) {
         auto pnts = num[i].second;
         if (pnts.size() == 0) continue;
         double diff = ((*size)[i].second - (*size)[i].first) / (pnts.size() - 1);
         for (size_t j = 0; j < pnts.size(); j++) {
-            drawText(pImage, format((*size)[i].first + diff * j), matText,
-                num[i].second[j], num[i].first);
+            QString s = format((*size)[i].first + diff * j);
+            float w = met.width(s);
+            if (w > textWidth[i]) textWidth[i] = w;
+            drawText(pImage, s, matText, num[i].second[j], num[i].first);
         }
     }
 
@@ -261,9 +371,22 @@ void EngineGL::render(QPainter &p) {
         double start = (*size)[2].first;
         double diff = ((*size)[2].second - start) / (ns.size() - 1);
         for (size_t j = 0; j < ns.size(); j++) {
-            drawText(pImage, format(start + diff * j), matScreen * matBar, ns[j], false);
+            QString s = format(start + diff * j);
+            float w = met.width(s);
+            if (w > textWidth[2]) textWidth[2] = w;
+            drawText(pImage, s, matScreen * matBar, ns[j], Axis::EnumPosition::RIGHT);
         }
     }
+
+    // position, base line dir, expand dir
+    const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &ls =
+        axis->getLabel(rotX, rotY);
+    for (int i = 0; i < 3; i++) {
+        auto &j = ls[i];
+        if (j.c.isNull()) continue;
+        drawTextRich(pImage, textWidth[i], (*labels)[i], matText, j.b, j.c, j.d, j.a);
+    }
+
     p.drawImage(QPoint(0, 0), image);
 
     p.beginNativePainting();
@@ -335,9 +458,9 @@ void EngineGL::render(QPainter &p) {
     glDrawElements(GL_LINES, model->getIndexL(0).size(), GL_UNSIGNED_INT,
         model->getIndexL(0).data());
 
-    // draw label
-    if (label >= 0 && enLabel) {
-        QVector3D p[2] = {{label, 0, -0.0001}, {label, 1, -0.0001}};
+    // draw line
+    if (line >= 0 && enLine) {
+        QVector3D p[2] = {{line, 0, -0.0001}, {line, 1, -0.0001}};
         QVector3D c[2] = {{1, 0, 0}, {1, 0, 0}};
         GLuint i[2] = {0, 1};
         glVertexAttribPointer(argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0, p);
@@ -380,8 +503,9 @@ void EngineGL::render(QPainter &p) {
 }
 
 EngineQt::EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
-    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> size)
-    : Engine(model, axis, bar, size) {}
+    std::shared_ptr<Bar> &bar, std::shared_ptr<std::vector<VectorD2D>> size,
+    std::shared_ptr<std::vector<QString>> &labels)
+    : Engine(model, axis, bar, size, labels) {}
 
 void EngineQt::render(QPainter &p) {
     QMatrix4x4 matModel, matTrans, matNorm, matScreen, matBar, matAxis;
@@ -394,14 +518,17 @@ void EngineQt::render(QPainter &p) {
     int canvas = min(sizeX, sizeY);
     float width = canvas / 500.0;
     QFont font("sans-serif");
+    float textWidth[]{0, 0, 0};
     font.setStyleHint(QFont::SansSerif, QFont::PreferAntialias);
     font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
     p.setFont(font);
+    QFontMetricsF met(font);
     const vector<QVector3D> &vAPoint = axis->getPoint();
     const vector<QVector3D> &vAColor = axis->getColor();
     const vector<GLuint> &vAIndex = axis->getIndex();
     vector<QPair<int, int>> vASlice = axis->getSlice(rotX, rotY);
-    const vector<QPair<bool, vector<QVector3D>>> &vANumber = axis->getNumber(rotX, rotY);
+    const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &vANumber =
+        axis->getNumber(rotX, rotY);
     const vector<QVector3D> &vMNormal = model->getNormal();
     const vector<QVector3D> &vMPoint = model->getPoint();
     const vector<QVector3D> &vMColor = model->getColor();
@@ -426,15 +553,17 @@ void EngineQt::render(QPainter &p) {
         if (pnts.size() == 0) continue;
         double diff = ((*size)[i].second - (*size)[i].first) / (pnts.size() - 1);
         for (size_t j = 0; j < pnts.size(); j++) {
-            drawText(p, format((*size)[i].first + diff * j), matFinA,
-                vANumber[i].second[j], vANumber[i].first);
+            QString s = format((*size)[i].first + diff * j);
+            float w = met.width(s);
+            if (w > textWidth[i]) textWidth[i] = w;
+            drawText(p, s, matFinA, vANumber[i].second[j], vANumber[i].first);
         }
     }
 
     // draw label
-    if (label >= 0 && enLabel) {
-        QPointF p1 = (matFinM * QVector3D(label, 0, -0.0001)).toPointF();
-        QPointF p2 = (matFinM * QVector3D(label, 1, -0.0001)).toPointF();
+    if (line >= 0 && enLine) {
+        QPointF p1 = (matFinM * QVector3D(line, 0, -0.0001)).toPointF();
+        QPointF p2 = (matFinM * QVector3D(line, 1, -0.0001)).toPointF();
         p.setPen(QPen(Qt::red, width));
         p.drawLine(p1, p2);
     }
@@ -461,7 +590,9 @@ void EngineQt::render(QPainter &p) {
     p.setPen(QPen(Qt::black, width));
     double diff = ((*size)[2].second - (*size)[2].first) / (vBNumber.size() - 1);
     for (size_t j = 0; j < vBNumber.size(); j++) {
-        drawText(p, format((*size)[2].first + diff * j), matScreen * matBar, vBNumber[j],
-            false);
+        QString s = format((*size)[2].first + diff * j);
+        float w = met.width(s);
+        if (w > textWidth[2]) textWidth[2] = w;
+        drawText(p, s, matScreen * matBar, vBNumber[j], Axis::EnumPosition::RIGHT);
     }
 }
