@@ -160,7 +160,7 @@ class LoaderDummy:
                 'dimData': 1,
                 'sizeData': [3, 3],
                 'sizeModel': [[0, 1], [0, 1]],
-                'labels': ['t(s)', 'h(m)', 'x(m)', 'y(m)'],
+                'labels': ['t(s)', '&Phi;(Wm<sup>-2</sup>)', 'x(m)', 'y(m)'],
                 'data': lambda: [
                     [0, 1, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 1, 0, 0, 0, 0, 0, 0],
@@ -212,6 +212,36 @@ class LoaderMd2d:
     pat_rea = _re.compile(r'R\d\s{2,}(\S.+\S)\s{2,}\S+\s{2,}\S+')
     pat_dlt_x = _re.compile(r'\s*deltaX\s*(.+)\*(\D+?)\s*\n')
     pat_dlt_y = _re.compile(r'\s*deltaY\s*(.+)\*(\D+?)\s*\n')
+    pat_name = _re.compile(r'(\D+)\d*')
+    units = {
+        'n': 'n(Jm<sup>-3</sup>)',
+        'phi': '&Phi;(Wm<sup>-2</sup>)',
+        'S': 'S(Wm<sup>-3</sup>)',
+        'D': 'D(Wm<sup>2</sup>)',
+        'mu': '&mu;(Jm<sup>2</sup>V<sup>-1</sup>s<sup>-1</sup>)',
+        'Relas': 'Relas(Wm<sup>-3</sup>)',
+        'epsilon': '&epsilon;(J)',  # TODO check
+        'R': 'R(m<sup>-3</sup>s<sup>-1</sup>)',
+        'K': 'K(m<sup>3</sup>s<sup>-1</sup>)',
+        'Pp': 'Pp(Wm<sup>-3</sup>)',
+        'P': 'P(Wm<sup>-3</sup>)',
+        'J': 'J(Cs<sup>-1</sup>m<sup>-3</sup>)',
+        'V': 'V(V)',
+        'E': 'E(Vm<sup>-1</sup>)',
+        'Ereff': 'Ereff(Vm<sup>-1</sup>)',
+        'Er': 'Er(Vm<sup>-1</sup>Pa<sup>-1</sup>)',
+        'E_N': 'E<sub>N</sub>(Vm<sup>2</sup>)',
+        'rho': '&rho;(Cm<sup>-3</sup>)',
+        'sigma': '&sigma;(Cm<sup>-2</sup>)',
+        'Sigma': '&sigma;(Cm<sup>-2</sup>)',
+        't': 't(s)',
+        'dt': 'dt(s)',
+        'Relas Elastic losses': 'Relas(Wm<sup>-3</sup>)',
+        'ElasLoss': 'ElasLoss(Wm<sup>-3</sup>)',
+        'I': 'I(A)',
+        'Ic': 'Ic(A)',
+        'Q': 'C'
+    }
 
     @staticmethod
     def name():
@@ -251,6 +281,7 @@ class LoaderMd2d:
                 'dimData': dim,
                 'sizeData': [sx, sy],
                 'sizeModel': size_model,
+                'labels': ['t(s)', LoaderMd2d.units[name], 'x(m)', 'y(m)'],
                 'data': lambda: read_()
             }
 
@@ -286,12 +317,14 @@ class LoaderMd2d:
 
         def gen_ov():
             def item(name):
+                m = LoaderMd2d.pat_name.match(name)
                 return {
                     'name': name,
                     'times': t,
                     'dimData': 1,
                     'sizeData': [],
                     'sizeModel': [],
+                    'labels': ['t(s)', LoaderMd2d.units[m.group(1)] if m else ''],
                     'data': lambda: cache[name]
                 }
 
@@ -457,8 +490,6 @@ class LoaderMd2d:
             ret = []
             for iy, ix in _it.product(range(y), range(x)):
                 idx = iy * (x + 1 if is_y else x) + ix
-                if idx >= len(d) or idx + (1 if is_y else x) >= len(d):
-                    print('get')
                 ret.append((d[idx] + d[idx + (1 if is_y else x)]) / 2)
             return ret
 
@@ -511,13 +542,13 @@ def load(name, arguments):
 #     d, r = d[0]['children'][0]['quantities'][3]['data']()
 
 # linux
-# if __name__ == "__main__":
-#    init([])
-#    d = '/run/media/towdium/Files/Work/FYP/software/data'
-#    files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-#    a = args('MD2D')
-#    d, r = load('MD2D', [files_,['/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d']])
-#    d, r = d[0]['children'][0]['quantities'][3]['data']() #pylint: disable=E1126
+if __name__ == "__main__":
+   init([])
+   d = '/run/media/towdium/Files/Work/FYP/software/data'
+   files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
+   a = args('MD2D')
+   d, r = load('MD2D', [files_,['/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d']])
+   d, r = d[0]['children'][0]['quantities'][3]['data']() #pylint: disable=E1126
    
 # dummy
 # if __name__ == "__main__":

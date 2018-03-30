@@ -10,7 +10,7 @@
 
 class Axis {
 public:
-    enum EnumPosition { LEFT, RIGHT, CENTER, PARALLEL };
+    enum EnumPosition { LEFT, RIGHT, CENTER, PARALLEL, DISABLED };
     Axis(int sizeX, int sizeY, int sizeZ);
     const std::vector<QVector3D> &getPoint() const;
     const std::vector<QVector3D> &getColor() const;

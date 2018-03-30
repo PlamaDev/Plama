@@ -66,7 +66,7 @@ void genMatrix(int rX, int rY, int sX, int sY, bool enBar, const Axis &axis,
             t += f1;
             t += f2;
         }
-        float f = t / 6 / size;
+        float f = t / 7 / size;
         size *= 1 + 0.4 * f * f;
     }
 
@@ -149,12 +149,10 @@ void drawLine(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
 void drawText(QPainter &painter, QString &str, const QMatrix4x4 &matrix,
     const QVector3D &anchor, Axis::EnumPosition align) {
     int i = painter.font().pixelSize() * str.length() * 100;
-    int f = (align == Axis::EnumPosition::LEFT ? Qt::AlignRight : Qt::AlignLeft) |
-        Qt::AlignVCenter;
+    int f = (align == Axis::LEFT ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
     QPointF n = (matrix * anchor).toPointF();
-    QRect r = align == Axis::EnumPosition::LEFT
-        ? QRect(n.x() - i, n.y() - i / 10, i, i / 5)
-        : QRect(n.x(), n.y() - i / 10, i, i / 5);
+    QRect r = align == Axis::LEFT ? QRect(n.x() - i, n.y() - i / 10, i, i / 5)
+                                  : QRect(n.x(), n.y() - i / 10, i, i / 5);
     painter.drawText(r, f, str);
 }
 
@@ -165,16 +163,15 @@ void drawTextRich(QPainter &painter, QTextDocument &td, QPointF pos, QVector2D d
     VectorD2D polar;
     toPolar(dir.x(), dir.y(), polar);
     float angle = coef * polar.second;
-    if (angle > 90 && angle <= 270) angle -= 180;
+    if (angle >= 90 && angle < 270) angle -= 180;
     painter.translate(pos);
-    painter.rotate(-angle);
-    painter.translate(-s.width() / 2, -s.height());
+    painter.rotate(angle);
+    painter.translate(-s.width() / 2, -s.height() / 2);
     td.drawContents(&painter);
     painter.restore();
 }
 
-void drawTextRich(
-    QPainter &painter, QTextDocument &td, QPointF pos, Axis::EnumPosition dir) {
+void drawTextRich(QPainter &painter, QTextDocument &td, QPointF pos) {
     painter.save();
     QSizeF s = td.size();
     pos.rx() -= s.width() / 2;
@@ -184,7 +181,9 @@ void drawTextRich(
     painter.restore();
 }
 
-QPointF getDiff(QVector2D line, QVector2D expand, float x, float y) {
+QPointF getDiff(QVector2D line, QVector2D expand, float x, float y, float extra = 0) {
+    y *= 0.8;
+    x *= 0.95;
     VectorD2D linePoloar;
     toPolar(line.x(), line.y(), linePoloar);
     VectorD2D expandPolar;
@@ -206,7 +205,7 @@ QPointF getDiff(QVector2D line, QVector2D expand, float x, float y) {
     float len = (2 * lenOut + lenIn) / 3;
     expandPolar.first *= fabs(len / expandCatsn.y());
     expandPolar.second += linePoloar.second;
-    toCatsn(expandPolar.first, expandPolar.second, expandCatsn);
+    toCatsn(expandPolar.first + extra, expandPolar.second, expandCatsn);
     return expandCatsn.toPointF();
 }
 
@@ -220,28 +219,23 @@ void drawTextRich(QPainter &painter, float space, QString &str, const QMatrix4x4
     td.setHtml(str);
     QFont font = painter.font();
     QFontMetricsF met(font);
-    font.setPixelSize(1.2 * font.pixelSize());
+    font.setPixelSize(1.3 * font.pixelSize());
     td.setDefaultFont(font);
     QVector2D nExpand;
-    if (dir == Axis::EnumPosition::PARALLEL) {
-        nExpand = get2DVector(matrix, line);
-        if (nExpand.x() > 0)
-            nExpand = QVector2D(nExpand.y(), -nExpand.x());
-        else
-            nExpand = QVector2D(-nExpand.y(), nExpand.x());
-        if (nExpand.y() == 0 &&
-            (get2DVector(matrix, expand).x() < 0) != (nExpand.x() < 0))
-            nExpand.setX(nExpand.x() * -1);
-        QVector2D nLine = get2DVector(matrix, line);
-        QPointF pPos =
-            (matrix * pos).toPointF() + getDiff(nLine, nExpand, space, met.height());
+    QVector2D nLine = get2DVector(matrix, line);
+    if (dir == Axis::PARALLEL) {
+        nExpand = QVector2D(nLine.y(), -nLine.x());
+        if (QVector2D::dotProduct(nExpand, get2DVector(matrix, expand)) < 0)
+            nExpand *= -1;
+        QPointF pPos = (matrix * pos).toPointF() +
+            getDiff(nLine, nExpand, 1.2 * space, met.height(), met.height() * 0.6);
         drawTextRich(painter, td, pPos, nLine);
     } else {
         nExpand = get2DVector(matrix, expand);
-        QPointF pPos = (matrix * pos).toPointF() +
-            getDiff(get2DVector(matrix, line), nExpand, space + td.size().width() / 2,
-                met.height() + met.height() / 2);
-        drawTextRich(painter, td, pPos, dir);
+        float h = met.height() * 1.6;
+        float w = space + td.size().width() / 1.6;
+        QPointF pPos = (matrix * pos).toPointF() + getDiff(nLine, nExpand, w, h);
+        drawTextRich(painter, td, pPos);
     }
 }
 
@@ -374,7 +368,7 @@ void EngineGL::render(QPainter &p) {
             QString s = format(start + diff * j);
             float w = met.width(s);
             if (w > textWidth[2]) textWidth[2] = w;
-            drawText(pImage, s, matScreen * matBar, ns[j], Axis::EnumPosition::RIGHT);
+            drawText(pImage, s, matScreen * matBar, ns[j], Axis::RIGHT);
         }
     }
 
@@ -383,7 +377,7 @@ void EngineGL::render(QPainter &p) {
         axis->getLabel(rotX, rotY);
     for (int i = 0; i < 3; i++) {
         auto &j = ls[i];
-        if (j.c.isNull()) continue;
+        if (j.a == Axis::DISABLED) continue;
         drawTextRich(pImage, textWidth[i], (*labels)[i], matText, j.b, j.c, j.d, j.a);
     }
 
@@ -593,6 +587,6 @@ void EngineQt::render(QPainter &p) {
         QString s = format((*size)[2].first + diff * j);
         float w = met.width(s);
         if (w > textWidth[2]) textWidth[2] = w;
-        drawText(p, s, matScreen * matBar, vBNumber[j], Axis::EnumPosition::RIGHT);
+        drawText(p, s, matScreen * matBar, vBNumber[j], Axis::RIGHT);
     }
 }

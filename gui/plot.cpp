@@ -119,17 +119,18 @@ Plot::Plot(SimQuantity &quantity) : time(quantity.getTimes()[0]), step(1) {
         };
 
     auto range = make_unique<vector<VectorD2D>>();
+    auto labels = make_unique<vector<QString>>();
     if (quantity.getSizeModel().size() == 0) {
         *range = {
             {quantity.getTimes()[0], quantity.getTimes()[quantity.getTimes().size() - 1]},
             quantity.getExtreme(), {0, 1}};
+        *labels = {quantity.getLabels()[0], quantity.getLabels()[1], ""};
     } else {
         *range = {quantity.getSizeModel()[0], quantity.getSizeModel()[1],
             quantity.getExtreme()};
+        *labels = {
+            quantity.getLabels()[2], quantity.getLabels()[3], quantity.getLabels()[1]};
     }
-
-    auto labels = make_unique<vector<QString>>();
-    *labels = quantity.getLabels();
 
     QVBoxLayout *l = new QVBoxLayout;
     l->setMargin(0);

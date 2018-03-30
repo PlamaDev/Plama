@@ -236,12 +236,24 @@ const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &Axis::g
     float xy2 = xyStrait ? -DIST : -DIST - 2 * EXTRA;
     float z1 = zStrait ? 1 + 2 * EXTRA : 1;
     float z2 = zStrait ? -DIST : -DIST - 2 * EXTRA;
-    ret[0] = {CENTER, {0.5, xy1, xy2}, {1, 0, 0},
-        xEnable ? (xyStrait ? QVector3D{0, 1, 0} : QVector3D{0, 1, -1}) : QVector3D()};
-    ret[1] = {CENTER, {xy1, 0.5, xy2}, {0, 1, 0},
-        yEnable ? (xyStrait ? QVector3D{1, 0, 0} : QVector3D{1, 0, -1}) : QVector3D()};
-    ret[2] = {PARALLEL, {z1, z2, 0.5}, {0, 0, 1},
-        zEnable ? (zStrait ? QVector3D{1, 0, 0} : QVector3D{0, -1, 0}) : QVector3D()};
+    int i1 = dir % 4 > 1 ? 1 : 0;
+    int i2 = dir % 4 > 1 ? 0 : 1;
+
+    if (zEnable) {
+        ret[i1] = {xEnable ? CENTER : DISABLED, {0.5, xy1, xy2}, {1, 0, 0},
+            xyStrait ? QVector3D{0, 1, 0} : QVector3D{0, 1, -1}};
+        ret[i2] = {yEnable ? CENTER : DISABLED, {xy1, 0.5, xy2}, {0, 1, 0},
+            xyStrait ? QVector3D{1, 0, 0} : QVector3D{1, 0, -1}};
+        ret[2] = {zEnable ? PARALLEL : DISABLED, {z1, z2, 0.5}, {0, 0, 1},
+            zStrait ? QVector3D{1, 0, 0} : QVector3D{0, -1, 0}};
+    } else {
+        ret[i1] = {xEnable ? PARALLEL : DISABLED, {0.5, xy1, xy2}, {1, 0, 0},
+            xyStrait ? QVector3D{0, 1, 0} : QVector3D{0, 1, -1}};
+        ret[i2] = {yEnable ? PARALLEL : DISABLED, {xy1, 0.5, xy2}, {0, 1, 0},
+            xyStrait ? QVector3D{1, 0, 0} : QVector3D{1, 0, -1}};
+        ret[2] = {DISABLED, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    }
+
     return ret;
 }
 
