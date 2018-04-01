@@ -75,6 +75,7 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
             if (sq->getError().isEmpty()) {
                 QDockWidget *d =
                     new QDockWidget(sp->getAbbr() + '>' + sq->getName(), this);
+                d->setAttribute(Qt::WA_DeleteOnClose);
                 Plot *plot = new Plot(*sq);
                 plot->setRotation(90, 90);
                 plot->setPartition(slider->value() / (float)10000);
@@ -95,7 +96,6 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
                     if (v) {
                         activeDocks.insert(d);
                         activePlots.insert(plot);
-                        setCentralWidget(nullptr);
                     } else {
                         activeDocks.erase(d);
                         activePlots.erase(plot);
@@ -126,7 +126,8 @@ WindowMain::WindowMain(QWidget *parent) : QMainWindow(parent), data() {
                 data = std::move(tmp);
                 tree->clear();
                 tree->addTopLevelItems(generateTree(*data));
-                for (auto i : activeDocks) i->close();
+                auto set = activeDocks;
+                for (auto i : set) i->close();
             } else
                 QMessageBox::warning(this, "File Loading Error", tmp->getError());
         });

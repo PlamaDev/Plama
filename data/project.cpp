@@ -97,7 +97,9 @@ PyObject *ProjectLoader::buildStringList(const QStringList &value) {
 }
 
 Project::Project(PyObject *data)
-    : nodes(), data(data, [](PyObject *o) { Py_DECREF(o); }) {
+    : nodes(), data(data, [](PyObject *o) { //
+          Py_DECREF(o);
+      }) {
     PyObject *value = PyTuple_GetItem(data, 0);
     PyObject *error = PyTuple_GetItem(data, 1);
 

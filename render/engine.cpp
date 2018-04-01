@@ -151,7 +151,7 @@ void drawLine(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
 void drawText(QPainter &painter, QString &str, const QMatrix4x4 &matrix,
     const QVector3D &anchor, EnumPosition align) {
     int i = painter.font().pixelSize() * str.length() * 100;
-    int f;
+    int f = 0;
     QRectF r;
     QPointF n = (matrix * anchor).toPointF();
     switch (align) {
@@ -516,7 +516,7 @@ EngineQt::EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
     : Engine(model, axis, bar, size, labels) {}
 
 void EngineQt::render(QPainter &p) {
-    p.fillRect(0, 0, sizeX, sizeY, Qt::white); // TODO
+    // p.fillRect(0, 0, sizeX, sizeY, Qt::white);
     QMatrix4x4 matModel, matTrans, matNorm, matScreen, matBar, matAxis;
     QVector3D vecView;
     genMatrix(rotX, rotY, sizeX, sizeY, enBar, *axis, matModel, matTrans, matNorm,
