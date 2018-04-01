@@ -36,16 +36,6 @@ public:
     Trio() = default;
 };
 
-template<typename A, typename B, typename C, typename D> class Quad {
-public:
-    A a;
-    B b;
-    C c;
-    D d;
-    Quad(const A &a, const B &b, const C &c, const D &d) : a(a), b(b), c(c), d(d) {}
-    Quad() = default;
-};
-
 class Sampler {
 public:
     Sampler(int sizeX, int sizeY, int step);

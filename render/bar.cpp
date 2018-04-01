@@ -6,7 +6,8 @@ const QVector3D Bar::BLACK = QVector3D(0.4, 0.4, 0.4);
 
 Bar::Bar(const Gradient &gradient, int steps)
     : point(104 + 2 * steps), index(310 + 2 * steps), color(104 + 2 * steps),
-      number(steps + 1), steps(steps) {
+      number(steps + 1), pos{PARALLEL, {1.3, 0.5, 0}, {0, 1, 0}, {1, 0, 0}},
+      steps(steps) {
     int count = 0;
     float step = 1.0 / 50;
     for (int j = 0; j < 2; j++) {
@@ -60,9 +61,6 @@ const std::vector<QVector3D> &Bar::getPoint() const { return point; }
 const std::vector<QVector3D> &Bar::getColor() const { return color; }
 const std::vector<GLuint> &Bar::getIndex() const { return index; }
 const std::vector<QVector3D> &Bar::getNumber() const { return number; }
+const PositionInfo &Bar::getLabel() const { return pos; }
 QPair<int, int> Bar::getSliceL() const { return QPair<int, int>(300, steps + 3); }
 QPair<int, int> Bar::getSliceT() const { return QPair<int, int>(0, 100); }
-
-QMatrix4x4 Bar::getTransform() const {
-    return QMatrix4x4(0.1, 0, 0, 0.55, 0, 1.1, 0, -0.55, 0, 0, 1, 0, 0, 0, 0, 1);
-}

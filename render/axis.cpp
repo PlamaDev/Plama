@@ -219,19 +219,18 @@ vector<QPair<int, int>> Axis::getSlice(
     return ret;
 }
 
-const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(
+const vector<QPair<EnumPosition, vector<QVector3D>>> &Axis::getNumber(
     int rotX, int rotY) const {
     int rx = (360 - rotX) % 90;
     int dir = (360 - rotX) / 45 % 8;
-    return getNumber(
-        dir, rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45, rotY > 20);
+    return getNumber(dir, rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45,
+        rotY > 20, rx == 0);
 }
 
 // position, base line dir, expand dir
-const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &Axis::getLabel(
-    int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait,
-    bool xyStrait) const {
-    static vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> ret(3);
+const vector<PositionInfo> &Axis::getLabel(int dir, bool xEnable, bool yEnable,
+    bool zEnable, bool zStrait, bool xyStrait, bool front) const {
+    static vector<PositionInfo> ret(3);
     float xy1 = xyStrait ? 1 + 2 * EXTRA : 1;
     float xy2 = xyStrait ? -DIST : -DIST - 2 * EXTRA;
     float z1 = zStrait ? 1 + 2 * EXTRA : 1;
@@ -240,10 +239,10 @@ const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &Axis::g
     int i2 = dir % 4 > 1 ? 0 : 1;
 
     if (zEnable) {
-        ret[i1] = {xEnable ? CENTER : DISABLED, {0.5, xy1, xy2}, {1, 0, 0},
-            xyStrait ? QVector3D{0, 1, 0} : QVector3D{0, 1, -1}};
-        ret[i2] = {yEnable ? CENTER : DISABLED, {xy1, 0.5, xy2}, {0, 1, 0},
-            xyStrait ? QVector3D{1, 0, 0} : QVector3D{1, 0, -1}};
+        ret[i1] = {xEnable ? (front ? PARALLEL : CENTER) : DISABLED, {0.5, xy1, xy2},
+            {1, 0, 0}, xyStrait ? QVector3D{0, 1, 0} : QVector3D{0, 1, -1}};
+        ret[i2] = {yEnable ? (front ? PARALLEL : CENTER) : DISABLED, {xy1, 0.5, xy2},
+            {0, 1, 0}, xyStrait ? QVector3D{1, 0, 0} : QVector3D{1, 0, -1}};
         ret[2] = {zEnable ? PARALLEL : DISABLED, {z1, z2, 0.5}, {0, 0, 1},
             zStrait ? QVector3D{1, 0, 0} : QVector3D{0, -1, 0}};
     } else {
@@ -257,12 +256,11 @@ const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &Axis::g
     return ret;
 }
 
-const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &Axis::getLabel(
-    int rotX, int rotY) const {
+const vector<PositionInfo> &Axis::getLabel(int rotX, int rotY) const {
     int rx = (360 - rotX) % 90;
     int dir = (360 - rotX) / 45 % 8;
-    return getLabel(
-        dir, rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45, rotY > 20);
+    return getLabel(dir, rx > 20 || rotY > 20, rx < 70 || rotY > 20, rotY<70, rx> 45,
+        rotY > 20, rx == 0);
 }
 
 bool Axis::getDir(int rotX, int rotY) const {
@@ -281,8 +279,9 @@ QMatrix4x4 Axis::getTransform(int dir, bool flipX) const {
     return ret * tmp;
 }
 
-const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(int dir,
-    bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const {
+const vector<QPair<EnumPosition, vector<QVector3D>>> &Axis::getNumber(int dir,
+    bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait,
+    bool front) const {
     static vector<QPair<EnumPosition, vector<QVector3D>>> ret(3); // true for right align
     for (int i = 0; i < 3; i++) ret[i].second.clear();
     float diffX = 1.0f / sizeX;
@@ -308,7 +307,7 @@ const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(int 
                         QVector3D(1 + xyEx, 1 - diffY * i, -DIST + zEx));
         }
         ret[0].first = zEnable ? RIGHT : LEFT;
-        ret[1].first = LEFT;
+        ret[1].first = !front && xEnable ? LEFT : CENTER;
     } else if (d == 1) {
         if (xEnable)
             for (int i = 0; i < sizeY + 1; i++)
@@ -322,7 +321,7 @@ const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(int 
                 for (int i = 0; i < sizeX + 1; i++)
                     ret[0].second.push_back(QVector3D(1 + xyEx, diffX * i, -DIST + zEx));
         }
-        ret[0].first = LEFT;
+        ret[0].first = !front && xEnable ? LEFT : CENTER;
         ret[1].first = zEnable ? RIGHT : LEFT;
     } else if (d == 2) {
         if (xEnable)
@@ -338,7 +337,7 @@ const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(int 
                     ret[1].second.push_back(QVector3D(1 + xyEx, diffY * i, -DIST + zEx));
         }
         ret[0].first = zEnable ? RIGHT : LEFT;
-        ret[1].first = LEFT;
+        ret[1].first = !front && xEnable ? LEFT : CENTER;
     } else {
         if (xEnable)
             for (int i = 0; i < sizeY + 1; i++)
@@ -352,7 +351,7 @@ const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &Axis::getNumber(int 
                     ret[0].second.push_back(
                         QVector3D(1 + xyEx, 1 - diffX * i, -DIST + zEx));
         }
-        ret[0].first = LEFT;
+        ret[0].first = !front && xEnable ? LEFT : CENTER;
         ret[1].first = zEnable ? RIGHT : LEFT;
     }
     if (zEnable)

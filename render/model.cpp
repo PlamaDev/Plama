@@ -170,13 +170,13 @@ void Model::genHeight(DATA data, VectorD2D extreme) {
             normal[offsetPoint + 7] = QVector3D::crossProduct(p[6] - p[7], p[4] - p[7]);
             normal[offsetPoint + 8] = QVector3D::crossProduct(p[7] - p[8], p[4] - p[8]);
 
-            color[offsetPoint] = Gradient::HEIGHT_MAP.getColor((d[0] + d[4]) / 2);
+            color[offsetPoint] = Gradient::HEIGHT_MAP.getColor(d[0]);
             color[offsetPoint + 3] = color[offsetPoint];
-            color[offsetPoint + 1] = Gradient::HEIGHT_MAP.getColor((d[2] + d[4]) / 2);
+            color[offsetPoint + 1] = Gradient::HEIGHT_MAP.getColor(d[2]);
             color[offsetPoint + 2] = color[offsetPoint + 1];
-            color[offsetPoint + 5] = Gradient::HEIGHT_MAP.getColor((d[8] + d[4]) / 2);
+            color[offsetPoint + 5] = Gradient::HEIGHT_MAP.getColor(d[8]);
             color[offsetPoint + 8] = color[offsetPoint + 5];
-            color[offsetPoint + 7] = Gradient::HEIGHT_MAP.getColor((d[6] + d[4]) / 2);
+            color[offsetPoint + 7] = Gradient::HEIGHT_MAP.getColor(d[6]);
             color[offsetPoint + 6] = color[offsetPoint + 7];
             color[offsetPoint + 4] = Gradient::HEIGHT_MAP.getColor(0);
 
@@ -255,7 +255,7 @@ void Model::genVector(
             float offX = marginX + diffX * (j + offsetX);
             float offY = marginY + diffY * (i + offsetY);
             VectorD2D &p = polar[idx].first;
-            QVector3D base(offX, offY, 0);
+            QVector3D base(offX, offY, polar[idx].second);
             toCatsn(p.first, p.second, line0);
             QVector3D top = base + line0;
             point[idx * 5] = base;

@@ -1,16 +1,16 @@
 #ifndef AXIS_H
 #define AXIS_H
 
+#include "common.h"
+#include "util.h"
 #include <QMatrix4x4>
 #include <QOpenGLContext>
 #include <QPair>
 #include <QVector3D>
-#include <util.h>
 #include <vector>
 
 class Axis {
 public:
-    enum EnumPosition { LEFT, RIGHT, CENTER, PARALLEL, DISABLED };
     Axis(int sizeX, int sizeY, int sizeZ);
     const std::vector<QVector3D> &getPoint() const;
     const std::vector<QVector3D> &getColor() const;
@@ -19,14 +19,13 @@ public:
     std::vector<QPair<int, int>> getSlice(bool xEnable, bool yEnable, bool zEnable,
         bool zStrait, bool xyStrait, bool invert);
     const std::vector<QPair<EnumPosition, std::vector<QVector3D>>> &getNumber(int dir,
-        bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait) const;
+        bool xEnable, bool yEnable, bool zEnable, bool zStrait, bool xyStrait,
+        bool front) const;
     const std::vector<QPair<EnumPosition, std::vector<QVector3D>>> &getNumber(
         int rotX, int rotY) const;
-    const std::vector<Quad<EnumPosition, QVector3D, QVector3D, QVector3D>> &getLabel(
-        int dir, bool xEnable, bool yEnable, bool zEnable, bool zStrait,
-        bool xyStrait) const;
-    const std::vector<Quad<EnumPosition, QVector3D, QVector3D, QVector3D>> &getLabel(
-        int rotX, int rotY) const;
+    const std::vector<PositionInfo> &getLabel(int dir, bool xEnable, bool yEnable,
+        bool zEnable, bool zStrait, bool xyStrait, bool front) const;
+    const std::vector<PositionInfo> &getLabel(int rotX, int rotY) const;
     bool getDir(int rotX, int rotY) const;
 
     QMatrix4x4 getTransform(int rotX, int rotY) const;

@@ -26,10 +26,12 @@ QVector3D reflect(const QVector3D &d, const QVector3D &n) {
 }
 
 void genMatrix(int rX, int rY, int sX, int sY, bool enBar, const Axis &axis,
-    const Bar &bar, QMatrix4x4 &matModel, QMatrix4x4 &matTrans, QMatrix4x4 &matNormal,
+    QMatrix4x4 &matModel, QMatrix4x4 &matTrans, QMatrix4x4 &matNormal,
     QMatrix4x4 &matScreen, QMatrix4x4 &matBar, QMatrix4x4 &matAxis, QVector3D &vecView) {
     static QVector3D vecViewRaw(1.5, 0, 0);
-    static QMatrix4x4 matShift(0.8, 0, 0, -0.2, 0, 0.8, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    QMatrix4x4 matShift = enBar
+        ? QMatrix4x4(0.8, 0, 0, -0.12, 0, 0.85, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+        : QMatrix4x4(1, 0, 0, 0.08, 0, 1.05, 0, 0.05, 0, 0, 1, 0, 0, 0, 0, 1);
     matAxis = axis.getTransform(rX, rY);
 
     // view matrix
@@ -54,7 +56,7 @@ void genMatrix(int rX, int rY, int sX, int sY, bool enBar, const Axis &axis,
     matTest = matTest * matAxis * matModel;
 
     static vector<QVector3D> testers = {
-        {1.1, 1.1, -0.2}, {1.1, -0.1, -0.2}, {1.1, -0.2, 1}};
+        {1.25, 1.25, -0.2}, {1.25, -0.25, -0.2}, {1.25, -0.2, 1}};
     float size = 0;
     {
         float t = 0;
@@ -76,12 +78,12 @@ void genMatrix(int rX, int rY, int sX, int sY, bool enBar, const Axis &axis,
     matTrans.lookAt(vecViewRaw, QVector3D(0, 0, 0), QVector3D(0, 0, 1));
     matTrans.rotate(rY, 0, 1, 0);
     matTrans.rotate(rX, 0, 0, 1);
-    if (enBar) matTrans = matShift * matTrans;
+    matTrans = matShift * matTrans;
 
     // others
     matScreen = QMatrix4x4(sX / 2.0, 0, 0, 0, 0, -sY / 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
     matScreen.translate(1, -1);
-    matBar = bar.getTransform();
+    matBar = QMatrix4x4(0.06, 0, 0, 0.62, 0, 1, 0, -0.5, 0, 0, 1, 0, 0, 0, 0, 1);
 }
 
 void drawTriangle(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
@@ -147,12 +149,27 @@ void drawLine(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
 }
 
 void drawText(QPainter &painter, QString &str, const QMatrix4x4 &matrix,
-    const QVector3D &anchor, Axis::EnumPosition align) {
+    const QVector3D &anchor, EnumPosition align) {
     int i = painter.font().pixelSize() * str.length() * 100;
-    int f = (align == Axis::LEFT ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter;
+    int f;
+    QRectF r;
     QPointF n = (matrix * anchor).toPointF();
-    QRect r = align == Axis::LEFT ? QRect(n.x() - i, n.y() - i / 10, i, i / 5)
-                                  : QRect(n.x(), n.y() - i / 10, i, i / 5);
+    switch (align) {
+    case LEFT:
+        f = Qt::AlignRight;
+        r = QRectF(n.x() - i, n.y() - i / 10, i, i / 5);
+        break;
+    case RIGHT:
+        f = Qt::AlignLeft;
+        r = QRectF(n.x(), n.y() - i / 10, i, i / 5);
+        break;
+    case CENTER:
+        f = Qt::AlignCenter;
+        r = QRectF(n.x() - i / 2, n.y() - i / 10, i, i / 5);
+        break;
+    default: Q_ASSERT(false);
+    }
+    f |= Qt::AlignVCenter;
     painter.drawText(r, f, str);
 }
 
@@ -214,27 +231,29 @@ QVector2D get2DVector(const QMatrix4x4 &matrix, QVector3D vector) {
 }
 
 void drawTextRich(QPainter &painter, float space, QString &str, const QMatrix4x4 &matrix,
-    QVector3D pos, QVector3D line, QVector3D expand, Axis::EnumPosition dir) {
+    PositionInfo posInfo) {
     static QTextDocument td;
-    td.setHtml(str);
+    static QString color = "<font color=\"black\">%1</font>";
+    if (posInfo.align == DISABLED) return;
+    td.setHtml(color.arg(str));
     QFont font = painter.font();
     QFontMetricsF met(font);
     font.setPixelSize(1.3 * font.pixelSize());
     td.setDefaultFont(font);
     QVector2D nExpand;
-    QVector2D nLine = get2DVector(matrix, line);
-    if (dir == Axis::PARALLEL) {
+    QVector2D nLine = get2DVector(matrix, posInfo.line);
+    if (posInfo.align == PARALLEL) {
         nExpand = QVector2D(nLine.y(), -nLine.x());
-        if (QVector2D::dotProduct(nExpand, get2DVector(matrix, expand)) < 0)
+        if (QVector2D::dotProduct(nExpand, get2DVector(matrix, posInfo.expand)) < 0)
             nExpand *= -1;
-        QPointF pPos = (matrix * pos).toPointF() +
+        QPointF pPos = (matrix * posInfo.base).toPointF() +
             getDiff(nLine, nExpand, 1.2 * space, met.height(), met.height() * 0.6);
         drawTextRich(painter, td, pPos, nLine);
     } else {
-        nExpand = get2DVector(matrix, expand);
+        nExpand = get2DVector(matrix, posInfo.expand);
         float h = met.height() * 1.6;
         float w = space + td.size().width() / 1.6;
-        QPointF pPos = (matrix * pos).toPointF() + getDiff(nLine, nExpand, w, h);
+        QPointF pPos = (matrix * posInfo.base).toPointF() + getDiff(nLine, nExpand, w, h);
         drawTextRich(painter, td, pPos);
     }
 }
@@ -332,7 +351,7 @@ void EngineGL::render(QPainter &p) {
 
     QMatrix4x4 matModel, matTrans, matNorm, matScreen, matBar, matAxis;
     QVector3D vecView;
-    genMatrix(rotX, rotY, sizeX, sizeY, enBar, *axis, *bar, matModel, matTrans, matNorm,
+    genMatrix(rotX, rotY, sizeX, sizeY, enBar, *axis, matModel, matTrans, matNorm,
         matScreen, matBar, matAxis, vecView);
     QMatrix4x4 matText = matScreen * matTrans * matAxis * matModel;
 
@@ -340,13 +359,14 @@ void EngineGL::render(QPainter &p) {
     QFont font = p.font();
 
     font.setStyleHint(QFont::SansSerif, QFont::PreferAntialias);
-    font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 60 : 50) + 1);
+    font.setPixelSize(magnitude(sizeX, sizeY) / (enBar ? 70 : 56) + 1);
     pImage.setFont(font);
     QFontMetricsF met(font);
     float textWidth[]{0, 0, 0};
 
-    const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &num =
+    const vector<QPair<EnumPosition, vector<QVector3D>>> &num =
         axis->getNumber(rotX, rotY);
+    const vector<PositionInfo> &ls = axis->getLabel(rotX, rotY);
 
     for (int i = 0; i < 3; i++) {
         auto pnts = num[i].second;
@@ -358,6 +378,7 @@ void EngineGL::render(QPainter &p) {
             if (w > textWidth[i]) textWidth[i] = w;
             drawText(pImage, s, matText, num[i].second[j], num[i].first);
         }
+        drawTextRich(pImage, textWidth[i], (*labels)[i], matText, ls[i]);
     }
 
     if (enBar) {
@@ -368,17 +389,10 @@ void EngineGL::render(QPainter &p) {
             QString s = format(start + diff * j);
             float w = met.width(s);
             if (w > textWidth[2]) textWidth[2] = w;
-            drawText(pImage, s, matScreen * matBar, ns[j], Axis::RIGHT);
+            drawText(pImage, s, matScreen * matBar, ns[j], RIGHT);
         }
-    }
-
-    // position, base line dir, expand dir
-    const vector<Quad<Axis::EnumPosition, QVector3D, QVector3D, QVector3D>> &ls =
-        axis->getLabel(rotX, rotY);
-    for (int i = 0; i < 3; i++) {
-        auto &j = ls[i];
-        if (j.a == Axis::DISABLED) continue;
-        drawTextRich(pImage, textWidth[i], (*labels)[i], matText, j.b, j.c, j.d, j.a);
+        drawTextRich(
+            pImage, textWidth[2], (*labels)[2], matScreen * matBar, bar->getLabel());
     }
 
     p.drawImage(QPoint(0, 0), image);
@@ -474,7 +488,7 @@ void EngineGL::render(QPainter &p) {
 
     // draw bar
     if (enBar) {
-        programPlain->setUniformValue(argPlainMatModel, bar->getTransform());
+        programPlain->setUniformValue(argPlainMatModel, matBar);
         programPlain->setUniformValue(argPlainMatTrans, QMatrix4x4());
         glVertexAttribPointer(
             argPlainVecPnt, 3, GL_FLOAT, GL_FALSE, 0, bar->getPoint().data());
@@ -502,9 +516,10 @@ EngineQt::EngineQt(std::shared_ptr<Model> &model, std::shared_ptr<Axis> &axis,
     : Engine(model, axis, bar, size, labels) {}
 
 void EngineQt::render(QPainter &p) {
+    p.fillRect(0, 0, sizeX, sizeY, Qt::white); // TODO
     QMatrix4x4 matModel, matTrans, matNorm, matScreen, matBar, matAxis;
     QVector3D vecView;
-    genMatrix(rotX, rotY, sizeX, sizeY, enBar, *axis, *bar, matModel, matTrans, matNorm,
+    genMatrix(rotX, rotY, sizeX, sizeY, enBar, *axis, matModel, matTrans, matNorm,
         matScreen, matBar, matAxis, vecView);
     QMatrix4x4 matFinA = matScreen * matTrans * matAxis * matModel;
     QMatrix4x4 matFinM = matScreen * matTrans * matModel;
@@ -521,8 +536,9 @@ void EngineQt::render(QPainter &p) {
     const vector<QVector3D> &vAColor = axis->getColor();
     const vector<GLuint> &vAIndex = axis->getIndex();
     vector<QPair<int, int>> vASlice = axis->getSlice(rotX, rotY);
-    const vector<QPair<Axis::EnumPosition, vector<QVector3D>>> &vANumber =
+    const vector<QPair<EnumPosition, vector<QVector3D>>> &vANumber =
         axis->getNumber(rotX, rotY);
+    const vector<PositionInfo> &ls = axis->getLabel(rotX, rotY);
     const vector<QVector3D> &vMNormal = model->getNormal();
     const vector<QVector3D> &vMPoint = model->getPoint();
     const vector<QVector3D> &vMColor = model->getColor();
@@ -533,9 +549,6 @@ void EngineQt::render(QPainter &p) {
     const vector<QVector3D> &vBColor = bar->getColor();
     const vector<GLuint> &vBIndex = bar->getIndex();
     const vector<QVector3D> &vBNumber = bar->getNumber();
-
-    // p.setBrush(Qt::white);
-    // p.drawRect(-1, -1, sizeX + 2, sizeY + 2);
 
     // draw grid
     for (auto i : vASlice)
@@ -552,6 +565,7 @@ void EngineQt::render(QPainter &p) {
             if (w > textWidth[i]) textWidth[i] = w;
             drawText(p, s, matFinA, vANumber[i].second[j], vANumber[i].first);
         }
+        drawTextRich(p, textWidth[i], (*labels)[i], matFinA, ls[i]);
     }
 
     // draw label
@@ -587,6 +601,7 @@ void EngineQt::render(QPainter &p) {
         QString s = format((*size)[2].first + diff * j);
         float w = met.width(s);
         if (w > textWidth[2]) textWidth[2] = w;
-        drawText(p, s, matScreen * matBar, vBNumber[j], Axis::RIGHT);
+        drawText(p, s, matScreen * matBar, vBNumber[j], RIGHT);
     }
+    drawTextRich(p, textWidth[2], (*labels)[2], matScreen * matBar, bar->getLabel());
 }

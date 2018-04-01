@@ -14,7 +14,8 @@ SOURCES += \
     gui/plot.cpp \
     data/project.cpp \
     render/bar.cpp \
-    render/gradient.cpp
+    render/gradient.cpp \
+    render/common.cpp
 
 HEADERS += \
     gui/windowmain.h \
@@ -25,7 +26,8 @@ HEADERS += \
     gui/plot.h \
     data/project.h \
     render/bar.h \
-    render/gradient.h
+    render/gradient.h \
+    render/common.h
 
 RESOURCES += \
     res/res.qrc
