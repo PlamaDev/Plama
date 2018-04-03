@@ -1,5 +1,5 @@
 #include "bar.h"
-#include "util.h"
+#include "util/util.h"
 
 const float Bar::DIFF = -0.00001;
 const QVector3D Bar::BLACK = QVector3D(0.4, 0.4, 0.4);

@@ -13,6 +13,8 @@ class Manager:
         self.plugins = {}
 
     def init(self, configs):
+        print('Configs: ' + str(configs))
+
         def scripts_():
             for config in configs:
                 if _os.path.exists(config):
@@ -21,8 +23,9 @@ class Manager:
                         if file.endswith('.py') and _os.path.isfile(path):
                             yield path
 
-        for i in [LoaderDummy(), LoaderMd2d(), LoaderError()]:
-            self.plugins[i.name()] = (i.load, [(str(i), Manager.types[j]) for i, j in i.args()])
+        loader = LoaderMd2d()
+        self.plugins[loader.name()] = \
+            (loader.load, [(str(i), Manager.types[j]) for i, j in loader.args()])
 
         for script in scripts_():
             variables = {}
@@ -37,7 +40,7 @@ class Manager:
                     else:
                         print('Failed to load file "' +
                               script + '": attribute not met')
-                except Exception:
+                except Exception as e:
                     print('Failed to load file "' +
                           script + '": exception caught.')
 
@@ -128,81 +131,6 @@ class Manager:
         return ret
 
 
-class LoaderError:
-    @staticmethod
-    def name():
-        return 'Error'
-
-    @staticmethod
-    def load(files):
-        raise NotImplementedError('This is a exception test')
-
-    @staticmethod
-    def args():
-        return []
-
-
-class LoaderDummy:
-    @staticmethod
-    def name():
-        return 'Dummy'
-
-    # noinspection PyUnusedLocal
-    @staticmethod
-    def load():
-        return [{
-            'abbr': 'Rea-1',
-            'name': 'Reaction A + B <=> C',
-            'children': [],
-            'quantities': [{
-                'name': 'example-2D1D',
-                'times': [1, 2, 3],
-                'dimData': 1,
-                'sizeData': [3, 3],
-                'sizeModel': [[0, 1], [0, 1]],
-                'labels': ['t(s)', '&Phi;(Wm<sup>-2</sup>)', 'x(m)', 'y(m)'],
-                'data': lambda: [
-                    [0, 1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 2, 0, 0, 0, 0]
-                ]
-            }, {
-                'name': 'example-0D1D',
-                'times': [1, 2, 3],
-                'dimData': 1,
-                'sizeData': [],
-                'sizeModel': [],
-                'labels': ['t(s)', 'h(m)'],
-                'data': lambda: [
-                    [0], [3], [2]
-                ]
-            }, {
-                'name': 'example-2D2D',
-                'times': [1],
-                'dimData': 2,
-                'sizeData': [3, 2],
-                'sizeModel': [[2, 20], [4, 5]],
-                'labels': ['t(s)', 'h(m)', 'x(m)', 'y(m)'],
-                'data': lambda: [
-                    [0, 1, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0]
-                ]
-            }, {
-                'name': 'example-err',
-                'times': [1, 2, 3],
-                'dimData': 1,
-                'sizeData': [],
-                'sizeModel': [],
-                'labels': ['t(s)', 'h(m)'],
-                'data': lambda: [[1], [2]]
-            }]
-        }]
-
-    @staticmethod
-    def args():
-        return []
-
-
 class LoaderMd2d:
     pat_split = _re.compile(r' +')
     pat_time = _re.compile(r'# *time *= *(.+?)\s')
@@ -267,14 +195,14 @@ class LoaderMd2d:
             def read_():
                 ret = LoaderMd2d.read_data(file)
                 if len(ret) != len(times) * dim:
-                    raise RuntimeError('Section size mismatch. ' + \
-                    'Please make sure all data files generated in ' + \
-                    'previous simulations are removed.')
+                    raise RuntimeError('Section size mismatch. ' +
+                                       'Please make sure all data files generated in ' +
+                                       'previous simulations are removed.')
                 else:
                     return ret
 
             dim, sx, sy = LoaderMd2d.read_dim(file)
-            
+
             return {
                 'name': name,
                 'times': times,
@@ -350,7 +278,6 @@ class LoaderMd2d:
                 except FileNotFoundError:
                     pass
             return ret
-
 
         particles, reactions = LoaderMd2d.read_info(output)
         size_model = LoaderMd2d.read_model(sim)
@@ -532,7 +459,6 @@ def args(name):
 def load(name, arguments):
     return manager.load(name, arguments)
 
-
 # if __name__ == '__main__':
 #     init([])
 #     d = 'D:\Work\FYP\software\data'
@@ -542,14 +468,14 @@ def load(name, arguments):
 #     d, r = d[0]['children'][0]['quantities'][3]['data']()
 
 # linux
-#if __name__ == "__main__":
-#   init([])
-#   d = '/run/media/towdium/Files/Work/FYP/software/data'
-#   files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
-#   a = args('MD2D')
-#   d, r = load('MD2D', [files_,['/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d']])
-#   d, r = d[0]['children'][0]['quantities'][3]['data']() #pylint: disable=E1126
-   
+if __name__ == "__main__":
+    init(['/home/towdium/.config/Plama'])
+    d = '/run/media/towdium/Files/Work/FYP/software/data'
+    files_ = [_os.path.join(d, i) for i in _os.listdir(d)]
+    a = args('MD2D')
+    d, r = load('MD2D', [files_, ['/run/media/towdium/Files/Work/FYP/software/input/md2d/hcd_demo.md2d']])
+    d, r = d[0]['children'][0]['quantities'][3]['data']()  # pylint: disable=E1126
+
 # dummy
 # if __name__ == "__main__":
 #    init([])
