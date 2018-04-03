@@ -394,7 +394,6 @@ void EngineGL::render(QPainter &p) {
         drawTextRich(
             pImage, textWidth[2], (*labels)[2], matScreen * matBar, bar->getLabel());
     }
-
     p.drawImage(QPoint(0, 0), image);
 
     p.beginNativePainting();

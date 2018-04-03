@@ -20,19 +20,22 @@ In one sentence, it is a light-weighted, free and flexible data visualizing tool
 
 This program has built-in support for a plasma simulation file format called `MD2D`, so you can directly open projects in this format without any configuration. Simply choose open, and select all the output data, and the input model file, then it will handle all the things.
 
-### Installing the Plugin
+#### Installing the Plugin
 
 This program aims to provide zero-configuration experience for any data format, through a plugin system. When you have the plugin to process the data format, you only needs to click open, then select the files, easy.
 
-But you might have already thought about, you need to install the plugin first. A plugin is basically a python file. On linux, throw it into the folder `/home/username/.config/Plama`, then the program will load it automatically if it runs.
+But you might have already thought about, you need to install the plugin first. A plugin is basically a python file. Simply throw it into the config folder , then the program will load it automatically if it runs. The config location is given below:
 
-### Write a Plugin
+- Linux: `/home/username/.config/Plama`
+- Windows: `C:/Users/username/AppData/Local/Plama`
+
+#### Write a Plugin
 
 This program implements possibly the easiest way to write plugins. All you need is a python file with global variable called `plugin`  TODO!
 
 ## How to Compile
 
-### Linux
+#### Linux
 
 First you need the dependencies (python3 please):
 
@@ -42,11 +45,11 @@ Then the typical way for Qt projects:
 
 `qmake && make && make install`
 
-### Windows
+#### Windows
 
 Well, I don't suggest compile it yourself on Windows, not only because I use QtCreator to compile and run it on Windows, but also for the complicities of the dependencies. Why not use the released executable? By the way, I use mingw to compile it on Windows.
 
-### OSX
+#### OSX
 
 Not tested, not supported, have fun yourself.
 
