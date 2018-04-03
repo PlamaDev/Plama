@@ -1,7 +1,7 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-#include "util.h"
+#include "util/util.h"
 #include <Python.h>
 #include <QPair>
 #include <QTextStream>

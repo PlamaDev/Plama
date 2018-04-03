@@ -1,7 +1,7 @@
 #include "plot.h"
 #include "render/bar.h"
 #include "render/model.h"
-#include "util.h"
+#include "util/util.h"
 #include <QApplication>
 #include <QFile>
 #include <QFileDialog>

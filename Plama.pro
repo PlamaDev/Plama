@@ -10,7 +10,7 @@ SOURCES += \
     render/engine.cpp \
     render/model.cpp \
     render/axis.cpp \
-    util.cpp \
+    util/util.cpp \
     gui/plot.cpp \
     data/project.cpp \
     render/bar.cpp \
@@ -22,7 +22,7 @@ HEADERS += \
     render/engine.h \
     render/model.h \
     render/axis.h \
-    util.h \
+    util/util.h \
     gui/plot.h \
     data/project.h \
     render/bar.h \

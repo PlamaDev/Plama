@@ -1,6 +1,6 @@
 #include "engine.h"
 #include "axis.h"
-#include "util.h"
+#include "util/util.h"
 #include <QColor>
 #include <QFont>
 #include <QFontMetricsF>

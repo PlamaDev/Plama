@@ -2,7 +2,7 @@
 #define AXIS_H
 
 #include "common.h"
-#include "util.h"
+#include "util/util.h"
 #include <QMatrix4x4>
 #include <QOpenGLContext>
 #include <QPair>

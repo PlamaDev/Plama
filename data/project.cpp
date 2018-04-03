@@ -1,5 +1,4 @@
 #include "project.h"
-#include "util.h"
 #include <Python.h>
 #include <QApplication>
 #include <QFileDialog>

@@ -2,8 +2,7 @@
 #define MODEL_H
 
 #include "data/project.h"
-#include "render/gradient.h"
-#include "util.h"
+#include "gradient.h"
 #include <QOpenGLContext>
 #include <QVector3D>
 #include <memory>

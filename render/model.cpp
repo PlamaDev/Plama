@@ -1,5 +1,5 @@
 #include "render/model.h"
-#include "util.h"
+#include "util/util.h"
 #include <QPair>
 
 using namespace std;

@@ -10,5 +10,6 @@
         <file>icons/plot-shader.svg</file>
         <file>icons/plot-gradient.svg</file>
         <file>icons/plot-step.svg</file>
+        <file>icons/plama.svg</file>
     </qresource>
 </RCC>

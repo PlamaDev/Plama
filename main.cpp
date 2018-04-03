@@ -1,5 +1,4 @@
 #include "gui/windowmain.h"
-#include "util.h"
 #include <Python.h>
 #include <QApplication>
 #include <QDebug>
@@ -22,6 +21,7 @@ int main(int argc, char *argv[]) {
         QSurfaceFormat::setDefaultFormat(format);
 
         QApplication a(argc, argv);
+        a.setWindowIcon(getIcon("plama"));
         if (QSysInfo::productType() == "windows") {
             QFont font("Segoe UI");
             a.setFont(font);
