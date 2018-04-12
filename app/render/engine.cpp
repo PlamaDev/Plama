@@ -137,6 +137,10 @@ void drawLine(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
     const vector<QVector3D> &clr, const GLuint *ind, int n, float width) {
     if (ind == nullptr) return;
     for (int i = 1;; i++) {
+        if (i == n) {
+            i = -1;
+            continue;
+        }
         QPointF p1 = (mat * pnt[*(ind + 2 * i)]).toPointF();
         QPointF p2 = (mat * pnt[*(ind + 2 * i + 1)]).toPointF();
         QVector3D c = clr[*(ind + 2 * i + 1)];
@@ -144,7 +148,6 @@ void drawLine(QPainter &p, const QMatrix4x4 &mat, const vector<QVector3D> &pnt,
         p.setPen(QPen(cq, width));
         p.drawLine(p1, p2);
         if (i == 0) break;
-        if (i + 1 == n) i = -1;
     }
 }
 

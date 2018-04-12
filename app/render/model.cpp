@@ -232,14 +232,14 @@ void Model::genVector(
         pair.second = magnitude(dataX->get(i), dataY->get(i));
     }
     int divs = sizeX > sizeY ? sizeX : sizeY;
-    double toLenth = maxScaled == 0 ? 0 : 1 / maxScaled / divs;
+    double toLenth = maxScaled == 0 ? 0 : 0.7 / maxScaled / divs;
     double toUnity = 1 / maxActual;
-    float sizeL = 0.8 / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
+    float sizeL = 0.6 / (sizeX > sizeY ? sizeX + 1 : sizeY + 1);
     float sizeA = sizeL * cos(PI / 12);
-    float marginX = 0.5 / (dataX->sizeXO() + 1);
-    float marginY = 0.5 / (dataX->sizeYO() + 1);
-    float diffX = (1.0 - 2 * marginX) / dataX->sizeXF();
-    float diffY = (1.0 - 2 * marginY) / dataX->sizeYF();
+    float marginX = 0.5 / dataX->sizeXO();
+    float marginY = 0.5 / dataX->sizeYO();
+    float diffX = dataX->sizeXI() == 1 ? 1 : (1.0 - 2 * marginX) / dataX->sizeXF();
+    float diffY = dataX->sizeYI() == 1 ? 1 : (1.0 - 2 * marginY) / dataX->sizeYF();
     for (auto &i : polar) {
         i.first.first *= toLenth;
         i.second *= toUnity;

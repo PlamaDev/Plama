@@ -60,7 +60,9 @@ public:
 protected:
     int step, sxo, syo, sxi, syi, startX, startY;
     float sxf, syf, ofsetX, ofsetY;
-
+    // s_o: original size
+    // s_i: sampled integer size
+    // s_f: sampled float size
     virtual double getRaw(int x, int y = 0) const = 0;
     void conv(int &x, int &y) const;
 };
