@@ -31,7 +31,7 @@ But you might have already thought about, you need to install the plugin first. 
 
 #### Write a Plugin
 
-This program implements possibly the easiest way to write plugins. All you need is a python file with global variable called `plugin`  TODO!
+This program implements possibly the easiest way to write plugins. For the description of plugin protocol, please find corresponding sections in the [full report](doc/Report/final-report_juntong-liu_201219267.pdf).
 
 ## How to Compile
 
