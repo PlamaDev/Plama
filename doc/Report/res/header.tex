@@ -1,0 +1,184 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{graphicx, fullpage, listings}
+\usepackage{pdfpages, color}
+\usepackage[titletoc, page]{appendix}
+\usepackage{tocloft}
+\usepackage{ifthen, calc}
+\usepackage{subfig, wrapfig, caption}
+\usepackage{lipsum}
+\usepackage[separate-uncertainty=true, multi-part-units=single, output-complex-root = j, complex-root-position = before-number]{siunitx}
+\usepackage{amsmath}
+\usepackage[hyphens]{url}
+\usepackage[siunitx, american]{circuitikz}
+\usepackage[hidelinks]{hyperref}
+\usepackage{cprotect}
+\usepackage{suffix}
+\usepackage{enumitem}
+\usepackage[hang,flushmargin]{footmisc}
+\usepackage{lmodern}
+\usepackage{float}
+
+% COMMANDS
+
+\newfloat{lstfloat}{tbp}{lop}
+\floatname{lstfloat}{Listing}
+\def\lstfloatautorefname{Listing}
+
+\newcommand\cell[2]{\parbox{#1\textwidth}{\vspace{3pt}#2\vspace{3pt}}}
+
+\newcommand\makereference[1]{ %
+  \bibliographystyle{res/myieee}
+  \bibliography{#1}
+  \addcontentsline{toc}{section}{References}
+}
+
+% \eq[label]{equation}
+\newcommand\eq[2][]{ %
+  \ifthenelse{\equal{#1}{}}{ %
+    \begin{equation*}\begin{aligned} #2 \end{aligned}\end{equation*}
+  }{ %
+    \begin{equation}\begin{aligned} #2 \end{aligned}\label{#1}\end{equation}
+  }
+}
+
+\newcommand{\MatLab}{\textsc{Matlab}}
+
+% VALUES
+\graphicspath{{fig/}}
+\setlength\cftbeforesecskip{3pt}
+\setlength{\parskip}{4.5pt}
+\interfootnotelinepenalty=500
+\hfuzz=\maxdimen
+\tolerance=10000
+\hbadness=10000
+\setlist[itemize]{topsep=0.5pt}
+
+
+% LISTING
+
+\lstdefinelanguage{ahdl}{
+  morekeywords={
+    AND, ASSERT, BEGIN, BIDIR, BiTS, BURIED,
+    CASE, CLIQUE, CONNECTED_PINS, CONSTANT,
+    DEFAULTS, DEFINE, DESIGN, DEVICE, DIV,
+    ELSE, ELSEIF, END, FOR, FUNCTION,
+    GENERATE, GND, HELP_ID,
+    IF, INCLUDE, INPUT, IS, LOG2,
+    MACHINE, MOD, NAND, NODE, NOR, NOT,
+    OF, OPTIONS, OR, OTHERS, OUTPUT,
+    PARAMETERS, REPORT, RETURNS,
+    SEGMENTS, SEVERITY, STATES, SUBDESIGN,
+    TABLE, THEN, TITLE, TO, TRI_STATE_NODE,
+    VARIABLE, VCC, WHEN, WITH, XNOR, XOR,
+    CARRY, CASCADE, CEIL, DFFE, DFF,
+    EXP, FLOOR, GLOBAL, JEFFE, JKFF,
+    LATCH, LCELL, MCELL, MEMORY, OPNDRN,
+    SOFT, SRFFE, SRFF, TFFE, TFF, TRI,
+    WIRE, X
+  },
+  sensitive=false,
+  morecomment=[l]{--},
+  morecomment=[s]{\%}{\%},
+  tabsize = 4
+}
+
+\lstdefinelanguage{xml}{
+  basicstyle=\ttfamily\footnotesize,
+  morestring=[b]",
+  moredelim=[s][\bfseries\color{mygreen}]{<}{\ },
+  moredelim=[s][\bfseries\color{mygreen}]{</}{>},
+  moredelim=[l][\bfseries\color{mygreen}]{/>},
+  moredelim=[l][\bfseries\color{mygreen}]{>},
+  morecomment=[s]{<?}{?>},
+  morecomment=[s]{<!--}{-->},
+  commentstyle=\color{mygrey},
+  stringstyle=\color{myorange},
+  %identifierstyle=\color{mygreen}
+}
+
+\newcommand\lstinputlistingnobreak[2][]{
+  \begin{figure}[!ht]
+  \vspace{-0.5cm}
+  \lstinputlisting[#1]{#2}
+  \end{figure}
+}
+
+\lstnewenvironment{lstlistingnobreak}[1][]{ %
+  \figure[!ht]\vspace{-0.5cm}
+  \lstset{xrightmargin=35pt}\lstset{#1}
+}{ %
+  \endfigure
+}
+
+\lstset{
+  frame=single,basicstyle=\ttfamily,breaklines=true
+}
+
+\definecolor{myyellow}{rgb}{1,1,0.8}
+\definecolor{mygray}{rgb}{0.5,0.5,0.4}
+\definecolor{mygreen}{rgb}{0,0.7,0.5}
+\definecolor{myorange}{rgb}{1.0,0.4,0}
+\definecolor{mylilas}{rgb}{0.8,0.3,1.0}
+
+\lstdefinestyle{mybase} {
+	breaklines=true,
+	showstringspaces=false,
+	basicstyle=\scriptsize\tt,
+	frame=single,
+	xleftmargin=20pt,
+	xrightmargin=20pt,
+  numbersep=9pt,
+  numberstyle={\color{black} \footnotesize \sf},
+  stringstyle=\color{myorange},
+  keywordstyle=\color{mygreen},
+  commentstyle=\color{mygray},
+  tabsize=4
+}
+
+\lstdefinestyle{myahdl} {
+  style=mybase,
+  language = ahdl,
+  keywordstyle=\color{mylilas},
+  commentstyle=\color{mygreen}
+}
+
+\lstdefinestyle{mymatlabcode} {
+  style=mybase,
+	language=Matlab,
+	stringstyle=\color{mylilas},
+	commentstyle=\color{mygreen},
+	emph=[1]{for,end,break,function,while,if,else},emphstyle=[1]\color{blue},
+}
+
+\lstdefinestyle{mymatlabconsole} {
+  style=mybase,
+	morecomment=[l][\color{red}]{Error},
+}
+
+\lstdefinestyle{myahdl} {
+  style=mybase,
+  language = ahdl,
+  keywordstyle=\color{mylilas},
+  commentstyle=\color{mygreen},
+  numberstyle={\color{black} \footnotesize \sf}
+}
+
+
+% TITLE
+
+\title{
+  \includegraphics[width=0.4\textwidth]{res/univcrest.pdf}
+  \\[4pt]\reporttitle}
+\author{ %
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft}
+  \projectinfoleft
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\begin{flushright}
+  \projectinforight
+\end{flushright}
+\end{minipage}
+}
+\date{\small{\today}}
