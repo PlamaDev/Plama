@@ -20,6 +20,8 @@ In one sentence, it is a light-weighted, free and flexible data visualizing tool
 
 This program has built-in support for a plasma simulation file format called `MD2D`, so you can directly open projects in this format without any configuration. Simply choose open, and select all the output data, and the input model file, then it will handle all the things.
 
+If you do not have MD2D format data, [here](doc/demo.7z) is a simple example to help you run it an test most of the features. The data files are given in data folder and `pdp_demo.md2d` is the input model file.
+
 #### Installing the Plugin
 
 This program aims to provide zero-configuration experience for any data format, through a plugin system. When you have the plugin to process the data format, you only needs to click open, then select the files, easy.
